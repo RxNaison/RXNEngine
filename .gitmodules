@@ -1,0 +1,3 @@
+[submodule "RXNEngine/vendor/spdlog"]
+	path = RXNEngine/vendor/spdlog
+	url = https://github.com/gabime/spdlog
