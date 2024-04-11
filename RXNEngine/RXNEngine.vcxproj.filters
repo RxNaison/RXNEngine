@@ -4,6 +4,9 @@
     <Filter Include="RXNEngine">
       <UniqueIdentifier>{3330CD95-9F9A-810C-E8D8-32B254825F61}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RXNEngine\Events">
+      <UniqueIdentifier>{B744AAA1-A33D-C9F3-CC6F-AE78B8C7A8FF}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\RXNEngine.h" />
@@ -15,6 +18,18 @@
     </ClInclude>
     <ClInclude Include="src\RXNEngine\EntryPoint.h">
       <Filter>RXNEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RXNEngine\Events\ApplicationEvent.h">
+      <Filter>RXNEngine\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RXNEngine\Events\Event.h">
+      <Filter>RXNEngine\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RXNEngine\Events\KeyEvent.h">
+      <Filter>RXNEngine\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RXNEngine\Events\MouseEvent.h">
+      <Filter>RXNEngine\Events</Filter>
     </ClInclude>
     <ClInclude Include="src\RXNEngine\Log.h">
       <Filter>RXNEngine</Filter>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core.h"
+#include "Events/Event.h"
 
 namespace RXNEngine {
 
@@ -16,5 +17,3 @@ namespace RXNEngine {
 	Application* CreateApplication();
 
 }
-
-

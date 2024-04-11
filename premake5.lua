@@ -14,7 +14,7 @@ project "RXNEngine"
    objdir "bin-int/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}/%{prj.name}"
 
    files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
-   includedirs "%{prj.name}/vendor/spdlog/include/"
+   includedirs { "%{prj.name}/src", "%{prj.name}/vendor/spdlog/include" }
 
    filter "system:windows"
       cppdialect "C++latest"
@@ -45,7 +45,7 @@ project "Sandbox"
    objdir "bin-int/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}/%{prj.name}"
 
    files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
-   includedirs {"RXNEngine/vendor/spdlog/include/;", "RXNEngine/src"}
+   includedirs {"RXNEngine/vendor/spdlog/include", "RXNEngine/src"}
    links "RXNEngine"
 
    filter "system:windows"

@@ -4,6 +4,7 @@
 #include "Core.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/fmt/ostr.h"
 
 namespace RXNEngine
 {
@@ -25,10 +26,10 @@ namespace RXNEngine
 #define RXN_CORE_INFO(...)		::RXNEngine::Log::GetCoreLogger()->info(__VA_ARGS__)
 #define RXN_CORE_WARN(...)		::RXNEngine::Log::GetCoreLogger()->warn(__VA_ARGS__)
 #define RXN_CORE_ERROR(...)		::RXNEngine::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define RXN_CORE_FATAL(...)		::RXNEngine::Log::GetCoreLogger()->fatal(__VA_ARGS__)
+#define RXN_CORE_CRITICAL(...)	::RXNEngine::Log::GetCoreLogger()->critical(__VA_ARGS__)
 
 #define RXN_TRACE(...)			::RXNEngine::Log::GetClientLogger()->trace(__VA_ARGS__)
 #define RXN_INFO(...)			::RXNEngine::Log::GetClientLogger()->info(__VA_ARGS__)
 #define RXN_WARN(...)			::RXNEngine::Log::GetClientLogger()->warn(__VA_ARGS__)
 #define RXN_ERROR(...)			::RXNEngine::Log::GetClientLogger()->error(__VA_ARGS__)
-#define RXN_FATAL(...)			::RXNEngine::Log::GetClientLogger()->fatal(__VA_ARGS__)
+#define RXN_CRITICAL(...)		::RXNEngine::Log::GetClientLogger()->critical(__VA_ARGS__)

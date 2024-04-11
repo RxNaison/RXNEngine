@@ -8,3 +8,5 @@
 		#endif // RXN_BUILD_DLL
 
 #endif // RXN_PLATFORM_WINDOWS
+
+#define BIT(x) (1 << x)
