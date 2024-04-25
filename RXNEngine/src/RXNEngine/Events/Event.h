@@ -1,9 +1,7 @@
 #pragma once
 
+#include "rxnpch.h"
 #include "RXNEngine/Core.h"
-
-#include <string>
-#include <functional>
 
 
 namespace RXNEngine {
