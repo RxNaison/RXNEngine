@@ -79,8 +79,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>rxnpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>RXN_PLATFORM_WINDOWS;RXN_BUILD_DLL;RXN_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RXN_PLATFORM_WINDOWS;RXN_BUILD_DLL;GLFW_INCLUDE_NONE;RXN_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;vendor\Glad\include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -94,7 +94,7 @@
       <ImportLibrary>..\bin\Debug-windows-x86_64\RXNEngine\RXNEngine.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>copy /B /Y ..\bin\Debug-windows-x86_64\RXNEngine\RXNEngine.dll ..\bin\Debug-windows-x86_64\Sandbox</Command>
+      <Command>copy /B /Y ..\bin\Debug-windows-x86_64\RXNEngine\RXNEngine.dll "..\bin\Debug-windows-x86_64\Sandbox\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -102,8 +102,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>rxnpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>RXN_PLATFORM_WINDOWS;RXN_BUILD_DLL;RXN_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RXN_PLATFORM_WINDOWS;RXN_BUILD_DLL;GLFW_INCLUDE_NONE;RXN_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;vendor\Glad\include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -121,7 +121,7 @@
       <ImportLibrary>..\bin\Release-windows-x86_64\RXNEngine\RXNEngine.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>copy /B /Y ..\bin\Release-windows-x86_64\RXNEngine\RXNEngine.dll ..\bin\Release-windows-x86_64\Sandbox</Command>
+      <Command>copy /B /Y ..\bin\Release-windows-x86_64\RXNEngine\RXNEngine.dll "..\bin\Release-windows-x86_64\Sandbox\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
@@ -129,8 +129,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>rxnpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>RXN_PLATFORM_WINDOWS;RXN_BUILD_DLL;RXN_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RXN_PLATFORM_WINDOWS;RXN_BUILD_DLL;GLFW_INCLUDE_NONE;RXN_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;vendor\Glad\include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -148,10 +148,12 @@
       <ImportLibrary>..\bin\Dist-windows-x86_64\RXNEngine\RXNEngine.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>copy /B /Y ..\bin\Dist-windows-x86_64\RXNEngine\RXNEngine.dll ..\bin\Dist-windows-x86_64\Sandbox</Command>
+      <Command>copy /B /Y ..\bin\Dist-windows-x86_64\RXNEngine\RXNEngine.dll "..\bin\Dist-windows-x86_64\Sandbox\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Platform\OpenGL\ImGuiOpenGLRenderer.h" />
+    <ClInclude Include="src\Platform\Windows\WindowsInput.h" />
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="src\RXNEngine.h" />
     <ClInclude Include="src\RXNEngine\Application.h" />
@@ -161,13 +163,22 @@
     <ClInclude Include="src\RXNEngine\Events\Event.h" />
     <ClInclude Include="src\RXNEngine\Events\KeyEvent.h" />
     <ClInclude Include="src\RXNEngine\Events\MouseEvent.h" />
+    <ClInclude Include="src\RXNEngine\ImGui\ImGuiLayer.h" />
+    <ClInclude Include="src\RXNEngine\Input.h" />
+    <ClInclude Include="src\RXNEngine\Layer.h" />
+    <ClInclude Include="src\RXNEngine\LayerStack.h" />
     <ClInclude Include="src\RXNEngine\Log.h" />
     <ClInclude Include="src\RXNEngine\Window.h" />
     <ClInclude Include="src\rxnpch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Platform\OpenGL\ImGuiOpenGLRenderer.cpp" />
+    <ClCompile Include="src\Platform\Windows\WindowsInput.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="src\RXNEngine\Application.cpp" />
+    <ClCompile Include="src\RXNEngine\ImGui\ImGuiLayer.cpp" />
+    <ClCompile Include="src\RXNEngine\Layer.cpp" />
+    <ClCompile Include="src\RXNEngine\LayerStack.cpp" />
     <ClCompile Include="src\RXNEngine\Log.cpp" />
     <ClCompile Include="src\rxnpch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -176,6 +187,12 @@
   <ItemGroup>
     <ProjectReference Include="vendor\GLFW\GLFW.vcxproj">
       <Project>{154B857C-0182-860D-AA6E-6C109684020F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="vendor\Glad\Glad.vcxproj">
+      <Project>{BDD6857C-A90D-870D-52FA-6C103E10030F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="vendor\imgui\ImGui.vcxproj">
+      <Project>{C0FF640D-2C14-8DBE-F595-301E616989EF}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

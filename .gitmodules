@@ -4,3 +4,6 @@
 [submodule "RXNEngine/vendor/GLFW"]
 	path = RXNEngine/vendor/GLFW
 	url = https://github.com/RxNaison/glfw
+[submodule "RXNEngine/vendor/imgui"]
+	path = RXNEngine/vendor/imgui
+	url = https://github.com/RxNaison/imgui

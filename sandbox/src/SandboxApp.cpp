@@ -5,7 +5,7 @@ class Sandbox : public RXNEngine::Application
 public:
 	Sandbox()
 	{
-
+		PushOverlay(new RXNEngine::ImGuiLayer());
 	}
 	~Sandbox()
 	{
