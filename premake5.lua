@@ -11,6 +11,7 @@ IncludeDir = {}
 IncludeDir["GLFW"] = "RXNEngine/vendor/GLFW/include"
 IncludeDir["Glad"] = "RXNEngine/vendor/Glad/include"
 IncludeDir["Imgui"] = "RXNEngine/vendor/imgui"
+IncludeDir["glm"] = "RXNEngine/vendor/glm"
 
 group "Dependencies"
     include "RXNEngine/vendor/GLFW"
@@ -31,7 +32,13 @@ project "RXNEngine"
    pchheader "rxnpch.h"
    pchsource "RXNEngine/src/rxnpch.cpp"
 
-   files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
+   files
+   {
+       "%{prj.name}/src/**.h",
+       "%{prj.name}/src/**.cpp",
+       "%{prj.name}/vendor/glm/glm/**.hpp",
+       "%{prj.name}/vendor/glm/glm/**.inl"
+   }
 
    includedirs
    { 
@@ -39,8 +46,11 @@ project "RXNEngine"
        "%{prj.name}/vendor/spdlog/include",
        "%{IncludeDir.GLFW}",
        "%{IncludeDir.Glad}",
-       "%{IncludeDir.Imgui}"
+       "%{IncludeDir.Imgui}",
+       "%{IncludeDir.glm}"
    }
+
+
 
    links { "GLFW", "Glad", "Imgui", "opengl32.lib", "dwmapi.lib" }
 
@@ -76,7 +86,12 @@ project "Sandbox"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
    files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
-   includedirs {"RXNEngine/vendor/spdlog/include", "RXNEngine/src"}
+   includedirs
+   {
+       "RXNEngine/vendor/spdlog/include",
+       "RXNEngine/src",
+       "%{IncludeDir.glm}"
+   }
    links "RXNEngine"
 
    filter "system:windows"
