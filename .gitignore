@@ -1,8 +1,15 @@
-# Directories
-.vs/
-bin/
+# Binaries
+**/bin/
 bin-int/
+Intermediates/
 
-# Files
-*.user
-*.bat
+# RXNEngine files
+*.log
+
+# Visual Studio files and folder
+.vs/
+**.sln
+**.vcxproj
+**.vcxproj.filters
+**.vcxproj.user
+**.csproj
