@@ -6,6 +6,7 @@
 #include "RXNEngine/LayerStack.h"
 #include "RXNEngine/Events/Event.h"
 #include "RXNEngine/Events/ApplicationEvent.h"
+#include "RXNEngine/ImGui/ImGuiLayer.h"
 
 namespace RXNEngine {
 
@@ -29,6 +30,7 @@ namespace RXNEngine {
 		bool OnWindowClosed(WindowCloseEvent& e);
 
 		std::unique_ptr<Window> m_Window;
+		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 		LayerStack m_LayerStack;
 
