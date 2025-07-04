@@ -1,12 +1,15 @@
 #pragma once
 
 #ifdef RXN_PLATFORM_WINDOWS
+#if RXN_DYNAMIC_LINK
 		#ifdef RXN_BUILD_DLL
 			#define RXN_API __declspec(dllexport)
 		#else 
 			#define RXN_API __declspec(dllimport)
 		#endif // RXN_BUILD_DLL
-
+#else
+		#define RXN_API
+#endif
 #endif // RXN_PLATFORM_WINDOWS
 
 #ifdef RXN_ENABLE_ASSERTS

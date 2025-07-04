@@ -22,9 +22,10 @@ group ""
 
 project "RXNEngine"
    location "RXNEngine"
-   kind "SharedLib"
+   kind "StaticLib"
    language "C++"
-   staticruntime "On"
+   cppdialect "C++latest"
+   staticruntime "off"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -41,6 +42,13 @@ project "RXNEngine"
        "%{prj.name}/vendor/glm/glm/**.h"
    }
 
+   	defines
+	{
+		"_CRT_SECURE_NO_WARNINGS",
+        "GLFW_INCLUDE_NONE",
+        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+	}
+
    includedirs
    { 
        "%{prj.name}/src",
@@ -52,41 +60,44 @@ project "RXNEngine"
    }
 
 
-
-   links { "GLFW", "Glad", "Imgui", "opengl32.lib", "dwmapi.lib" }
+   links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
 
    filter "system:windows"
-      cppdialect "C++latest"
       systemversion "latest"
       defines { "RXN_PLATFORM_WINDOWS", "RXN_BUILD_DLL", "GLFW_INCLUDE_NONE" }
-
-      postbuildcommands { "{COPYFILE} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"" }
 
       filter "configurations:Debug"
         defines "RXN_DEBUG"
         runtime "Debug"
-        symbols "On"
+        symbols "on"
 
       filter "configurations:Release"
         defines "RXN_DEBUG"
         runtime "Release"
-        optimize "On"
+        optimize "on"
 
       filter "configurations:Dist"
         defines "RXN_DEBUG"
         runtime "Release"
-        optimize "On"
+        optimize "on"
 
 project "Sandbox"
  location "RXNEngine"
    kind "ConsoleApp"
    language "C++"
-   staticruntime "Off"
+   cppdialect "C++latest"
+   staticruntime "off"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
    files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
+
+    defines
+	{
+        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+	}
+
    includedirs
    {
        "RXNEngine/vendor/spdlog/include",
@@ -96,21 +107,20 @@ project "Sandbox"
    links "RXNEngine"
 
    filter "system:windows"
-      cppdialect "C++latest"
       systemversion "latest"
       defines "RXN_PLATFORM_WINDOWS"
 
    filter "configurations:Debug"
       defines "RXN_DEBUG"
       runtime "Debug"
-      symbols "On"
+      symbols "on"
 
    filter "configurations:Release"
       defines "RXN_DEBUG"
       runtime "Release"
-      optimize "On"
+      optimize "on"
 
    filter "configurations:Dist"
       defines "RXN_DEBUG"
       runtime "Release"
-      optimize "On"
+      optimize "on"
