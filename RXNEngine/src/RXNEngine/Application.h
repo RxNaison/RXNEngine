@@ -8,6 +8,10 @@
 #include "RXNEngine/Events/ApplicationEvent.h"
 #include "RXNEngine/ImGui/ImGuiLayer.h"
 
+#include "Renderer/Shader.h"
+#include "Renderer/Buffer.h"
+#include "Renderer/VertexArray.h"
+
 namespace RXNEngine {
 
 	class RXN_API Application
@@ -33,6 +37,11 @@ namespace RXNEngine {
 		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 		LayerStack m_LayerStack;
+
+		std::shared_ptr<Shader> m_Shader;
+		std::shared_ptr<VertexArray> m_VertexArray;
+		std::shared_ptr<VertexBuffer> m_VertexBuffer;
+		std::shared_ptr<IndexBuffer> m_IndexBuffer;
 
 		static Application* s_Instance;
 	};

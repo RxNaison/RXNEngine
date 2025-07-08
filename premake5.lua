@@ -70,14 +70,15 @@ project "RXNEngine"
         defines "RXN_DEBUG"
         runtime "Debug"
         symbols "on"
+        defines { "RXN_ENABLE_ASSERTS" }
 
       filter "configurations:Release"
-        defines "RXN_DEBUG"
+        defines "RXN_RELEASE"
         runtime "Release"
         optimize "on"
 
       filter "configurations:Dist"
-        defines "RXN_DEBUG"
+        defines "RXN_DIST"
         runtime "Release"
         optimize "on"
 
@@ -116,11 +117,11 @@ project "Sandbox"
       symbols "on"
 
    filter "configurations:Release"
-      defines "RXN_DEBUG"
+      defines "RXN_RELEASE"
       runtime "Release"
       optimize "on"
 
    filter "configurations:Dist"
-      defines "RXN_DEBUG"
+      defines "RXN_DIST"
       runtime "Release"
       optimize "on"
