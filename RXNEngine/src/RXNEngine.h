@@ -8,4 +8,13 @@
 
 #include "RXNEngine/ImGui/ImGuiLayer.h"
 
+#include "RXNEngine/Renderer/Renderer.h"
+#include "RXNEngine/Renderer/RenderCommand.h"
+
+#include "RXNEngine/Renderer/Buffer.h"
+#include "RXNEngine/Renderer/Shader.h"
+#include "RXNEngine/Renderer/VertexArray.h"
+
+#include "RXNEngine/Renderer/Camera.h"
+
 #include "RXNEngine/EntryPoint.h"
