@@ -3,6 +3,7 @@
 
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
+#include "RXNEngine/Core/Time.h"
 
 namespace RXNEngine {
 
@@ -50,12 +51,21 @@ namespace RXNEngine {
 		}
 	}
 
-	void Application::Run() 
+	void Application::Run()
 	{
 		while (m_Running)
 		{
+			Time::Get().OnFrameStart();
+
+			while (Time::Get().ShouldRunFixedUpdate())
+			{
+				for (Layer* layer : m_LayerStack) {
+					layer->OnFixedUpdate(Time::Get().GetFixedDeltaTime());
+				}
+			}
+
 			for (Layer* layer : m_LayerStack)
-				layer->OnUpdate();
+				layer->OnUpdate(Time::Get().GetDeltaTime());
 
 			m_ImGuiLayer->Begin();
 			for (Layer* layer : m_LayerStack)
@@ -63,9 +73,9 @@ namespace RXNEngine {
 			m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
+			
 		}
 	}
-
 	bool Application::OnWindowClosed(WindowCloseEvent& e)
 	{
 		m_Running = false;
