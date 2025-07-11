@@ -16,5 +16,6 @@
 #include "RXNEngine/Renderer/VertexArray.h"
 
 #include "RXNEngine/Renderer/Camera.h"
+#include "RXNEngine/Renderer/CameraController.h"
 
 #include "RXNEngine/EntryPoint.h"

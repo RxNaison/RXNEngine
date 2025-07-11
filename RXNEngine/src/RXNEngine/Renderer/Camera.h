@@ -48,6 +48,8 @@ namespace RXNEngine {
 		inline glm::vec3 GetUpDirection() const { return glm::rotate(m_Orientation, glm::vec3(0.0f, 1.0f, 0.0f)); }
 		inline glm::vec3 GetRightDirection() const { return glm::rotate(m_Orientation, glm::vec3(1.0f, 0.0f, 0.0f)); }
 
+		inline float GetAspectRatio() const { return m_AspectRatio; }
+
 		ProjectionMode GetProjectionMode() const { return m_ProjectionMode; }
 
 	private:

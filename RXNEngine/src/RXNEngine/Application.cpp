@@ -59,9 +59,8 @@ namespace RXNEngine {
 
 			while (Time::Get().ShouldRunFixedUpdate())
 			{
-				for (Layer* layer : m_LayerStack) {
+				for (Layer* layer : m_LayerStack)
 					layer->OnFixedUpdate(Time::Get().GetFixedDeltaTime());
-				}
 			}
 
 			for (Layer* layer : m_LayerStack)

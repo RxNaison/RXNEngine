@@ -4,7 +4,7 @@ class ExampleLayer : public RXNEngine::Layer
 {
 public:
 	ExampleLayer()
-		: Layer("Example")
+		: Layer("Example"), m_CameraController(&m_Camera)
 	{
 		m_VertexArray.reset(RXNEngine::VertexArray::Create());
 
@@ -76,13 +76,16 @@ public:
 		m_Camera.SetPerspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 		m_Camera.SetPosition({ 1.5f, 0.0f, 5.0f });
 		m_Camera.SetOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+
+		m_CameraController.SetControlMode(RXNEngine::CameraController::ControlMode::Mode2D);
 	}
 
 	void OnUpdate(float deltaTime) override
 	{
+		m_CameraController.OnUpdate(deltaTime);
+
 		RXNEngine::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		RXNEngine::RenderCommand::Clear();
-		RXN_CORE_TRACE(deltaTime);
 
 		RXNEngine::Renderer::BeginScene(m_Camera);
 
@@ -97,7 +100,6 @@ public:
 
 	void OnFixedUpdate(float fixedDeltaTime) override
 	{
-		RXN_CORE_INFO(fixedDeltaTime);
 	}
 
 private:
@@ -106,6 +108,7 @@ private:
 	std::shared_ptr<RXNEngine::VertexBuffer> m_VertexBuffer;
 	std::shared_ptr<RXNEngine::IndexBuffer> m_IndexBuffer;
 	RXNEngine::Camera m_Camera;
+	RXNEngine::CameraController m_CameraController;
 
 	float m_CubeRotationAngle = 0.0f;
 };
