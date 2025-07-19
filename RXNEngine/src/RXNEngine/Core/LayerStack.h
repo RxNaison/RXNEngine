@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RXNEngine/Core.h"
+#include "RXNEngine/Core/Core.h"
 #include "Layer.h"
 
 namespace RXNEngine {

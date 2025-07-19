@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RXNEngine/Input.h"
+#include "RXNEngine/Core/Input.h"
 
 namespace RXNEngine {
 	class WindowsInput : public Input

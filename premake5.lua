@@ -12,6 +12,7 @@ IncludeDir["GLFW"] = "RXNEngine/vendor/GLFW/include"
 IncludeDir["Glad"] = "RXNEngine/vendor/Glad/include"
 IncludeDir["Imgui"] = "RXNEngine/vendor/imgui"
 IncludeDir["glm"] = "RXNEngine/vendor/glm"
+IncludeDir["stb_image"] = "RXNEngine/vendor/stb_image"
 
 group "Dependencies"
     include "RXNEngine/vendor/GLFW"
@@ -39,7 +40,9 @@ project "RXNEngine"
        "%{prj.name}/src/**.cpp",
        "%{prj.name}/vendor/glm/glm/**.hpp",
        "%{prj.name}/vendor/glm/glm/**.inl",
-       "%{prj.name}/vendor/glm/glm/**.h"
+       "%{prj.name}/vendor/glm/glm/**.h",
+       "%{prj.name}/vendor/stb_image/**.h",
+       "%{prj.name}/vendor/stb_image/**.cpp"
    }
 
    	defines
@@ -56,7 +59,8 @@ project "RXNEngine"
        "%{IncludeDir.GLFW}",
        "%{IncludeDir.Glad}",
        "%{IncludeDir.Imgui}",
-       "%{IncludeDir.glm}"
+       "%{IncludeDir.glm}",
+       "%{IncludeDir.stb_image}"
    }
 
 

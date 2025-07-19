@@ -2,7 +2,7 @@
 
 #include "rxnpch.h"
 
-#include "RXNEngine/Core.h"
+#include "RXNEngine/Core/Core.h"
 #include "RXNEngine/Events/Event.h"
 
 namespace RXNEngine {

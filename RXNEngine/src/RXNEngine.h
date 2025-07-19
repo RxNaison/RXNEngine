@@ -1,10 +1,10 @@
 #pragma once
 
-#include "RXNEngine/Application.h"
-#include "RXNEngine/Layer.h"
-#include "RXNEngine/Log.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/Layer.h"
+#include "RXNEngine/Core/Log.h"
 
-#include "RXNEngine/Input.h"
+#include "RXNEngine/Core/Input.h"
 
 #include "RXNEngine/ImGui/ImGuiLayer.h"
 
@@ -18,4 +18,4 @@
 #include "RXNEngine/Renderer/Camera.h"
 #include "RXNEngine/Renderer/CameraController.h"
 
-#include "RXNEngine/EntryPoint.h"
+#include "RXNEngine/Core/EntryPoint.h"

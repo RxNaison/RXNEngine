@@ -21,7 +21,7 @@ namespace RXNEngine {
 			glm::vec2 delta = (mousePos - m_LastMousePosition) * m_MouseSensitivity;
 			m_LastMousePosition = mousePos;
 
-			m_Yaw += delta.x;
+			m_Yaw -= delta.x;
 			m_Pitch -= delta.y;
 			m_Pitch = glm::clamp(m_Pitch, -89.0f, 89.0f);
 

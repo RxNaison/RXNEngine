@@ -1,7 +1,7 @@
 #include "rxnpch.h"
 #include "WindowsInput.h"
 
-#include "RXNEngine/Application.h"
+#include "RXNEngine/Core/Application.h"
 #include <GLFW/glfw3.h>
 
 namespace RXNEngine {

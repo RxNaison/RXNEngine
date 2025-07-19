@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "RXNEngine/Log.h"
+#include "RXNEngine/Core/Log.h"
 
 #ifdef RXN_PLATFORM_WINDOWS
 	#include <Windows.h>

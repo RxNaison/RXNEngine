@@ -2,7 +2,7 @@
 
 #include "Camera.h"
 #include "RXNEngine/Core/Time.h" 
-#include "RXNEngine/Input.h"
+#include "RXNEngine/Core/Input.h"
 #include "RXNEngine/Events/Event.h"
 
 namespace RXNEngine {
@@ -32,7 +32,7 @@ namespace RXNEngine {
 		glm::vec3 m_Position{ 0.0f, 0.0f, 5.0f };
 		float m_MoveSpeed = 5.0f;
 
-		float m_Pitch = 0.0f, m_Yaw = -90.0f;
+		float m_Pitch = 0.0f, m_Yaw = 90.0f;
 		float m_MouseSensitivity = 0.1f;
 		glm::vec2 m_LastMousePosition{ 0.0f, 0.0f };
 

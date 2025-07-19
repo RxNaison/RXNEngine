@@ -40,44 +40,13 @@ public:
 		m_IndexBuffer.reset(RXNEngine::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
 		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 
-		std::string vertexSrc = R"(
-			#version 330 core
-			
-			layout(location = 0) in vec3 a_Position;
-			layout(location = 1) in vec4 a_Color;
-
-			uniform mat4 u_ViewProjection;
-			uniform mat4 u_Model;
-
-			out vec4 v_Color;
-
-			void main()
-			{
-				v_Color = a_Color;
-				gl_Position = u_ViewProjection * u_Model * vec4(a_Position, 1.0);
-			}
-		)";
-
-		std::string fragmentSrc = R"(
-			#version 330 core
-			
-			layout(location = 0) out vec4 color;
-
-			in vec4 v_Color; // Receive color from vertex shader
-
-			void main()
-			{
-				color = v_Color;
-			}
-		)";
-
-		m_Shader.reset(RXNEngine::Shader::Create(vertexSrc, fragmentSrc));
+		m_Shader = m_ShaderLibrary.Load("assets/shaders/CubePosCol.glsl");
 
 		m_Camera.SetPerspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 		m_Camera.SetPosition({ 1.5f, 0.0f, 5.0f });
 		m_Camera.SetOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
 
-		m_CameraController.SetControlMode(RXNEngine::CameraController::ControlMode::Mode2D);
+		m_CameraController.SetControlMode(RXNEngine::CameraController::ControlMode::Mode3D);
 	}
 
 	void OnUpdate(float deltaTime) override
@@ -103,10 +72,11 @@ public:
 	}
 
 private:
-	std::shared_ptr<RXNEngine::Shader> m_Shader;
-	std::shared_ptr<RXNEngine::VertexArray> m_VertexArray;
-	std::shared_ptr<RXNEngine::VertexBuffer> m_VertexBuffer;
-	std::shared_ptr<RXNEngine::IndexBuffer> m_IndexBuffer;
+	RXNEngine::ShaderLibrary m_ShaderLibrary;
+	RXNEngine::Ref<RXNEngine::Shader> m_Shader;
+	RXNEngine::Ref<RXNEngine::VertexArray> m_VertexArray;
+	RXNEngine::Ref<RXNEngine::VertexBuffer> m_VertexBuffer;
+	RXNEngine::Ref<RXNEngine::IndexBuffer> m_IndexBuffer;
 	RXNEngine::Camera m_Camera;
 	RXNEngine::CameraController m_CameraController;
 
