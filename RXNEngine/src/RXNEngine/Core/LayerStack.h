@@ -1,11 +1,11 @@
 #pragma once
 
-#include "RXNEngine/Core/Core.h"
+#include "RXNEngine/Core/Base.h"
 #include "Layer.h"
 
 namespace RXNEngine {
 
-	class RXN_API LayerStack
+	class LayerStack
 	{
 	public:
 		LayerStack();

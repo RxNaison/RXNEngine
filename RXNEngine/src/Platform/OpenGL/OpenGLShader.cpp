@@ -22,11 +22,8 @@ namespace RXNEngine {
 		auto shaderSources = PreProcess(source);
 		Compile(shaderSources);
 
-		auto lastSlash = filepath.find_last_of("/\\");
-		lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
-		auto lastDot = filepath.rfind('.');
-		auto count = lastDot == std::string::npos ? filepath.size() - lastSlash : lastDot - lastSlash;
-		m_Name = filepath.substr(lastSlash, count);
+		std::filesystem::path path = filepath;
+		m_Name = path.stem().string();
 	}
 
 	OpenGLShader::OpenGLShader(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc)
@@ -54,7 +51,6 @@ namespace RXNEngine {
 			in.seekg(0, std::ios::beg);
 			in.read(&result[0], result.size());
 			in.close();
-			;
 		}
 		else
 		{

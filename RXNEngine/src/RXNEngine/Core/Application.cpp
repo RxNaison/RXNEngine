@@ -43,7 +43,9 @@ namespace RXNEngine {
 	void Application::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClosed, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClose, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&Application::OnWindowResize, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowMinimizeEvent>(std::bind(&Application::OnWindowMinimize, this, std::placeholders::_1));
 
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
 		{
@@ -59,14 +61,17 @@ namespace RXNEngine {
 		{
 			Time::Get().OnFrameStart();
 
-			while (Time::Get().ShouldRunFixedUpdate())
+			if (!m_Minimized)
 			{
-				for (Layer* layer : m_LayerStack)
-					layer->OnFixedUpdate(Time::Get().GetFixedDeltaTime());
-			}
+				while (Time::Get().ShouldRunFixedUpdate())
+				{
+					for (Layer* layer : m_LayerStack)
+						layer->OnFixedUpdate(Time::Get().GetFixedDeltaTime());
+				}
 
-			for (Layer* layer : m_LayerStack)
-				layer->OnUpdate(Time::Get().GetDeltaTime());
+				for (Layer* layer : m_LayerStack)
+					layer->OnUpdate(Time::Get().GetDeltaTime());
+			}
 
 			m_ImGuiLayer->Begin();
 			for (Layer* layer : m_LayerStack)
@@ -77,9 +82,20 @@ namespace RXNEngine {
 			
 		}
 	}
-	bool Application::OnWindowClosed(WindowCloseEvent& e)
+
+	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
 		m_Running = false;
+		return true;
+	}
+	bool Application::OnWindowResize(WindowResizeEvent& e)
+	{
+		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+		return false;
+	}
+	bool Application::OnWindowMinimize(WindowMinimizeEvent& e)
+	{
+		m_Minimized = e.GetMinimizeState();
 		return true;
 	}
 }

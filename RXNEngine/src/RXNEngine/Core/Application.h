@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core.h"
+#include "Base.h"
 
 #include "Window.h"
 #include "RXNEngine/Core/LayerStack.h"
@@ -10,7 +10,7 @@
 
 namespace RXNEngine {
 
-	class RXN_API Application
+	class Application
 	{
 	public:
 		Application();
@@ -27,11 +27,14 @@ namespace RXNEngine {
 
 		inline static Application& Get() { return *s_Instance; }
 	private:
-		bool OnWindowClosed(WindowCloseEvent& e);
-
+		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
+		bool OnWindowMinimize(WindowMinimizeEvent& e);
+	private:
 		std::unique_ptr<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
+		bool m_Minimized = false;
 		LayerStack m_LayerStack;
 
 		static Application* s_Instance;

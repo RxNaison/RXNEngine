@@ -1,11 +1,11 @@
 #pragma once
 
-#include "RXNEngine/Core/Core.h"
+#include "RXNEngine/Core/Base.h"
 #include "RXNEngine/Events/Event.h"
 
 namespace RXNEngine {
 
-	class RXN_API Layer
+	class Layer
 	{
 	public:
 		Layer(const std::string& name = "Layer");

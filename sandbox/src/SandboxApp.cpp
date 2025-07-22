@@ -1,4 +1,7 @@
 #include <RXNEngine.h>
+#include <RXNEngine/Core/EntryPoint.h>
+
+#include "Sandbox2D.h"
 
 class ExampleLayer : public RXNEngine::Layer
 {
@@ -6,7 +9,7 @@ public:
 	ExampleLayer()
 		: Layer("Example"), m_CameraController(&m_Camera)
 	{
-		m_VertexArray.reset(RXNEngine::VertexArray::Create());
+		m_VertexArray = RXNEngine::VertexArray::Create();
 
 		float vertices[] = {
 			// Positions         // Colors
@@ -20,7 +23,7 @@ public:
 			-0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f 
 		};
 
-		m_VertexBuffer.reset(RXNEngine::VertexBuffer::Create(vertices, sizeof(vertices)));
+		m_VertexBuffer = RXNEngine::VertexBuffer::Create(vertices, sizeof(vertices));
 
 		RXNEngine::BufferLayout layout = {
 			{ RXNEngine::ShaderDataType::Float3, "a_Position" },
@@ -37,7 +40,7 @@ public:
 			1, 5, 6, 6, 2, 1,
 			4, 0, 3, 3, 7, 4 
 		};
-		m_IndexBuffer.reset(RXNEngine::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
+		m_IndexBuffer = RXNEngine::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t));
 		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 
 		m_Shader = m_ShaderLibrary.Load("assets/shaders/CubePosCol.glsl");
@@ -93,7 +96,8 @@ class Sandbox : public RXNEngine::Application
 public:
 	Sandbox()
 	{
-		PushLayer(new ExampleLayer);
+		//PushLayer(new ExampleLayer);
+		PushLayer(new Sandbox2D);
 	}
 };
 

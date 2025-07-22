@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rxnpch.h"
-#include "RXNEngine/Core/Core.h"
+#include "RXNEngine/Core/Base.h"
 
 
 namespace RXNEngine {
@@ -9,7 +9,7 @@ namespace RXNEngine {
 	enum class EventType
 	{
 		None = 0,
-		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
+		WindowClose, WindowMinimize, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		AppTick, AppUpdate, AppRender,
 		KeyPressed, KeyReleased, KeyTyped,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
@@ -31,7 +31,7 @@ namespace RXNEngine {
 
 #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
-	class RXN_API Event
+	class Event
 	{
 	public:
 		bool Handled = false;

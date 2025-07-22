@@ -5,7 +5,7 @@
 
 namespace RXNEngine {
 
-	class RXN_API KeyEvent : public Event
+	class KeyEvent : public Event
 	{
 	public:
 		inline int GetKeyCode() const { return m_KeyCode; }
@@ -18,7 +18,7 @@ namespace RXNEngine {
 		int m_KeyCode;
 	};
 
-	class RXN_API KeyPressedEvent : public KeyEvent
+	class KeyPressedEvent : public KeyEvent
 	{
 	public:
 		KeyPressedEvent(int keycode, int repeatCount)
@@ -38,7 +38,7 @@ namespace RXNEngine {
 		int m_RepeatCount;
 	};
 
-	class RXN_API KeyReleasedEvent : public KeyEvent
+	class KeyReleasedEvent : public KeyEvent
 	{
 	public:
 		KeyReleasedEvent(int keycode)
@@ -54,7 +54,7 @@ namespace RXNEngine {
 		EVENT_CLASS_TYPE(KeyReleased)
 	};
 
-	class RXN_API KeyTypedEvent : public KeyEvent
+	class KeyTypedEvent : public KeyEvent
 	{
 	public:
 		KeyTypedEvent(int keycode)

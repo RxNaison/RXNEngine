@@ -1,3 +1,5 @@
+#include "CameraController.h"
+#include "CameraController.h"
 #include "rxnpch.h"
 #include "CameraController.h"
 
@@ -50,30 +52,43 @@ namespace RXNEngine {
 		UpdateCameraView();
 	}
 
-	void CameraController::OnMouseScrolled(float yOffset)
+	void CameraController::OnEvent(Event& event)
 	{
-		if (m_ControlMode == ControlMode::Mode3D)
+		EventDispatcher dispatcher(event);
+		dispatcher.Dispatch<MouseScrolledEvent>(std::bind(&CameraController::OnMouseScrolled, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&CameraController::OnWindowResize, this, std::placeholders::_1));
+	}
+
+	bool CameraController::OnMouseScrolled(MouseScrolledEvent& e)
+	{
+		float yOffset = e.GetYOffset();
+		if (m_Camera->GetProjectionMode() == Camera::ProjectionMode::Perspective)
 		{
 			m_MoveSpeed = glm::max(m_MoveSpeed - yOffset, 0.5f);
 		}
 		else
 		{
 			m_OrthoZoomLevel = glm::max(m_OrthoZoomLevel - yOffset * 0.1f, 0.25f);
-			m_Camera->SetOrthographic(10.0f * m_OrthoZoomLevel, m_Camera->GetAspectRatio(), -1.0f, 1.0f);
+			m_Camera->SetOrthographic(m_OrthoZoomLevel, m_Camera->GetAspectRatio(), -1.0f, 1.0f);
 		}
+		return false;
+	}
+
+	bool CameraController::OnWindowResize(WindowResizeEvent& e)
+	{
+		float aspectRatio = (float)e.GetWidth() / (float)e.GetHeight();
+		m_Camera->SetAspectRatio(aspectRatio);
+		return false;
 	}
 
 	void CameraController::UpdateCameraView()
 	{
 		glm::quat orientation;
 		if (m_ControlMode == ControlMode::Mode3D)
-		{
 			orientation = glm::quat(glm::vec3(glm::radians(m_Pitch), glm::radians(m_Yaw), 0.0f));
-		}
 		else
-		{
 			orientation = glm::quat(glm::vec3(0.0f, 0.0f, glm::radians(m_ZRotation)));
-		}
+
 		m_Camera->SetOrientation(orientation);
 		m_Camera->SetPosition(m_Position);
 	}

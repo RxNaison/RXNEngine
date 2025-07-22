@@ -5,7 +5,7 @@
 
 namespace RXNEngine {
 
-	class RXN_API MouseMovedEvent : public Event
+	class MouseMovedEvent : public Event
 	{
 	public:
 		MouseMovedEvent(double x, double y)
@@ -27,14 +27,14 @@ namespace RXNEngine {
 		double m_MouseX, m_MouseY;
 	};
 
-	class RXN_API MouseScrolledEvent : public Event
+	class MouseScrolledEvent : public Event
 	{
 	public:
-		MouseScrolledEvent(double xOffset, double yOffset)
+		MouseScrolledEvent(float xOffset, float yOffset)
 			: m_XOffset(xOffset), m_YOffset(yOffset) {}
 
-		inline double GetXOffset() const { return m_XOffset; }
-		inline double GetYOffset() const { return m_YOffset; }
+		inline float GetXOffset() const { return m_XOffset; }
+		inline float GetYOffset() const { return m_YOffset; }
 
 		std::string ToString() const override
 		{
@@ -46,10 +46,10 @@ namespace RXNEngine {
 		EVENT_CLASS_TYPE(MouseScrolled)
 			EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	private:
-		double m_XOffset, m_YOffset;
+		float m_XOffset, m_YOffset;
 	};
 
-	class RXN_API MouseButtonEvent : public Event
+	class MouseButtonEvent : public Event
 	{
 	public:
 		inline int GetMouseButton() const { return m_Button; }
@@ -62,7 +62,7 @@ namespace RXNEngine {
 		int m_Button;
 	};
 
-	class RXN_API MouseButtonPressedEvent : public MouseButtonEvent
+	class MouseButtonPressedEvent : public MouseButtonEvent
 	{
 	public:
 		MouseButtonPressedEvent(int button)
@@ -78,7 +78,7 @@ namespace RXNEngine {
 		EVENT_CLASS_TYPE(MouseButtonPressed)
 	};
 
-	class RXN_API MouseButtonReleasedEvent : public MouseButtonEvent
+	class MouseButtonReleasedEvent : public MouseButtonEvent
 	{
 	public:
 		MouseButtonReleasedEvent(int button)

@@ -5,7 +5,7 @@
 
 namespace RXNEngine {
 
-	class RXN_API WindowResizeEvent : public Event
+	class WindowResizeEvent : public Event
 	{
 	public:
 		WindowResizeEvent(uint32_t width, uint32_t height)
@@ -27,7 +27,7 @@ namespace RXNEngine {
 		uint32_t m_Width, m_Height;
 	};
 
-	class RXN_API WindowCloseEvent : public Event
+	class WindowCloseEvent : public Event
 	{
 	public:
 		WindowCloseEvent() {}
@@ -36,7 +36,22 @@ namespace RXNEngine {
 			EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class RXN_API AppTickEvent : public Event
+	class WindowMinimizeEvent : public Event
+	{
+	public:
+		WindowMinimizeEvent(bool minimizeState)
+			:m_MinimizeState(minimizeState)
+		{}
+
+		bool GetMinimizeState() const { return m_MinimizeState; }
+
+		EVENT_CLASS_TYPE(WindowMinimize)
+			EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	private:
+		bool m_MinimizeState;
+	};
+
+	class AppTickEvent : public Event
 	{
 	public:
 		AppTickEvent() {}
@@ -45,7 +60,7 @@ namespace RXNEngine {
 			EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class RXN_API AppUpdateEvent : public Event
+	class AppUpdateEvent : public Event
 	{
 	public:
 		AppUpdateEvent() {}
@@ -54,7 +69,7 @@ namespace RXNEngine {
 			EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class RXN_API AppRenderEvent : public Event
+	class AppRenderEvent : public Event
 	{
 	public:
 		AppRenderEvent() {}

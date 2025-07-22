@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "RXNEngine/Core/Core.h"
+#include "RXNEngine/Core/Base.h"
 
 namespace RXNEngine {
 
@@ -19,6 +19,7 @@ namespace RXNEngine {
 
 	class Texture2D : public Texture
 	{
+	public:
 		static Ref<Texture2D> Create(const std::string& path);
 	};
 

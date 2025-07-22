@@ -66,6 +66,13 @@ namespace RXNEngine {
 				data.EventCallback(event);
 			});
 
+		glfwSetWindowIconifyCallback(m_Window, [](GLFWwindow* window, int iconified)
+			{
+				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				WindowMinimizeEvent event((bool)iconified);
+				data.EventCallback(event);
+			});
+
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
@@ -132,7 +139,7 @@ namespace RXNEngine {
 			{
 				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-				MouseScrolledEvent event(xoffset, yoffset);
+				MouseScrolledEvent event((float)xoffset, (float)yoffset);
 				data.EventCallback(event);
 			});
 

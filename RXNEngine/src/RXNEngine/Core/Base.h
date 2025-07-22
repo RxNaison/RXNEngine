@@ -2,17 +2,19 @@
 
 #include <memory>
 
-#ifdef RXN_PLATFORM_WINDOWS
-#if RXN_DYNAMIC_LINK
-		#ifdef RXN_BUILD_DLL
-			#define RXN_API __declspec(dllexport)
-		#else 
-			#define RXN_API __declspec(dllimport)
-		#endif // RXN_BUILD_DLL
+#ifdef RXN_DEBUG
+	#if defined(RXN_PLATFORM_WINDOWS)
+		#define HZ_DEBUGBREAK() __debugbreak()
+	#elif defined(RXN_PLATFORM_LINUX)
+		#include <signal.h>
+	#define RXN_DEBUGBREAK() raise(SIGTRAP)
+	#else
+		#error "Platform doesn't support debugbreak yet!"
+	#endif
+	#define RXN_ENABLE_ASSERTS
 #else
-		#define RXN_API
+	#define RXN_DEBUGBREAK()
 #endif
-#endif // RXN_PLATFORM_WINDOWS
 
 #ifdef RXN_ENABLE_ASSERTS
 #define RXN_ASSERT(x, ...) { if(!(x)) { RXN_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }

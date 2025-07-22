@@ -2,7 +2,7 @@
 
 #include "rxnpch.h"
 
-#include "RXNEngine/Core/Core.h"
+#include "RXNEngine/Core/Base.h"
 #include "RXNEngine/Events/Event.h"
 
 namespace RXNEngine {
@@ -19,7 +19,7 @@ namespace RXNEngine {
 		}
 	};
 
-	class RXN_API Window
+	class Window
 	{
 	public:
 		using EventCallbackFn = std::function<void(Event&)>;

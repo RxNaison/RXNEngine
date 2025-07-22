@@ -17,5 +17,4 @@
 
 #include "RXNEngine/Renderer/Camera.h"
 #include "RXNEngine/Renderer/CameraController.h"
-
-#include "RXNEngine/Core/EntryPoint.h"
+#include "RXNEngine/Renderer/Texture.h"
