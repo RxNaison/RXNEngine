@@ -1,9 +1,9 @@
 workspace "RXNEngine"
 
-   language "C++"
-   architecture "x64"
-   startproject "Sandbox"
-   configurations { "Debug", "Release", "Dist" }
+    language "C++"
+    architecture "x64"
+    startproject "Sandbox"
+    configurations { "Debug", "Release", "Dist" }
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
@@ -22,53 +22,53 @@ group "Dependencies"
 group ""
 
 project "RXNEngine"
-   location "RXNEngine"
-   kind "StaticLib"
-   language "C++"
-   cppdialect "C++latest"
-   staticruntime "off"
+    location "RXNEngine"
+    kind "StaticLib"
+    language "C++"
+    cppdialect "C++latest"
+    staticruntime "off"
+   
+     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+   
+    pchheader "rxnpch.h"
+    pchsource "RXNEngine/src/rxnpch.cpp"
+   
+    files
+    {
+        "%{prj.name}/src/**.h",
+        "%{prj.name}/src/**.cpp",
+        "%{prj.name}/vendor/glm/glm/**.hpp",
+        "%{prj.name}/vendor/glm/glm/**.inl",
+        "%{prj.name}/vendor/glm/glm/**.h",
+        "%{prj.name}/vendor/stb_image/**.h",
+        "%{prj.name}/vendor/stb_image/**.cpp"
+    }
+   
+    	defines
+	 {
+	 	"_CRT_SECURE_NO_WARNINGS",
+         "GLFW_INCLUDE_NONE",
+         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+	 }
+   
+    includedirs
+    { 
+        "%{prj.name}/src",
+        "%{prj.name}/vendor/spdlog/include",
+        "%{IncludeDir.GLFW}",
+        "%{IncludeDir.Glad}",
+        "%{IncludeDir.Imgui}",
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.stb_image}"
+    }
 
-    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
-   pchheader "rxnpch.h"
-   pchsource "RXNEngine/src/rxnpch.cpp"
+    links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
 
-   files
-   {
-       "%{prj.name}/src/**.h",
-       "%{prj.name}/src/**.cpp",
-       "%{prj.name}/vendor/glm/glm/**.hpp",
-       "%{prj.name}/vendor/glm/glm/**.inl",
-       "%{prj.name}/vendor/glm/glm/**.h",
-       "%{prj.name}/vendor/stb_image/**.h",
-       "%{prj.name}/vendor/stb_image/**.cpp"
-   }
-
-   	defines
-	{
-		"_CRT_SECURE_NO_WARNINGS",
-        "GLFW_INCLUDE_NONE",
-        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
-	}
-
-   includedirs
-   { 
-       "%{prj.name}/src",
-       "%{prj.name}/vendor/spdlog/include",
-       "%{IncludeDir.GLFW}",
-       "%{IncludeDir.Glad}",
-       "%{IncludeDir.Imgui}",
-       "%{IncludeDir.glm}",
-       "%{IncludeDir.stb_image}"
-   }
-
-
-   links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
-
-   filter "system:windows"
+    filter "system:windows"
       systemversion "latest"
-      defines { "RXN_PLATFORM_WINDOWS", "RXN_BUILD_DLL", "GLFW_INCLUDE_NONE" }
+      defines { "RXN_PLATFORM_WINDOWS", "GLFW_INCLUDE_NONE" }
 
       filter "configurations:Debug"
         defines "RXN_DEBUG"
@@ -87,45 +87,45 @@ project "RXNEngine"
         optimize "on"
 
 project "Sandbox"
- location "RXNEngine"
-   kind "ConsoleApp"
-   language "C++"
-   cppdialect "C++latest"
-   staticruntime "off"
-
-    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
-
-   files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
-
-    defines
-	{
-        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
-	}
-
-   includedirs
-   {
-       "RXNEngine/vendor/spdlog/include",
-       "RXNEngine/src",
-       "%{IncludeDir.glm}"
-   }
-   links "RXNEngine"
-
-   filter "system:windows"
-      systemversion "latest"
-      defines "RXN_PLATFORM_WINDOWS"
-
-   filter "configurations:Debug"
-      defines "RXN_DEBUG"
-      runtime "Debug"
-      symbols "on"
-
-   filter "configurations:Release"
-      defines "RXN_RELEASE"
-      runtime "Release"
-      optimize "on"
-
-   filter "configurations:Dist"
-      defines "RXN_DIST"
-      runtime "Release"
-      optimize "on"
+    location "Sandbox"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++latest"
+    staticruntime "off"
+    
+     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    
+    files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
+    
+     defines
+	 {
+         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+	 }
+    
+    includedirs
+    {
+        "RXNEngine/vendor/spdlog/include",
+        "RXNEngine/src",
+        "%{IncludeDir.glm}"
+    }
+    links "RXNEngine"
+    
+    filter "system:windows"
+       systemversion "latest"
+       defines "RXN_PLATFORM_WINDOWS"
+    
+    filter "configurations:Debug"
+       defines "RXN_DEBUG"
+       runtime "Debug"
+       symbols "on"
+    
+    filter "configurations:Release"
+       defines "RXN_RELEASE"
+       runtime "Release"
+       optimize "on"
+    
+    filter "configurations:Dist"
+       defines "RXN_DIST"
+       runtime "Release"
+       optimize "on"

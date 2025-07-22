@@ -43,7 +43,7 @@ public:
 		m_Shader = m_ShaderLibrary.Load("assets/shaders/CubePosCol.glsl");
 
 		m_Camera.SetPerspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
-		m_Camera.SetPosition({ 1.5f, 0.0f, 5.0f });
+		m_Camera.SetPosition({ 0.0f, 0.0f, 5.0f });
 		m_Camera.SetOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
 
 		m_CameraController.SetControlMode(RXNEngine::CameraController::ControlMode::Mode3D);
@@ -69,6 +69,11 @@ public:
 
 	void OnFixedUpdate(float fixedDeltaTime) override
 	{
+	}
+
+	void OnEvent(RXNEngine::Event& event) override
+	{
+		m_CameraController.OnEvent(event);
 	}
 
 private:
