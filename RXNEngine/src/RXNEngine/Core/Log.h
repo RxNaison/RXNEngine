@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Base.h"
+#include "Assert.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
 
