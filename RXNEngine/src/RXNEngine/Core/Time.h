@@ -1,4 +1,3 @@
-// Time.h
 #pragma once
 
 #include <chrono>

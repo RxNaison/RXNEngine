@@ -21,8 +21,6 @@ namespace RXNEngine {
 		void Begin();
 		void End();
 
-		virtual void OnImGuiRenderer() override;
-
 		void BlockEvents(bool block) { m_BlockEvents = block; }
 
 		void SetDarkThemeColors();

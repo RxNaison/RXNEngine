@@ -96,12 +96,6 @@ namespace RXNEngine {
 		}
 	}
 
-	void ImGuiLayer::OnImGuiRenderer()
-	{
-		static bool show = true;
-		ImGui::ShowDemoWindow(&show);
-	}
-
 	void ImGuiLayer::SetDarkThemeColors()
 	{
 		auto& colors = ImGui::GetStyle().Colors;
