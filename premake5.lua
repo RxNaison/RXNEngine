@@ -42,15 +42,16 @@ project "RXNEngine"
         "%{prj.name}/vendor/glm/glm/**.inl",
         "%{prj.name}/vendor/glm/glm/**.h",
         "%{prj.name}/vendor/stb_image/**.h",
-        "%{prj.name}/vendor/stb_image/**.cpp"
+        "%{prj.name}/vendor/stb_image/**.cpp",
+        "%{prj.name}/vendor/entt/include/**.hpp"
     }
    
-    	defines
-	 {
-	 	"_CRT_SECURE_NO_WARNINGS",
-         "GLFW_INCLUDE_NONE",
-         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
-	 }
+    defines
+    {
+	    "_CRT_SECURE_NO_WARNINGS",
+        "GLFW_INCLUDE_NONE",
+        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+    }
    
     includedirs
     { 
@@ -85,6 +86,58 @@ project "RXNEngine"
         defines "RXN_DIST"
         runtime "Release"
         optimize "on"
+
+
+
+project "RXNEditor"
+    location "Sandbox"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++latest"
+    staticruntime "off"
+    
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    
+    files
+    { 
+        "%{prj.name}/src/**.h",
+        "%{prj.name}/src/**.cpp",
+        "%{prj.name}/vendor/entt/include/**.hpp"
+    }
+    
+    defines
+	{
+         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+	}
+    
+    includedirs
+    {
+        "RXNEngine/vendor/spdlog/include",
+        "RXNEngine/src",
+        "%{IncludeDir.glm}"
+    }
+    links "RXNEngine"
+    
+    filter "system:windows"
+       systemversion "latest"
+       defines "RXN_PLATFORM_WINDOWS"
+    
+    filter "configurations:Debug"
+       defines "RXN_DEBUG"
+       runtime "Debug"
+       symbols "on"
+    
+    filter "configurations:Release"
+       defines "RXN_RELEASE"
+       runtime "Release"
+       optimize "on"
+    
+    filter "configurations:Dist"
+       defines "RXN_DIST"
+       runtime "Release"
+       optimize "on"
+
 
 project "Sandbox"
     location "Sandbox"
