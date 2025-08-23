@@ -32,7 +32,7 @@ namespace RXNEngine {
 		ControlMode m_ControlMode = ControlMode::Mode3D;
 
 		glm::vec3 m_Position{ 0.0f, 0.0f, 0.0f };
-		float m_MoveSpeed = 1.0f;
+		float m_MoveSpeed = 0.5f;
 
 		float m_Pitch = 0.0f, m_Yaw = -90.0f;
 		float m_MouseSensitivity = 0.1f;
