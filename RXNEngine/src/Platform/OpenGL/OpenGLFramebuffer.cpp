@@ -76,11 +76,13 @@ namespace RXNEngine {
 			return false;
 		}
 
-		static GLenum HazelFBTextureFormatToGL(FramebufferTextureFormat format)
+		static GLenum TextureFormatToOpenGL(FramebufferTextureFormat format)
 		{
 			switch (format)
 			{
 				case FramebufferTextureFormat::RGBA8:       return GL_RGBA8;
+				case FramebufferTextureFormat::RGBA16F:     return GL_RGBA16F;
+				case FramebufferTextureFormat::RGBA32F:     return GL_RGBA32F;
 				case FramebufferTextureFormat::RED_INTEGER: return GL_RED_INTEGER;
 			}
 
@@ -136,15 +138,13 @@ namespace RXNEngine {
 			for (size_t i = 0; i < m_ColorAttachments.size(); i++)
 			{
 				Utils::BindTexture(multisample, m_ColorAttachments[i]);
-				switch (m_ColorAttachmentSpecifications[i].TextureFormat)
-				{
-					case FramebufferTextureFormat::RGBA8:
-						Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_RGBA8, GL_RGBA, m_Specification.Width, m_Specification.Height, i);
-						break;
-					case FramebufferTextureFormat::RED_INTEGER:
-						Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
-						break;
-				}
+
+				FramebufferTextureFormat currentTextureFormat = m_ColorAttachmentSpecifications[i].TextureFormat;
+
+				if (currentTextureFormat == FramebufferTextureFormat::RED_INTEGER)
+					Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
+
+				Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, Utils::TextureFormatToOpenGL(currentTextureFormat), GL_RGBA, m_Specification.Width, m_Specification.Height, i);
 			}
 		}
 
@@ -217,7 +217,7 @@ namespace RXNEngine {
 
 		auto& spec = m_ColorAttachmentSpecifications[attachmentIndex];
 		glClearTexImage(m_ColorAttachments[attachmentIndex], 0,
-			Utils::HazelFBTextureFormatToGL(spec.TextureFormat), GL_INT, &value);
+			Utils::TextureFormatToOpenGL(spec.TextureFormat), GL_INT, &value);
 	}
 
 }

@@ -1,29 +1,50 @@
 #pragma once
 
-#include "RendererAPI.h"
 #include "Camera.h"
-#include "Shader.h"
+#include "Mesh.h"
+#include "Material.h"
+#include "Light.h"
+#include "Framebuffer.h"
+#include "EditorCamera.h"
+#include "RendererAPI.h"
+
+#include <vector>
 
 namespace RXNEngine {
 
-	class Renderer
-	{
-	public:
-		static void Init();
-		static void OnWindowResize(uint32_t width, uint32_t height);
+    struct RenderCommandPacket
+    {
+        Ref<Mesh> Mesh;
+        Ref<Material> Material;
+        glm::mat4 Transform;
+        float DistanceToCamera;
+    };
 
-		static void BeginScene(Camera& camera);
-		static void EndScene();
+    class Renderer
+    {
+    public:
+        static void Init();
+        static void Shutdown();
 
-		static void Submit(const Ref<Shader> shader, const Ref<VertexArray>& vertexArray, const glm::mat4& modelMatrix);
+        static void OnWindowResize(uint32_t width, uint32_t height);
 
-		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
-	private:
-		struct SceneData
-		{
-			glm::mat4 ViewProjectionMatrix;
-		};
+        static void BeginScene(const Camera& camera, const glm::mat4& transform,
+            const LightEnvironment& lights, const Ref<Framebuffer>& targetFramebuffer = nullptr);
 
-		static SceneData* m_SceneData;
-	};
+        static void BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
+            const Ref<Framebuffer>& targetFramebuffer = nullptr);
+
+        static void EndScene();
+
+        static void Submit(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4& transform = glm::mat4(1.0f));
+
+        static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
+    private:
+        static void PrepareScene(const glm::mat4& viewProjection, const glm::vec3& cameraPosition,
+            const LightEnvironment& lights, const Ref<Framebuffer>& targetFramebuffer);
+    private:
+        static void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
+        static void FlushBatch(const Ref<Mesh>& mesh, const Ref<Material>& material, const std::vector<glm::mat4>& transforms);
+        static void Flush();
+    };
 }

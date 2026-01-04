@@ -35,9 +35,10 @@ namespace RXNEngine {
 		uint32_t Size;
 		uint32_t Offset;
 		bool Normalized;
+		bool Instanced;
 
-		BufferElement(ShaderDataType type, const std::string& name, bool normalized = false)
-			:Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized)
+		BufferElement(ShaderDataType type, const std::string& name, bool normalized = false, bool instanced = false)
+			:Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized), Instanced(instanced)
 		{
 		}
 
@@ -73,7 +74,7 @@ namespace RXNEngine {
 			CalculateOffsetsAndStride();
 		}
 
-		inline const std::vector<BufferElement>& GetElemets() const { return m_Elements; }
+		inline const std::vector<BufferElement>& GetElements() const { return m_Elements; }
 		inline const uint32_t GetStride() const { return m_Stride; }
 
 		std::vector<BufferElement>::iterator begin() { return m_Elements.begin(); }

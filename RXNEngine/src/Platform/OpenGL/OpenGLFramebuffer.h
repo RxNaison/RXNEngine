@@ -10,8 +10,6 @@ namespace RXNEngine {
 		OpenGLFramebuffer(const FramebufferSpecification& spec);
 		virtual ~OpenGLFramebuffer();
 
-		void UpdateState();
-
 		virtual void Bind() override;
 		virtual void Unbind() override;
 
@@ -23,6 +21,8 @@ namespace RXNEngine {
 		virtual uint32_t GetColorAttachmentRendererID(uint32_t index = 0) const override { RXN_CORE_ASSERT(index < m_ColorAttachments.size()); return m_ColorAttachments[index]; }
 
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
+	private:
+		void UpdateState();
 	private:
 		uint32_t m_RendererID = 0;
 		FramebufferSpecification m_Specification;

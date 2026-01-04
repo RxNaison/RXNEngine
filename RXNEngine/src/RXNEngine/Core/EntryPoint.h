@@ -1,4 +1,6 @@
 #pragma once
+#include "Base.h"
+#include "Application.h"
 
 #ifdef RXN_PLATFORM_WINDOWS
 

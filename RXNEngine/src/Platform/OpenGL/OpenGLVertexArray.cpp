@@ -5,27 +5,6 @@
 
 namespace RXNEngine {
 
-	static GLenum ShaderDataTypeToOpenGLBaseType(ShaderDataType type)
-	{
-		switch (type)
-		{
-			case RXNEngine::ShaderDataType::Float: return GL_FLOAT;
-			case RXNEngine::ShaderDataType::Float2: return GL_FLOAT;
-			case RXNEngine::ShaderDataType::Float3: return GL_FLOAT;
-			case RXNEngine::ShaderDataType::Float4: return GL_FLOAT;
-			case RXNEngine::ShaderDataType::Mat3: return GL_FLOAT;
-			case RXNEngine::ShaderDataType::Mat4: return GL_FLOAT;
-			case RXNEngine::ShaderDataType::Int: return GL_INT;
-			case RXNEngine::ShaderDataType::Int2: return GL_INT;
-			case RXNEngine::ShaderDataType::Int3: return GL_INT;
-			case RXNEngine::ShaderDataType::Int4: return GL_INT;
-			case RXNEngine::ShaderDataType::Bool: return GL_INT;
-		}
-
-		RXN_CORE_ASSERT(false, "Uknown ShaderDataType!");
-		return 0;
-	}
-
 	OpenGLVertexArray::OpenGLVertexArray()
 	{
 		glCreateVertexArrays(1, &m_RendererID);
@@ -48,25 +27,86 @@ namespace RXNEngine {
 
 	void OpenGLVertexArray::AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer)
 	{
-		RXN_CORE_ASSERT(vertexBuffer->GetLayout().GetElemets().size(), "VertexBuffer has no layout!");
+		RXN_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size(), "VertexBuffer has no layout!");
 
 		glBindVertexArray(m_RendererID);
 		vertexBuffer->Bind();
 
-
-		uint32_t index = 0;
 		const auto& layout = vertexBuffer->GetLayout();
 		for (const auto& element : layout)
 		{
-			glEnableVertexAttribArray(index);
-			glVertexAttribPointer(index, element.GetComponentCount(), ShaderDataTypeToOpenGLBaseType(element.Type),
-				element.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)element.Offset);
-			index++;
+			switch (element.Type)
+			{
+				case ShaderDataType::Float:
+				case ShaderDataType::Float2:
+				case ShaderDataType::Float3:
+				case ShaderDataType::Float4:
+				{
+					glEnableVertexAttribArray(m_VertexBufferIndex);
+					glVertexAttribPointer(m_VertexBufferIndex,
+						element.GetComponentCount(),
+						GL_FLOAT,
+						element.Normalized ? GL_TRUE : GL_FALSE,
+						layout.GetStride(),
+						(const void*)element.Offset);
+
+					if (element.Instanced)
+						glVertexAttribDivisor(m_VertexBufferIndex, 1);
+					else
+						glVertexAttribDivisor(m_VertexBufferIndex, 0);
+
+					m_VertexBufferIndex++;
+					break;
+				}
+				case ShaderDataType::Mat3:
+				case ShaderDataType::Mat4:
+				{
+					uint8_t count = element.GetComponentCount();
+					for (uint8_t i = 0; i < count; i++)
+					{
+						glEnableVertexAttribArray(m_VertexBufferIndex);
+						glVertexAttribPointer(m_VertexBufferIndex,
+							count,
+							GL_FLOAT,
+							element.Normalized ? GL_TRUE : GL_FALSE,
+							layout.GetStride(),
+							(const void*)(element.Offset + sizeof(float) * count * i));
+
+						if (element.Instanced)
+							glVertexAttribDivisor(m_VertexBufferIndex, 1);
+						else
+							glVertexAttribDivisor(m_VertexBufferIndex, 0);
+
+						m_VertexBufferIndex++;
+					}
+					break;
+				}
+				case ShaderDataType::Int:
+				case ShaderDataType::Int2:
+				case ShaderDataType::Int3:
+				case ShaderDataType::Int4:
+				case ShaderDataType::Bool:
+				{
+					glEnableVertexAttribArray(m_VertexBufferIndex);
+					glVertexAttribIPointer(m_VertexBufferIndex,
+						element.GetComponentCount(),
+						GL_INT,
+						layout.GetStride(),
+						(const void*)element.Offset);
+
+					if (element.Instanced)
+						glVertexAttribDivisor(m_VertexBufferIndex, 1);
+					else
+						glVertexAttribDivisor(m_VertexBufferIndex, 0);
+
+					m_VertexBufferIndex++;
+					break;
+				}
+			}
 		}
 
 		m_VertexBuffers.push_back(vertexBuffer);
 	}
-
 	void OpenGLVertexArray::SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer)
 	{
 		glBindVertexArray(m_RendererID);

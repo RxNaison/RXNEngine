@@ -10,3 +10,6 @@
 [submodule "RXNEngine/vendor/imgui"]
 	path = RXNEngine/vendor/imgui
 	url = https://github.com/RxNaison/imgui.git
+[submodule "RXNEngine/vendor/assimp"]
+	path = RXNEngine/vendor/assimp
+	url = https://github.com/assimp/assimp.git

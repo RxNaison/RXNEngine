@@ -2,7 +2,7 @@ workspace "RXNEngine"
 
     language "C++"
     architecture "x64"
-    startproject "Sandbox"
+    startproject "RXNEditor"
     configurations { "Debug", "Release", "Dist" }
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
@@ -13,6 +13,8 @@ IncludeDir["Glad"] = "RXNEngine/vendor/Glad/include"
 IncludeDir["Imgui"] = "RXNEngine/vendor/imgui"
 IncludeDir["glm"] = "RXNEngine/vendor/glm"
 IncludeDir["stb_image"] = "RXNEngine/vendor/stb_image"
+IncludeDir["entt"] = "RXNEngine/vendor/entt/include"
+IncludeDir["assimp"] = "RXNEngine/vendor/assimp/include"
 
 group "Dependencies"
     include "RXNEngine/vendor/GLFW"
@@ -28,8 +30,8 @@ project "RXNEngine"
     cppdialect "C++latest"
     staticruntime "off"
    
-     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
    
     pchheader "rxnpch.h"
     pchsource "RXNEngine/src/rxnpch.cpp"
@@ -61,36 +63,51 @@ project "RXNEngine"
         "%{IncludeDir.Glad}",
         "%{IncludeDir.Imgui}",
         "%{IncludeDir.glm}",
-        "%{IncludeDir.stb_image}"
+        "%{IncludeDir.stb_image}",
+        "%{IncludeDir.entt}",
+        "%{IncludeDir.assimp}"
     }
 
 
     links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
 
     filter "system:windows"
-      systemversion "latest"
-      defines { "RXN_PLATFORM_WINDOWS", "GLFW_INCLUDE_NONE" }
+    systemversion "latest"
+    defines { "GLFW_INCLUDE_NONE" }
 
-      filter "configurations:Debug"
-        defines "RXN_DEBUG"
-        runtime "Debug"
-        symbols "on"
-        defines { "RXN_ENABLE_ASSERTS" }
-
-      filter "configurations:Release"
-        defines "RXN_RELEASE"
-        runtime "Release"
-        optimize "on"
-
-      filter "configurations:Dist"
-        defines "RXN_DIST"
-        runtime "Release"
-        optimize "on"
+    filter "configurations:Debug"
+      defines "RXN_DEBUG"
+      runtime "Debug"
+      symbols "on"
+      defines { "RXN_ENABLE_ASSERTS" }
+      links 
+      { 
+          "RXNEngine/vendor/assimp/build/lib/Debug/assimp-vc143-mtd.lib",
+          "RXNEngine/vendor/assimp/build/contrib/zlib/Debug/zlibstaticd.lib"
+      }
+    filter "configurations:Release"
+      defines "RXN_RELEASE"
+      runtime "Release"
+      optimize "on"
+      links 
+      { 
+          "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
+          "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib"
+      }
+    filter "configurations:Dist"
+      defines "RXN_DIST"
+      runtime "Release"
+      optimize "on"
+      links 
+      { 
+          "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
+          "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib"
+      }
 
 
 
 project "RXNEditor"
-    location "Sandbox"
+    location "RXNEditor"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++latest"
@@ -115,13 +132,15 @@ project "RXNEditor"
     {
         "RXNEngine/vendor/spdlog/include",
         "RXNEngine/src",
-        "%{IncludeDir.glm}"
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.entt}",
+        "%{IncludeDir.Imgui}",
+        "%{IncludeDir.assimp}"
     }
     links "RXNEngine"
     
     filter "system:windows"
        systemversion "latest"
-       defines "RXN_PLATFORM_WINDOWS"
     
     filter "configurations:Debug"
        defines "RXN_DEBUG"
@@ -151,10 +170,10 @@ project "Sandbox"
     
     files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
     
-     defines
-	 {
-         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
-	 }
+    defines
+	{
+        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+	}
     
     includedirs
     {
@@ -166,7 +185,6 @@ project "Sandbox"
     
     filter "system:windows"
        systemversion "latest"
-       defines "RXN_PLATFORM_WINDOWS"
     
     filter "configurations:Debug"
        defines "RXN_DEBUG"

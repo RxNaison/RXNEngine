@@ -1,14 +1,16 @@
 #include "rxnpch.h"
 #include "Time.h"
 
+#include <GLFW/glfw3.h>
+
 Time::Time()
 {
-    m_LastFrameTime = GetSystemTime();
+    m_LastFrameTime = glfwGetTime();
 }
 
 void Time::OnFrameStart()
 {
-    float currentTime = GetSystemTime();
+    float currentTime = glfwGetTime();
     m_DeltaTime = currentTime - m_LastFrameTime;
     m_LastFrameTime = currentTime;
 

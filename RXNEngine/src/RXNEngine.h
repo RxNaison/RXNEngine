@@ -10,11 +10,13 @@
 
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
+#include "RXNEngine/Renderer/Framebuffer.h"
 
 #include "RXNEngine/Renderer/Buffer.h"
 #include "RXNEngine/Renderer/Shader.h"
 #include "RXNEngine/Renderer/VertexArray.h"
 
 #include "RXNEngine/Renderer/Camera.h"
-#include "RXNEngine/Renderer/CameraController.h"
+#include "RXNEngine/Renderer/EditorCamera.h"
+#include "RXNEngine/Renderer/Light.h"
 #include "RXNEngine/Renderer/Texture.h"
