@@ -48,6 +48,11 @@ namespace RXNEngine {
 
         Ref<UniformBuffer> LightUniformBuffer;
         LightDataGPU LightBufferLocal;
+
+        Ref<VertexArray> SkyboxVAO;
+        Ref<Shader> SkyboxShader;
+
+        Ref<TextureCube> SceneEnvironment;
     };
 
     static RendererData s_Data;
@@ -64,6 +69,57 @@ namespace RXNEngine {
             { ShaderDataType::Float4, "a_ModelMatrixCol3", false, true }
             });
         s_Data.LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataGPU), 1);
+
+        float skyboxVertices[] = {
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            -1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f
+        };
+
+        Ref<VertexBuffer> skyboxVB = VertexBuffer::Create(skyboxVertices, sizeof(skyboxVertices));
+        skyboxVB->SetLayout({ { ShaderDataType::Float3, "a_Position" } });
+        s_Data.SkyboxVAO = VertexArray::Create();
+        s_Data.SkyboxVAO->AddVertexBuffer(skyboxVB);
+
+        s_Data.SkyboxShader = Shader::Create("assets/shaders/skybox.glsl");
     }
 
     void Renderer::Shutdown()
@@ -76,26 +132,44 @@ namespace RXNEngine {
         RenderCommand::SetViewport(0, 0, width, height);
     }
 
-    void Renderer::BeginScene(const EditorCamera& camera,
-        const LightEnvironment& lights, const Ref<Framebuffer>& targetFramebuffer)
+    void Renderer::BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
+        const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer)
     {
-        PrepareScene(camera.GetViewProjection(), camera.GetPosition(), lights, targetFramebuffer);
+        PrepareScene(camera.GetViewProjection(), camera.GetPosition(), lights, environment, targetFramebuffer);
     }
 
     void Renderer::BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
-        const Ref<Framebuffer>& targetFramebuffer)
+        const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer)
     {
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
         glm::vec3 cameraPos = glm::vec3(transform[3]);
 
-        PrepareScene(viewProj, cameraPos, lights, targetFramebuffer);
+        PrepareScene(viewProj, cameraPos, lights, environment, targetFramebuffer);
     }
 
-    void Renderer::PrepareScene(const glm::mat4& viewProjection,
+    void Renderer::PrepareScene(
+        const glm::mat4& viewProjection,
         const glm::vec3& cameraPosition,
         const LightEnvironment& lights,
+        const Ref<TextureCube>& environment,
         const Ref<Framebuffer>& targetFramebuffer)
     {
+
+        if (environment)
+        {
+            s_Data.SceneEnvironment = environment;
+
+            glBindTextureUnit(10, environment->GetIrradianceRendererID());
+            glBindTextureUnit(11, environment->GetPrefilterRendererID());
+            glBindTextureUnit(12, environment->GetBRDFLUTRendererID());
+        }
+        else
+        {
+            glBindTextureUnit(10, 0);
+            glBindTextureUnit(11, 0);
+            glBindTextureUnit(12, 0);
+        }
+
         s_Data.CurrentFramebuffer = targetFramebuffer;
 
         if (s_Data.CurrentFramebuffer)
@@ -178,6 +252,37 @@ namespace RXNEngine {
         }
     }
 
+    void Renderer::DrawModel(const Model& model, const glm::mat4& transform)
+    {
+        for (const auto& submesh : model.GetSubmeshes())
+        {
+            glm::mat4 finalTransform = transform * submesh.LocalTransform;
+
+            Renderer::Submit(submesh.Geometry, submesh.Surface, finalTransform);
+        }
+    }
+
+    void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const EditorCamera& camera)
+    {
+        glDepthFunc(GL_LEQUAL);
+
+        s_Data.SkyboxShader->Bind();
+
+        glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+        glm::mat4 projection = camera.GetProjection();
+
+        s_Data.SkyboxShader->SetMat4("u_ViewProjection", projection * view);
+
+        skybox->Bind(0);
+        s_Data.SkyboxShader->SetInt("u_Skybox", 0);
+
+        s_Data.SkyboxVAO->Bind();
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        s_Data.SkyboxVAO->Unbind();
+
+        glDepthFunc(GL_LESS);
+    }
+
     void Renderer::Flush()
     {
         std::sort(s_Data.OpaqueQueue.begin(), s_Data.OpaqueQueue.end(),
@@ -245,6 +350,8 @@ namespace RXNEngine {
             shader->Bind();
             s_Data.CurrentShaderID = shader->GetRendererID();
             shader->SetMat4("u_ViewProjection", s_Data.ViewProjectionMatrix);
+
+            shader->SetFloat3("u_CameraPosition", s_Data.CameraPosition);
         }
 
         for (auto& [name, val] : material->m_UniformsInt)

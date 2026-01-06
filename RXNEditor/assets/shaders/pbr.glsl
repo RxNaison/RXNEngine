@@ -50,6 +50,7 @@ uniform sampler2D u_NormalMap;
 uniform sampler2D u_MetallicMap;
 uniform sampler2D u_RoughnessMap;
 uniform sampler2D u_AOMap;
+uniform vec4 u_AlbedoColor;
 
 // Material Fallback/Tints
 uniform float u_Metallic;
@@ -61,6 +62,11 @@ uniform int u_UseNormalMap;
 
 // SCENE DATA
 uniform vec3 u_CameraPosition;
+uniform samplerCube u_EnvironmentMap;
+
+layout(binding = 10) uniform samplerCube u_IrradianceMap;
+layout(binding = 11) uniform samplerCube u_PrefilterMap;
+layout(binding = 12) uniform sampler2D   u_BRDFLUT;
 
 // LIGHTING UBO (Must match C++ Struct Alignment!)
 struct PointLight {
@@ -143,9 +149,20 @@ vec3 GetNormalFromMap()
     vec3 N = normalize(v_Normal);
     vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);
     vec3 B = -normalize(cross(N, T));
+
+    if (length(T) < 0.0001 || length(B) < 0.0001)
+    {
+        return N;
+    }
+
     mat3 TBN = mat3(T, B, N);
 
     return normalize(TBN * tangentNormal);
+}
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 // ----------------------------------------------------------------------------
@@ -155,10 +172,14 @@ void main()
 {
     // 1. Sample Material
     // Use texture values mixed with uniform factors (simplifies fallback logic)
-    vec3 albedo = pow(texture(u_AlbedoMap, v_TexCoord).rgb, vec3(2.2)); // Linearize gamma
+
+    vec4 albedoSample = texture(u_AlbedoMap, v_TexCoord);
+    vec3 albedo = pow(albedoSample.rgb, vec3(2.2)) * u_AlbedoColor.rgb; // Linearize gamma
+    float alpha = albedoSample.a * u_AlbedoColor.a;
+
     float metallic = texture(u_MetallicMap, v_TexCoord).r * u_Metallic; 
-    float roughness = texture(u_RoughnessMap, v_TexCoord).r * u_Roughness;
-    float ao = texture(u_AOMap, v_TexCoord).r * u_AO;
+    float roughness = texture(u_RoughnessMap, v_TexCoord).g * u_Roughness;
+    float ao = texture(u_AOMap, v_TexCoord).b * u_AO;
 
     // 2. Calculate Normal
     vec3 N = normalize(v_Normal);
@@ -244,8 +265,39 @@ void main()
     }   
 
     // 5. Ambient & AO
-    vec3 ambient = vec3(0.03) * albedo * ao; // Simple ambient (later replace with IBL)
+
+    vec3 F_IBL = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+
+    // B. Diffuse Irradiance (Background light)
+    vec3 kS_IBL = F_IBL;
+    vec3 kD_IBL = 1.0 - kS_IBL;
+    kD_IBL *= 1.0 - metallic; // Metals consume all diffuse light
+    
+    vec3 irradiance = texture(u_IrradianceMap, N).rgb;
+    vec3 diffuseIBL = irradiance * albedo;
+
+    // C. Specular IBL (Reflections)
+    // 1. Get reflection vector
+    vec3 R = reflect(-V, N); 
+    
+    // 2. Sample Prefilter Map based on Roughness
+    // MAX_REFLECTION_LOD should match the mip levels in CreatePrefilterMap (we used 5)
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(u_PrefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    
+    // 3. Sample BRDF LUT (Scale and Bias for Fresnel)
+    vec2 brdf  = texture(u_BRDFLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specularIBL = prefilteredColor * (F_IBL * brdf.x + brdf.y);
+
+    // D. Combine
+    vec3 ambient = (kD_IBL * diffuseIBL + specularIBL) * ao;
+    
+    // ------------------------------------------------------------------
+
     vec3 color = ambient + Lo;
 
-    FragColor = vec4(color, 1.0);
+    float fresnelAlpha = pow(1.0 - max(dot(N, V), 0.0), 2.0);
+    alpha = clamp(alpha + fresnelAlpha * 0.5, 0.0, 1.0);
+
+    FragColor = vec4(color, alpha);
 }

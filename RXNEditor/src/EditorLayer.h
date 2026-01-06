@@ -23,8 +23,8 @@ namespace RXNEngine {
 		Ref<Shader> m_ModelShader;
 		Ref<Model> m_Model;
 		Ref<EditorCamera> m_Camera;
+		Ref<TextureCube> m_Skybox;
 		LightEnvironment m_Lights;
-		//Ref<Scene> m_ActiveScene;
 	};
 
 }

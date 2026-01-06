@@ -22,16 +22,13 @@ namespace RXNEngine {
 	public:
 		Model(const std::string& path, const Ref<Shader>& defaultShader);
 		~Model() = default;
-
-		void OnRender(const glm::mat4& transform);
-
 		const std::vector<ModelSubmesh>& GetSubmeshes() const { return m_Submeshes; }
 
 	private:
 		void ProcessNode(aiNode* node, const aiScene* scene, const glm::mat4& parentTransform);
 		void ProcessMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform);
 
-		Ref<Texture2D> LoadMaterialTexture(aiMaterial* mat, aiTextureType type);
+		Ref<Texture2D> LoadMaterialTexture(aiMaterial* mat, aiTextureType type, const aiScene* scene);
 
 	private:
 		std::vector<ModelSubmesh> m_Submeshes;

@@ -12,7 +12,6 @@ namespace RXNEngine {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_STENCIL_TEST);
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
 	void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)

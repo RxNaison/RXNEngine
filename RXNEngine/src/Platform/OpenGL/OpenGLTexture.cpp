@@ -54,13 +54,77 @@ namespace RXNEngine {
 	{
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(1);
-		stbi_uc* data = nullptr;
-		data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 
-		if (data)
+		if (stbi_is_hdr(path.c_str()))
+		{
+			float* data = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
+			if (data)
+			{
+				m_IsLoaded = true;
+				m_Width = width;
+				m_Height = height;
+
+				m_InternalFormat = GL_RGB16F;
+				m_DataFormat = GL_RGB;
+
+				glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+				glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
+
+				glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+				glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_FLOAT, data);
+
+				stbi_image_free(data);
+			}
+		}
+		else
+		{
+			stbi_uc* data = nullptr;
+			data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+
+			if (data)
+			{
+				m_IsLoaded = true;
+
+				m_Width = width;
+				m_Height = height;
+
+				GLenum internalFormat = GL_RGBA8, dataFormat = GL_RGBA;
+
+				m_InternalFormat = internalFormat;
+				m_DataFormat = dataFormat;
+
+				glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+				glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+
+				glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+				glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, data);
+
+				glGenerateTextureMipmap(m_RendererID);
+
+				stbi_image_free(data);
+			}
+		}
+	}
+
+	OpenGLTexture2D::OpenGLTexture2D(const void* data, size_t size)
+	{
+		int width, height, channels;
+		stbi_set_flip_vertically_on_load(1);
+
+		stbi_uc* imageData = stbi_load_from_memory((const stbi_uc*)data, (int)size, &width, &height, &channels, 0);
+
+		if (imageData)
 		{
 			m_IsLoaded = true;
-
 			m_Width = width;
 			m_Height = height;
 
@@ -84,13 +148,16 @@ namespace RXNEngine {
 
 			glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
 			glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, data);
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, imageData);
 
-			stbi_image_free(data);
+			stbi_image_free(imageData);
+		}
+		else
+		{
+			RXN_CORE_ERROR("Failed to load texture from memory!");
 		}
 	}
 

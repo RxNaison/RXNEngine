@@ -25,16 +25,18 @@ namespace RXNEngine {
         m_ModelShader = Shader::Create("assets/shaders/pbr.glsl");
         m_Model = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);
 		m_Camera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
+		m_Skybox = TextureCube::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
 
-        m_Lights.DirLight.Direction = { -0.5f, -1.0f, -0.5f };
-        m_Lights.DirLight.Color = { 1.0f, 1.0f, 1.0f };
-        m_Lights.DirLight.Intensity = 3.0f;
+        //m_Lights.DirLight.Direction = { -0.5f, -1.0f, -0.5f };
+        //m_Lights.DirLight.Color = { 1.0f, 1.0f, 1.0f };
+        //m_Lights.DirLight.Intensity = 30.0f;
 
-        PointLight light;
-        light.Position = { 0.0f, 5.0f, 0.0f };
-        light.Intensity = 10.0f;
-        light.Color = { 1.0f, 0.8f, 0.8f };
-        m_Lights.PointLights.push_back(light);
+        //PointLight light;
+        //light.Position = { -3.0f, 3.0f, 0.0f };
+        //light.Intensity = 10.0f;
+        //light.Color = { 1.0f, 1.0f, 1.0f };
+        //light.Radius = 100.0f;
+        //m_Lights.PointLights.push_back(light);
 	}
 
 	void EditorLayer::OnDetach()
@@ -45,9 +47,13 @@ namespace RXNEngine {
 	{
         m_Camera->OnUpdate(deltaTime);
 
-		Renderer::BeginScene(*m_Camera, m_Lights, m_Framebuffer);
+		Renderer::BeginScene(*m_Camera, m_Lights, m_Skybox, m_Framebuffer);
 
-		m_Model->OnRender(glm::mat4(1.0f));
+        glm::mat4 tranf(1.0f);
+        //glm::rotate(tranf, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f))
+		Renderer::DrawModel(*m_Model, tranf);
+
+        Renderer::DrawSkybox(m_Skybox, *m_Camera);
 
         Renderer::EndScene();
 	}
@@ -129,10 +135,21 @@ namespace RXNEngine {
             ImGui::EndMenuBar();
         }
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
+        ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+        const auto& framebufferSpec = m_Framebuffer->GetSpecification();
+
+        if (framebufferSpec.Width != viewportSize.x || framebufferSpec.Height != viewportSize.y)
+        {
+            m_Framebuffer->Resize(viewportSize.x, viewportSize.y);
+            m_Camera->SetViewportSize(viewportSize.x, viewportSize.y);
+        }
+
         uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
-        ImGui::Image((void*)textureID, ImVec2{ 1280.0f, 720.0f }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        ImGui::Image((void*)textureID, ImVec2{ framebufferSpec.Width, framebufferSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         ImGui::End();
+        ImGui::PopStyleVar();
 
         ImGui::End();
 

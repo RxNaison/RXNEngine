@@ -11,6 +11,7 @@ namespace RXNEngine {
 	public:
 		OpenGLTexture2D(const TextureSpecification& specification);
 		OpenGLTexture2D(const std::string& path);
+		OpenGLTexture2D(const void* data, size_t size);
 		virtual ~OpenGLTexture2D();
 
 		virtual const TextureSpecification& GetSpecification() const override { return m_Specification; }
@@ -40,5 +41,4 @@ namespace RXNEngine {
 		uint32_t m_RendererID;
 		GLenum m_InternalFormat, m_DataFormat;
 	};
-
 }

@@ -45,16 +45,6 @@ namespace RXNEngine {
 		ProcessNode(scene->mRootNode, scene, glm::mat4(1.0f));
 	}
 
-	void Model::OnRender(const glm::mat4& transform)
-	{
-		for (const auto& submesh : m_Submeshes)
-		{
-			glm::mat4 finalTransform = transform * submesh.LocalTransform;
-
-			Renderer::Submit(submesh.Geometry, submesh.Surface, finalTransform);
-		}
-	}
-
 	void Model::ProcessNode(aiNode* node, const aiScene* scene, const glm::mat4& parentTransform)
 	{
 		glm::mat4 nodeTransform = parentTransform * AssimpToGLM(node->mTransformation);
@@ -148,10 +138,10 @@ namespace RXNEngine {
 		{
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-			Ref<Texture2D> albedoMap = LoadMaterialTexture(material, aiTextureType_BASE_COLOR);
+			Ref<Texture2D> albedoMap = LoadMaterialTexture(material, aiTextureType_BASE_COLOR, scene);
 
 			if (!albedoMap)
-				albedoMap = LoadMaterialTexture(material, aiTextureType_DIFFUSE);
+				albedoMap = LoadMaterialTexture(material, aiTextureType_DIFFUSE, scene);
 
 			if (albedoMap)
 				rxnMaterial->SetTexture("u_AlbedoMap", albedoMap);
@@ -159,10 +149,10 @@ namespace RXNEngine {
 				rxnMaterial->SetTexture("u_AlbedoMap", Texture2D::WhiteTexture());
 
 
-			Ref<Texture2D> normalMap = LoadMaterialTexture(material, aiTextureType_NORMALS);
+			Ref<Texture2D> normalMap = LoadMaterialTexture(material, aiTextureType_NORMALS, scene);
 
 			if (!normalMap)
-				normalMap = LoadMaterialTexture(material, aiTextureType_HEIGHT);
+				normalMap = LoadMaterialTexture(material, aiTextureType_HEIGHT, scene);
 
 			if (normalMap)
 			{
@@ -175,21 +165,24 @@ namespace RXNEngine {
 				rxnMaterial->SetInt("u_UseNormalMap", 0);
 			}
 
-			Ref<Texture2D> metallicMap = LoadMaterialTexture(material, aiTextureType_METALNESS);
+			Ref<Texture2D> metallicMap = LoadMaterialTexture(material, aiTextureType_METALNESS, scene);
 
 			if (!metallicMap)
-				metallicMap = LoadMaterialTexture(material, aiTextureType_SPECULAR);
+				metallicMap = LoadMaterialTexture(material, aiTextureType_SPECULAR, scene);
 
 			if (metallicMap)
 				rxnMaterial->SetTexture("u_MetallicMap", metallicMap);
 			else
-				rxnMaterial->SetTexture("u_MetallicMap", Texture2D::WhiteTexture());
+				rxnMaterial->SetTexture("u_MetallicMap", Texture2D::BlackTexture());
 
 
-			Ref<Texture2D> roughnessMap = LoadMaterialTexture(material, aiTextureType_DIFFUSE_ROUGHNESS);
+			Ref<Texture2D> roughnessMap = LoadMaterialTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, scene);
 
 			if (!roughnessMap)
-				roughnessMap = LoadMaterialTexture(material, aiTextureType_SHININESS);
+				roughnessMap = LoadMaterialTexture(material, aiTextureType_SHININESS, scene);
+
+			if (!roughnessMap)
+				roughnessMap = LoadMaterialTexture(material, aiTextureType_SPECULAR, scene);
 
 			if (roughnessMap)
 				rxnMaterial->SetTexture("u_RoughnessMap", roughnessMap);
@@ -197,18 +190,19 @@ namespace RXNEngine {
 				rxnMaterial->SetTexture("u_RoughnessMap", Texture2D::WhiteTexture());
 
 
-			Ref<Texture2D> aoMap = LoadMaterialTexture(material, aiTextureType_AMBIENT_OCCLUSION);
+			Ref<Texture2D> aoMap = LoadMaterialTexture(material, aiTextureType_AMBIENT_OCCLUSION, scene);
 			if (!aoMap)
-				aoMap = LoadMaterialTexture(material, aiTextureType_AMBIENT);
+				aoMap = LoadMaterialTexture(material, aiTextureType_AMBIENT, scene);
 
 			if (aoMap)
 				rxnMaterial->SetTexture("u_AOMap", aoMap);
 			else
 				rxnMaterial->SetTexture("u_AOMap", Texture2D::WhiteTexture());
 
-			rxnMaterial->SetFloat("u_Metallic", 0.0f);
-			rxnMaterial->SetFloat("u_Roughness", 0.5f);
+			rxnMaterial->SetFloat("u_Metallic", 1.0f);
+			rxnMaterial->SetFloat("u_Roughness", 1.0f);
 			rxnMaterial->SetFloat("u_AO", 1.0f);
+			aiColor4D baseColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 			float floatVal;
 			if (material->Get(AI_MATKEY_METALLIC_FACTOR, floatVal) == AI_SUCCESS)
@@ -216,6 +210,40 @@ namespace RXNEngine {
 
 			if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, floatVal) == AI_SUCCESS)
 				rxnMaterial->SetFloat("u_Roughness", floatVal);
+
+			if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) != AI_SUCCESS)
+				material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
+
+			rxnMaterial->SetFloat4("u_AlbedoColor", glm::vec4(baseColor.r, baseColor.g, baseColor.b, baseColor.a));
+
+			Ref<Texture2D> opacityMap = LoadMaterialTexture(material, aiTextureType_OPACITY, scene);
+			if (opacityMap)
+			{
+				rxnMaterial->SetTransparent(true);
+			}
+
+			float opacity = 1.0f;
+			if (material->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
+			{
+				if (opacity < 1.0f)
+					rxnMaterial->SetTransparent(true);
+			}
+
+			aiString alphaMode;
+			if (material->Get("$mat.gltf.alphaMode", 0, 0, alphaMode) == AI_SUCCESS)
+			{
+				std::string mode = alphaMode.C_Str();
+
+				if (mode == "BLEND")
+				{
+					rxnMaterial->SetTransparent(true);
+				}
+				else if (mode == "MASK")
+				{
+					rxnMaterial->SetTransparent(true);
+					// read AI_MATKEY_GLTF_ALPHACUTOFF
+				}
+			}
 		}
 		else
 		{
@@ -239,34 +267,46 @@ namespace RXNEngine {
 		m_Submeshes.push_back(submesh);
 	}
 
-	Ref<Texture2D> Model::LoadMaterialTexture(aiMaterial* mat, aiTextureType type)
+	Ref<Texture2D> Model::LoadMaterialTexture(aiMaterial* mat, aiTextureType type, const aiScene* scene)
 	{
 		if (mat->GetTextureCount(type) > 0)
 		{
 			aiString str;
 			mat->GetTexture(type, 0, &str);
 
-			std::string filename = std::string(str.C_Str());
-			std::replace(filename.begin(), filename.end(), '\\', '/');
+			const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(str.C_Str());
 
-			std::string filepath = m_Directory + "/" + filename;
-
-			if (m_TextureCache.find(filepath) != m_TextureCache.end())
+			if (embeddedTexture)
 			{
-				return m_TextureCache[filepath];
-			}
-
-			Ref<Texture2D> newTexture = Texture2D::Create(filepath);
-
-			if (newTexture->IsLoaded())
-			{
-				m_TextureCache[filepath] = newTexture;
-				return newTexture;
+				if (embeddedTexture->mHeight == 0)
+					return Texture2D::Create(embeddedTexture->pcData, embeddedTexture->mWidth);
+				else
+					RXN_CORE_WARN("Uncompressed embedded textures not yet implemented!");
 			}
 			else
 			{
-				RXN_CORE_WARN("Texture failed to load: {0}", filepath);
-				return Texture2D::WhiteTexture();
+				std::string filename = std::string(str.C_Str());
+				std::replace(filename.begin(), filename.end(), '\\', '/');
+
+				std::string filepath = m_Directory + "/" + filename;
+
+				if (m_TextureCache.find(filepath) != m_TextureCache.end())
+				{
+					return m_TextureCache[filepath];
+				}
+
+				Ref<Texture2D> newTexture = Texture2D::Create(filepath);
+
+				if (newTexture->IsLoaded())
+				{
+					m_TextureCache[filepath] = newTexture;
+					return newTexture;
+				}
+				else
+				{
+					RXN_CORE_WARN("Texture failed to load: {0}", filepath);
+					return Texture2D::WhiteTexture();
+				}
 			}
 		}
 		return nullptr;
