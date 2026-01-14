@@ -52,7 +52,19 @@ namespace RXNEngine {
 
         glm::mat4 tranf(1.0f);
         //glm::rotate(tranf, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f))
-		Renderer::DrawModel(*m_Model, tranf);
+        
+        Renderer::DrawModel(*m_Model, tranf);
+
+        //for (int i = 0; i < 10; i++)
+        //{
+        //    for (int j = 0; j < 10; j++)
+        //    {
+        //        tranf = { 1.0f };
+        //        tranf = glm::translate(tranf, glm::vec3(5.0f * i, 0.0f, 5.0f * j));
+        //        Renderer::DrawModel(*m_Model, tranf);
+		//	}
+        //}
+
 		tranf = glm::translate(tranf, glm::vec3(-55.0f, -6.0f, 0.0f));
 		tranf = glm::scale(tranf, glm::vec3(1.0f, 0.1f, 1.0f));
 		Renderer::DrawModel(*m_CubeModel, tranf);
@@ -60,6 +72,7 @@ namespace RXNEngine {
         Renderer::DrawSkybox(m_Skybox, *m_Camera);
 
         Renderer::EndScene();
+        m_FPS = 1.0f / deltaTime;
 	}
 
 	void EditorLayer::OnFixedUpdate(float fixedDeltaTime)
@@ -154,6 +167,11 @@ namespace RXNEngine {
         ImGui::Image((void*)textureID, ImVec2{ framebufferSpec.Width, framebufferSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         ImGui::End();
         ImGui::PopStyleVar();
+
+        ImGui::Begin("Stats");
+        
+        ImGui::Text(std::to_string(m_FPS).c_str());
+        ImGui::End();
 
         ImGui::End();
 

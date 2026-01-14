@@ -26,6 +26,8 @@ namespace RXNEngine {
 		Ref<EditorCamera> m_Camera;
 		Ref<TextureCube> m_Skybox;
 		LightEnvironment m_Lights;
+
+		float m_FPS;
 	};
 
 }

@@ -64,6 +64,14 @@ uniform int u_UseNormalMap;
 uniform vec3 u_CameraPosition;
 uniform samplerCube u_EnvironmentMap;
 
+layout(binding = 8) uniform sampler2DArray u_ShadowMap; 
+layout (std140, binding = 2) uniform ShadowData
+{
+    mat4 u_LightSpaceMatrices[4];
+    vec4 u_CascadePlaneDistances[4]; // x = distance
+};
+uniform mat4 u_View;
+
 layout(binding = 10) uniform samplerCube u_IrradianceMap;
 layout(binding = 11) uniform samplerCube u_PrefilterMap;
 layout(binding = 12) uniform sampler2D   u_BRDFLUT;
@@ -168,6 +176,54 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 // ----------------------------------------------------------------------------
 // MAIN
 // ----------------------------------------------------------------------------
+
+float ShadowCalculation(vec3 fragPosWorld)
+{
+    vec4 fragPosViewSpace = u_View * vec4(fragPosWorld, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+
+    int layer = -1;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (depthValue < u_CascadePlaneDistances[i].x)
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1) layer = 3;
+
+    vec4 fragPosLightSpace = u_LightSpaceMatrices[layer] * vec4(fragPosWorld, 1.0);
+    
+    // Perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float currentDepth = projCoords.z;
+    if (currentDepth > 1.0) return 0.0;
+
+    // Bias to prevent shadow acne
+    vec3 normal = normalize(v_Normal);
+    vec3 lightDir = normalize(-u_DirLightDirection.xyz);
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
+    // bias *= 1.0 / (u_CascadePlaneDistances[layer].x * 0.5); // Optional: scale bias by cascade
+
+    // PCF (Percentage-closer filtering)
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(u_ShadowMap, vec3(projCoords.xy + vec2(x, y) * texelSize, layer)).r; 
+            shadow += (currentDepth - bias) > pcfDepth ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+    
+    return shadow;
+}
+
 void main()
 {
     // 1. Sample Material
@@ -180,6 +236,8 @@ void main()
     float metallic = texture(u_MetallicMap, v_TexCoord).r * u_Metallic; 
     float roughness = texture(u_RoughnessMap, v_TexCoord).g * u_Roughness;
     float ao = texture(u_AOMap, v_TexCoord).b * u_AO;
+     
+    float shadow = ShadowCalculation(v_WorldPos);
 
     // 2. Calculate Normal
     vec3 N = normalize(v_Normal);
@@ -203,7 +261,7 @@ void main()
         vec3 L = normalize(-u_DirLightDirection.xyz);
         vec3 H = normalize(V + L);
         float intensity = u_DirLightDirection.w;
-        vec3 radiance = u_DirLightColor.rgb * intensity;
+        vec3 radiance = u_DirLightColor.rgb * intensity * (1.0 - shadow);
 
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);   
