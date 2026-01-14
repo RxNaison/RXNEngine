@@ -24,6 +24,7 @@ namespace RXNEngine {
 
         m_ModelShader = Shader::Create("assets/shaders/pbr.glsl");
         m_Model = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);
+        m_CubeModel = CreateRef<Model>("assets/models/cube/source/cube.obj", m_ModelShader);
 		m_Camera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 		m_Skybox = TextureCube::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
 
@@ -32,8 +33,8 @@ namespace RXNEngine {
         //m_Lights.DirLight.Intensity = 30.0f;
 
         //PointLight light;
-        //light.Position = { -3.0f, 3.0f, 0.0f };
-        //light.Intensity = 10.0f;
+        //light.Position = { 1.0f, 3.0f, 0.0f };
+        //light.Intensity = 100.0f;
         //light.Color = { 1.0f, 1.0f, 1.0f };
         //light.Radius = 100.0f;
         //m_Lights.PointLights.push_back(light);
@@ -52,6 +53,9 @@ namespace RXNEngine {
         glm::mat4 tranf(1.0f);
         //glm::rotate(tranf, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f))
 		Renderer::DrawModel(*m_Model, tranf);
+		tranf = glm::translate(tranf, glm::vec3(-55.0f, -6.0f, 0.0f));
+		tranf = glm::scale(tranf, glm::vec3(1.0f, 0.1f, 1.0f));
+		Renderer::DrawModel(*m_CubeModel, tranf);
 
         Renderer::DrawSkybox(m_Skybox, *m_Camera);
 

@@ -22,6 +22,7 @@ namespace RXNEngine {
 		Ref<Framebuffer> m_Framebuffer;
 		Ref<Shader> m_ModelShader;
 		Ref<Model> m_Model;
+		Ref<Model> m_CubeModel;
 		Ref<EditorCamera> m_Camera;
 		Ref<TextureCube> m_Skybox;
 		LightEnvironment m_Lights;

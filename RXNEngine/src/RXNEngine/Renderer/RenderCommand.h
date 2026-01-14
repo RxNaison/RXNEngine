@@ -22,9 +22,15 @@ namespace RXNEngine {
 		{
 			s_RendererAPI->SetClearColor(color);
 		}
+
 		inline static void Clear()
 		{
 			s_RendererAPI->Clear();
+		}
+
+		inline static void Draw(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
+		{
+			s_RendererAPI->Draw(vertexArray, vertexCount);
 		}
 
 		inline static void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount = 0)
@@ -32,14 +38,44 @@ namespace RXNEngine {
 			s_RendererAPI->DrawIndexed(vertexArray, indexCount);
 		}
 
-		static void DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
+		inline static void DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
 		{
 			s_RendererAPI->DrawLines(vertexArray, vertexCount);
 		}
 
-		static void SetLineWidth(float width)
+		inline static void SetLineWidth(float width)
 		{
 			s_RendererAPI->SetLineWidth(width);
+		}
+
+		inline static void DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& instanceData, uint32_t instanceCount)
+		{
+			s_RendererAPI->DrawIndexedInstanced(vertexArray, instanceData, instanceCount);
+		}
+
+		inline static void BindTextureID(uint32_t slot, uint32_t textureID)
+		{
+			s_RendererAPI->BindTextureID(slot, textureID);
+		}
+
+		inline static void SetDepthTest(bool enabled)
+		{
+			s_RendererAPI->SetDepthTest(enabled);
+		}
+
+		inline static void SetDepthFunc(RendererAPI::DepthFunc func)
+		{
+			s_RendererAPI->SetDepthFunc(func);
+		}
+
+		inline static void SetCullFace(RendererAPI::CullFace face)
+		{
+			s_RendererAPI->SetCullFace(face);
+		}
+
+		inline static void BindDefaultFramebuffer()
+		{
+			s_RendererAPI->BindDefaultFramebuffer();
 		}
 	private:
 		static Scope<RendererAPI> s_RendererAPI;

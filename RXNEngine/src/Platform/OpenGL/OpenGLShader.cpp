@@ -11,6 +11,10 @@ namespace RXNEngine {
 			return GL_VERTEX_SHADER;
 		if (type == "fragment" || type == "pixel")
 			return GL_FRAGMENT_SHADER;
+		if (type == "geometry")
+			return GL_GEOMETRY_SHADER;
+		if (type == "compute")
+			return GL_COMPUTE_SHADER;
 
 		RXN_CORE_ASSERT(false, "Unknown shader type!");
 		return 0;
@@ -86,9 +90,10 @@ namespace RXNEngine {
 	void OpenGLShader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
 	{
 		GLuint program = glCreateProgram();
-		RXN_CORE_ASSERT(shaderSources.size() <= 2, "We only support 2 shaders for now");
-		std::array<GLenum, 2> glShaderIDs;
-		int glShaderIDIndex = 0;
+
+		std::vector<GLuint> glShaderIDs;
+		glShaderIDs.reserve(shaderSources.size());
+
 		for (auto& kv : shaderSources)
 		{
 			GLenum type = kv.first;
@@ -119,7 +124,7 @@ namespace RXNEngine {
 			}
 
 			glAttachShader(program, shader);
-			glShaderIDs[glShaderIDIndex++] = shader;
+			glShaderIDs.push_back(shader);
 		}
 
 		m_RendererID = program;
@@ -147,7 +152,10 @@ namespace RXNEngine {
 		}
 
 		for (auto id : glShaderIDs)
+		{
 			glDetachShader(program, id);
+			glDeleteShader(id);
+		}
 	}
 
 	void OpenGLShader::Bind() const

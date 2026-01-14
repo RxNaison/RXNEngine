@@ -45,11 +45,11 @@ namespace RXNEngine {
 
         static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
     private:
-        static void PrepareScene(const glm::mat4& viewProjection, const glm::vec3& cameraPosition,
+        static void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
             const LightEnvironment& lights, const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer);
-    private:
         static void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
         static void FlushBatch(const Ref<Mesh>& mesh, const Ref<Material>& material, const std::vector<glm::mat4>& transforms);
         static void Flush();
+        static void FlushShadows();
     };
 }

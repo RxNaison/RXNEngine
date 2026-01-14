@@ -4,11 +4,10 @@
 #include "Frustum.h"
 #include "UniformBuffer.h"
 #include "RenderCommand.h"
+#include "ShadowMap.h"
 
 #include <algorithm>
 #include <array>
-// remove opengl dependency from here
-#include <glad/glad.h>
 
 namespace RXNEngine {
 
@@ -20,11 +19,27 @@ namespace RXNEngine {
         uint32_t PointLightCount;
         uint32_t Padding[3];      // align to 16 bytes
 
-        struct PointLightGPU {
+        struct PointLightGPU
+        {
             glm::vec4 Position;  // w = Intensity
             glm::vec4 Color;     // w = Radius
             glm::vec4 Falloff;   // x = Falloff, yzw = Padding
         } PointLights[100];
+    };
+
+    struct ShadowData
+    {
+        Ref<ShadowMap> ShadowTarget;
+        Ref<Shader> ShadowShader;
+        Ref<UniformBuffer> ShadowUniformBuffer;
+
+        struct ShadowDataGPU
+        {
+            glm::mat4 LightSpaceMatrices[4];
+            glm::vec4 CascadePlaneDistances[4];
+        } BufferLocal;
+
+        std::vector<float> CascadeSplits;
     };
 
     struct RendererData
@@ -33,8 +48,10 @@ namespace RXNEngine {
         std::vector<RenderCommandPacket> OpaqueQueue;
         std::vector<RenderCommandPacket> TransparentQueue;
         glm::mat4 ViewProjectionMatrix;
+        glm::mat4 ViewMatrix;
         glm::vec3 CameraPosition;
         Frustum CameraFrustum;
+        float CameraFOV = 45.0f;
 
         uint32_t CurrentShaderID = 0;
         uint32_t CurrentVertexArrayID = 0;
@@ -53,9 +70,74 @@ namespace RXNEngine {
         Ref<Shader> SkyboxShader;
 
         Ref<TextureCube> SceneEnvironment;
+		ShadowData ShadowData;
     };
 
     static RendererData s_Data;
+
+    std::vector<glm::vec4> GetFrustumCornersWorldSpace(const glm::mat4& proj, const glm::mat4& view)
+    {
+        const auto inv = glm::inverse(proj * view);
+        std::vector<glm::vec4> frustumCorners;
+        for (unsigned int x = 0; x < 2; ++x)
+        {
+            for (unsigned int y = 0; y < 2; ++y)
+            {
+                for (unsigned int z = 0; z < 2; ++z)
+                {
+                    const glm::vec4 pt = inv * glm::vec4(2.0f * x - 1.0f, 2.0f * y - 1.0f, 2.0f * z - 1.0f, 1.0f);
+                    frustumCorners.push_back(pt / pt.w);
+                }
+            }
+        }
+        return frustumCorners;
+    }
+
+    void CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir)
+    {
+        float aspect = (float)s_Data.CurrentFramebuffer->GetSpecification().Width / (float)s_Data.CurrentFramebuffer->GetSpecification().Height;
+        float fov = s_Data.CameraFOV < 0.01f ? glm::radians(45.0f) : s_Data.CameraFOV;
+        float nearPlane = 0.1f;
+
+        for (size_t i = 0; i < 4; ++i)
+        {
+            float pNear = (i == 0) ? nearPlane : s_Data.ShadowData.CascadeSplits[i - 1];
+            float pFar = s_Data.ShadowData.CascadeSplits[i];
+
+            glm::mat4 proj = glm::perspective(fov, aspect, pNear, pFar);
+            auto corners = GetFrustumCornersWorldSpace(proj, cameraView);
+
+            glm::vec3 center = glm::vec3(0, 0, 0);
+            for (const auto& v : corners) center += glm::vec3(v);
+            center /= corners.size();
+
+            const auto lightView = glm::lookAt(center - glm::normalize(lightDir), center, glm::vec3(0.0f, 1.0f, 0.0f));
+
+            float minX = std::numeric_limits<float>::max(); float maxX = std::numeric_limits<float>::lowest();
+            float minY = std::numeric_limits<float>::max(); float maxY = std::numeric_limits<float>::lowest();
+            float minZ = std::numeric_limits<float>::max(); float maxZ = std::numeric_limits<float>::lowest();
+
+            for (const auto& v : corners)
+            {
+                const auto trf = lightView * v;
+                minX = std::min(minX, trf.x); maxX = std::max(maxX, trf.x);
+                minY = std::min(minY, trf.y); maxY = std::max(maxY, trf.y);
+                minZ = std::min(minZ, trf.z); maxZ = std::max(maxZ, trf.z);
+            }
+
+            // Tune Z bounds to include casters behind the camera slice
+            float zMult = 10.0f;
+            if (minZ < 0) minZ *= zMult; else minZ /= zMult;
+            if (maxZ < 0) maxZ /= zMult; else maxZ *= zMult;
+
+            const glm::mat4 lightProjection = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
+
+            s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i] = lightProjection * lightView;
+            s_Data.ShadowData.BufferLocal.CascadePlaneDistances[i].x = pFar;
+        }
+
+        s_Data.ShadowData.ShadowUniformBuffer->SetData(&s_Data.ShadowData.BufferLocal, sizeof(ShadowData::ShadowDataGPU));
+    }
 
     void Renderer::Init()
     {
@@ -120,6 +202,15 @@ namespace RXNEngine {
         s_Data.SkyboxVAO->AddVertexBuffer(skyboxVB);
 
         s_Data.SkyboxShader = Shader::Create("assets/shaders/skybox.glsl");
+
+        s_Data.ShadowData.ShadowTarget = ShadowMap::Create(4096);
+        s_Data.ShadowData.ShadowTarget->Init(4096);
+
+        s_Data.ShadowData.ShadowShader = Shader::Create("assets/shaders/shadow_depth.glsl");
+
+        s_Data.ShadowData.ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowData::ShadowDataGPU), 2);
+
+        s_Data.ShadowData.CascadeSplits = { 7.0f, 25.0f, 90.0f, 1000.0f };
     }
 
     void Renderer::Shutdown()
@@ -135,21 +226,25 @@ namespace RXNEngine {
     void Renderer::BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
         const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer)
     {
-        PrepareScene(camera.GetViewProjection(), camera.GetPosition(), lights, environment, targetFramebuffer);
+        PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, targetFramebuffer);
     }
 
     void Renderer::BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
         const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer)
     {
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
+        glm::mat4 view = glm::inverse(transform);
         glm::vec3 cameraPos = glm::vec3(transform[3]);
+        float fov = 2.0f * glm::atan(1.0f / camera.GetProjection()[1][1]);
 
-        PrepareScene(viewProj, cameraPos, lights, environment, targetFramebuffer);
+        PrepareScene(viewProj, view, cameraPos, fov, lights, environment, targetFramebuffer);
     }
 
     void Renderer::PrepareScene(
         const glm::mat4& viewProjection,
+        const glm::mat4& viewMatrix,
         const glm::vec3& cameraPosition,
+        float cameraFOV,
         const LightEnvironment& lights,
         const Ref<TextureCube>& environment,
         const Ref<Framebuffer>& targetFramebuffer)
@@ -159,15 +254,9 @@ namespace RXNEngine {
         {
             s_Data.SceneEnvironment = environment;
 
-            glBindTextureUnit(10, environment->GetIrradianceRendererID());
-            glBindTextureUnit(11, environment->GetPrefilterRendererID());
-            glBindTextureUnit(12, environment->GetBRDFLUTRendererID());
-        }
-        else
-        {
-            glBindTextureUnit(10, 0);
-            glBindTextureUnit(11, 0);
-            glBindTextureUnit(12, 0);
+            RenderCommand::BindTextureID(10, environment->GetIrradianceRendererID());
+            RenderCommand::BindTextureID(11, environment->GetPrefilterRendererID());
+            RenderCommand::BindTextureID(12, environment->GetBRDFLUTRendererID());
         }
 
         s_Data.CurrentFramebuffer = targetFramebuffer;
@@ -183,7 +272,7 @@ namespace RXNEngine {
         }
         else
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			RenderCommand::BindDefaultFramebuffer();
 
             //RenderCommand::SetViewport(0, 0, s_Data.WindowWidth, s_Data.WindowHeight);
 
@@ -192,6 +281,7 @@ namespace RXNEngine {
         }
 
         s_Data.ViewProjectionMatrix = viewProjection;
+        s_Data.ViewMatrix = viewMatrix;
         s_Data.CameraPosition = cameraPosition;
         s_Data.CameraFrustum.Define(viewProjection);
 
@@ -223,9 +313,7 @@ namespace RXNEngine {
         AABB worldAABB = Math::CalculateWorldAABB(mesh->GetAABB(), transform);
 
         if (!s_Data.CameraFrustum.IsBoxVisible(worldAABB.Min, worldAABB.Max))
-        {
             return;
-        }
 
         RenderCommandPacket packet;
         packet.Mesh = mesh;
@@ -264,7 +352,7 @@ namespace RXNEngine {
 
     void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const EditorCamera& camera)
     {
-        glDepthFunc(GL_LEQUAL);
+		RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
 
         s_Data.SkyboxShader->Bind();
 
@@ -277,14 +365,27 @@ namespace RXNEngine {
         s_Data.SkyboxShader->SetInt("u_Skybox", 0);
 
         s_Data.SkyboxVAO->Bind();
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        RenderCommand::Draw(s_Data.SkyboxVAO, 36);
         s_Data.SkyboxVAO->Unbind();
 
-        glDepthFunc(GL_LESS);
+		RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::Less);
     }
 
     void Renderer::Flush()
     {
+        CalculateShadowMapMatrices(s_Data.ViewMatrix, s_Data.LightBufferLocal.DirLightDirection);
+
+        FlushShadows();
+
+        if (s_Data.CurrentFramebuffer) s_Data.CurrentFramebuffer->Bind();
+        else RenderCommand::BindDefaultFramebuffer();
+
+        RenderCommand::SetViewport(0, 0, 
+            s_Data.CurrentFramebuffer ? s_Data.CurrentFramebuffer->GetSpecification().Width : 1280, 
+            s_Data.CurrentFramebuffer ? s_Data.CurrentFramebuffer->GetSpecification().Height : 720);
+
+        s_Data.ShadowData.ShadowTarget->BindRead(8);
+
         std::sort(s_Data.OpaqueQueue.begin(), s_Data.OpaqueQueue.end(),
             [](const RenderCommandPacket& a, const RenderCommandPacket& b)
             {
@@ -350,8 +451,8 @@ namespace RXNEngine {
             shader->Bind();
             s_Data.CurrentShaderID = shader->GetRendererID();
             shader->SetMat4("u_ViewProjection", s_Data.ViewProjectionMatrix);
-
             shader->SetFloat3("u_CameraPosition", s_Data.CameraPosition);
+            shader->SetMat4("u_View", s_Data.ViewMatrix);
         }
 
         for (auto& [name, val] : material->m_UniformsInt)
@@ -382,14 +483,58 @@ namespace RXNEngine {
         mesh->GetVertexArray()->Bind();
 
         s_Data.InstanceVertexBuffer->Bind();
+
+        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transforms.size());
+    }
+
+    void Renderer::FlushShadows()
+    {
+        s_Data.ShadowData.ShadowTarget->BindWrite();
+        RenderCommand::Clear();
+        RenderCommand::SetCullFace(RendererAPI::CullFace::Front);
+
+        s_Data.ShadowData.ShadowShader->Bind();
+
+        auto& matrices = s_Data.ShadowData.BufferLocal.LightSpaceMatrices;
         for (int i = 0; i < 4; i++)
         {
-            uint32_t loc = 4 + i; // Locations 4,5,6,7
-            glEnableVertexAttribArray(loc);
-            glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const void*)(i * sizeof(glm::vec4)));
-            glVertexAttribDivisor(loc, 1);
+            s_Data.ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrices[" + std::to_string(i) + "]", matrices[i]);
         }
 
-        glDrawElementsInstanced(GL_TRIANGLES, mesh->GetIndexCount(), GL_UNSIGNED_INT, nullptr, transforms.size());
+        if (!s_Data.OpaqueQueue.empty())
+        {
+            auto batchStart = s_Data.OpaqueQueue.begin();
+            std::vector<glm::mat4> batchTransforms;
+            batchTransforms.push_back(batchStart->Transform);
+
+            for (auto it = s_Data.OpaqueQueue.begin() + 1; it != s_Data.OpaqueQueue.end(); ++it)
+            {
+                bool isSameMesh = (it->Mesh->GetVertexArray() == batchStart->Mesh->GetVertexArray());
+
+                if (isSameMesh && batchTransforms.size() < s_Data.MaxInstances)
+                {
+                    batchTransforms.push_back(it->Transform);
+                }
+                else
+                {
+                    s_Data.InstanceVertexBuffer->SetData(batchTransforms.data(), batchTransforms.size() * sizeof(glm::mat4));
+                    batchStart->Mesh->GetVertexArray()->Bind();
+                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, batchTransforms.size());
+
+                    batchStart = it;
+                    batchTransforms.clear();
+                    batchTransforms.push_back(it->Transform);
+                }
+            }
+
+            if (!batchTransforms.empty())
+            {
+                s_Data.InstanceVertexBuffer->SetData(batchTransforms.data(), batchTransforms.size() * sizeof(glm::mat4));
+                batchStart->Mesh->GetVertexArray()->Bind();
+                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, batchTransforms.size());
+            }
+        }
+
+        RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
     }
 }

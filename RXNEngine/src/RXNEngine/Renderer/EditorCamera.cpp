@@ -25,7 +25,6 @@ namespace RXNEngine {
 
 	void EditorCamera::UpdateView()
 	{
-		// m_Yaw = m_Pitch = 0.0f; // Lock the camera's rotation
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
@@ -73,7 +72,6 @@ namespace RXNEngine {
 			else if (Input::IsMouseButtonPressed(MouseCode::ButtonRight))
 				MouseZoom(delta.y);
 		}
-
 		UpdateView();
 	}
 
@@ -110,7 +108,7 @@ namespace RXNEngine {
 		m_Distance -= delta * ZoomSpeed();
 		if (m_Distance < 1.0f)
 		{
-			m_FocalPoint += GetForwardDirection();
+			m_FocalPoint += GetForwardDirection() * delta;
 			m_Distance = 1.0f;
 		}
 	}
