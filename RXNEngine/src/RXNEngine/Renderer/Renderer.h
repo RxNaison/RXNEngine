@@ -40,6 +40,8 @@ namespace RXNEngine {
         static void Submit(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4& transform = glm::mat4(1.0f));
 
         static void DrawSkybox(const Ref<TextureCube>& skybox, const EditorCamera& camera);
+        static void DrawSkybox(const Ref<TextureCube>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
+        static void DrawSkybox(const Ref<TextureCube>& skybox, const Camera& camera, const glm::mat4& transform);
 
         static void DrawModel(const Model& model, const glm::mat4& transform);
 

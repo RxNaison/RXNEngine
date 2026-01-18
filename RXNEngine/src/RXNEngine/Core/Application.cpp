@@ -15,7 +15,7 @@ namespace RXNEngine {
 		s_Instance = this;
 
 		m_Window = std::unique_ptr<Window>(Window::Create());
-		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+		m_Window->SetEventCallback([this](Event& e) { OnEvent(e); });
 
 		Renderer::Init();
 
@@ -43,9 +43,9 @@ namespace RXNEngine {
 	void Application::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(std::bind(&Application::OnWindowClose, this, std::placeholders::_1));
-		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&Application::OnWindowResize, this, std::placeholders::_1));
-		dispatcher.Dispatch<WindowMinimizeEvent>(std::bind(&Application::OnWindowMinimize, this, std::placeholders::_1));
+		dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& e)->bool { return OnWindowClose(e); });
+		dispatcher.Dispatch<WindowResizeEvent>([this](WindowResizeEvent& e)->bool { return OnWindowResize(e); });
+		dispatcher.Dispatch<WindowMinimizeEvent>([this](WindowMinimizeEvent& e)->bool { return OnWindowMinimize(e); });
 
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
 		{

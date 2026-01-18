@@ -24,6 +24,7 @@ namespace RXNEngine {
 
         m_ModelShader = Shader::Create("assets/shaders/pbr.glsl");
         m_Model = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);
+        m_Model1 = CreateRef<Model>("assets/models/porsche-gt1-wwwvecarzcom/source/porsche_gt1.glb", m_ModelShader);
         m_CubeModel = CreateRef<Model>("assets/models/cube/source/cube.obj", m_ModelShader);
 		m_Camera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 		m_Skybox = TextureCube::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
@@ -38,6 +39,17 @@ namespace RXNEngine {
         //light.Color = { 1.0f, 1.0f, 1.0f };
         //light.Radius = 100.0f;
         //m_Lights.PointLights.push_back(light);
+
+        m_CameraEntity = m_Scene.CreateEntity("Scene Camera");
+        m_CameraEntity.AddComponent<CameraComponent>();
+        m_CameraEntity.GetComponent<CameraComponent>().Camera.SetPerspective(45.0f, 0.01f, 500.0f);
+        m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraControllerScript>();
+
+		m_ModelEntity = m_Scene.CreateEntity("Model Entity");
+		m_ModelEntity.AddComponent<MeshComponent>().ModelResource = m_Model;
+
+        m_SkyboxEntity = m_Scene.CreateEntity("Skybox Entity");
+		m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = m_Skybox;
 	}
 
 	void EditorLayer::OnDetach()
@@ -46,32 +58,12 @@ namespace RXNEngine {
 
 	void EditorLayer::OnUpdate(float deltaTime)
 	{
+
         m_Camera->OnUpdate(deltaTime);
 
-		Renderer::BeginScene(*m_Camera, m_Lights, m_Skybox, m_Framebuffer);
+		m_Scene.OnUpdateEditor(deltaTime, *m_Camera, m_Framebuffer);
+		//m_Scene.OnUpdateRuntime(deltaTime, m_Framebuffer);
 
-        glm::mat4 tranf(1.0f);
-        //glm::rotate(tranf, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f))
-        
-        Renderer::DrawModel(*m_Model, tranf);
-
-        //for (int i = 0; i < 10; i++)
-        //{
-        //    for (int j = 0; j < 10; j++)
-        //    {
-        //        tranf = { 1.0f };
-        //        tranf = glm::translate(tranf, glm::vec3(5.0f * i, 0.0f, 5.0f * j));
-        //        Renderer::DrawModel(*m_Model, tranf);
-		//	}
-        //}
-
-		tranf = glm::translate(tranf, glm::vec3(-55.0f, -6.0f, 0.0f));
-		tranf = glm::scale(tranf, glm::vec3(1.0f, 0.1f, 1.0f));
-		Renderer::DrawModel(*m_CubeModel, tranf);
-
-        Renderer::DrawSkybox(m_Skybox, *m_Camera);
-
-        Renderer::EndScene();
         m_FPS = 1.0f / deltaTime;
 	}
 
@@ -161,6 +153,7 @@ namespace RXNEngine {
         {
             m_Framebuffer->Resize(viewportSize.x, viewportSize.y);
             m_Camera->SetViewportSize(viewportSize.x, viewportSize.y);
+			m_Scene.OnViewportResize(viewportSize.x, viewportSize.y);
         }
 
         uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();

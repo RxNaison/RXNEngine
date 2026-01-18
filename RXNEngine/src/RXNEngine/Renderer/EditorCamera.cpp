@@ -78,7 +78,7 @@ namespace RXNEngine {
 	void EditorCamera::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<MouseScrolledEvent>(std::bind(&EditorCamera::OnMouseScroll, this, std::placeholders::_1));
+		dispatcher.Dispatch<MouseScrolledEvent>([this](MouseScrolledEvent& e)->bool { return OnMouseScroll(e); });
 	}
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)

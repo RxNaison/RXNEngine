@@ -352,12 +352,22 @@ namespace RXNEngine {
 
     void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const EditorCamera& camera)
     {
-		RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
+        DrawSkybox(skybox, camera.GetViewMatrix(), camera.GetProjection());
+    }
+
+    void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const Camera& camera, const glm::mat4& transform)
+    {
+        DrawSkybox(skybox, glm::inverse(transform), camera.GetProjection());
+    }
+
+    void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+    {
+        RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
 
         s_Data.SkyboxShader->Bind();
 
-        glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-        glm::mat4 projection = camera.GetProjection();
+        glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
+        glm::mat4 projection = projectionMatrix;
 
         s_Data.SkyboxShader->SetMat4("u_ViewProjection", projection * view);
 
@@ -368,7 +378,7 @@ namespace RXNEngine {
         RenderCommand::Draw(s_Data.SkyboxVAO, 36);
         s_Data.SkyboxVAO->Unbind();
 
-		RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::Less);
+        RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::Less);
     }
 
     void Renderer::Flush()
