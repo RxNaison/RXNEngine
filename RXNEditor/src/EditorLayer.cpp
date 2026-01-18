@@ -16,29 +16,14 @@ namespace RXNEngine {
 
 	void EditorLayer::OnAttach()
 	{
-		FramebufferSpecification fbSpec;
-		fbSpec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::Depth };
+        RenderTargetSpecification fbSpec;
+		fbSpec.Attachments = { RenderTargetTextureFormat::RGBA16F, RenderTargetTextureFormat::Depth };
 		fbSpec.Width = 1280;
 		fbSpec.Height = 720;
-		m_Framebuffer = Framebuffer::Create(fbSpec);
+		m_RenderTarget = RenderTarget::Create(fbSpec);
 
         m_ModelShader = Shader::Create("assets/shaders/pbr.glsl");
-        m_Model = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);
-        m_Model1 = CreateRef<Model>("assets/models/porsche-gt1-wwwvecarzcom/source/porsche_gt1.glb", m_ModelShader);
-        m_CubeModel = CreateRef<Model>("assets/models/cube/source/cube.obj", m_ModelShader);
 		m_Camera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
-		m_Skybox = TextureCube::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
-
-        //m_Lights.DirLight.Direction = { -0.5f, -1.0f, -0.5f };
-        //m_Lights.DirLight.Color = { 1.0f, 1.0f, 1.0f };
-        //m_Lights.DirLight.Intensity = 30.0f;
-
-        //PointLight light;
-        //light.Position = { 1.0f, 3.0f, 0.0f };
-        //light.Intensity = 100.0f;
-        //light.Color = { 1.0f, 1.0f, 1.0f };
-        //light.Radius = 100.0f;
-        //m_Lights.PointLights.push_back(light);
 
         m_CameraEntity = m_Scene.CreateEntity("Scene Camera");
         m_CameraEntity.AddComponent<CameraComponent>();
@@ -46,10 +31,10 @@ namespace RXNEngine {
         m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraControllerScript>();
 
 		m_ModelEntity = m_Scene.CreateEntity("Model Entity");
-		m_ModelEntity.AddComponent<MeshComponent>().ModelResource = m_Model;
+		m_ModelEntity.AddComponent<MeshComponent>().ModelResource = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);;
 
         m_SkyboxEntity = m_Scene.CreateEntity("Skybox Entity");
-		m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = m_Skybox;
+		m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = Cubemap::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
 	}
 
 	void EditorLayer::OnDetach()
@@ -61,8 +46,8 @@ namespace RXNEngine {
 
         m_Camera->OnUpdate(deltaTime);
 
-		m_Scene.OnUpdateEditor(deltaTime, *m_Camera, m_Framebuffer);
-		//m_Scene.OnUpdateRuntime(deltaTime, m_Framebuffer);
+		m_Scene.OnUpdateEditor(deltaTime, *m_Camera, m_RenderTarget);
+		//m_Scene.OnUpdateRuntime(deltaTime, m_RenderTarget);
 
         m_FPS = 1.0f / deltaTime;
 	}
@@ -147,17 +132,17 @@ namespace RXNEngine {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-        const auto& framebufferSpec = m_Framebuffer->GetSpecification();
+        const auto& renderTargetSpec = m_RenderTarget->GetSpecification();
 
-        if (framebufferSpec.Width != viewportSize.x || framebufferSpec.Height != viewportSize.y)
+        if (renderTargetSpec.Width != viewportSize.x || renderTargetSpec.Height != viewportSize.y)
         {
-            m_Framebuffer->Resize(viewportSize.x, viewportSize.y);
+            m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
             m_Camera->SetViewportSize(viewportSize.x, viewportSize.y);
 			m_Scene.OnViewportResize(viewportSize.x, viewportSize.y);
         }
 
-        uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
-        ImGui::Image((void*)textureID, ImVec2{ framebufferSpec.Width, framebufferSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        uint32_t textureID = m_RenderTarget->GetColorAttachmentRendererID();
+        ImGui::Image((void*)textureID, ImVec2{ renderTargetSpec.Width, renderTargetSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         ImGui::End();
         ImGui::PopStyleVar();
 

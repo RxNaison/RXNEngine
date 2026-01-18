@@ -5,12 +5,12 @@
 #include <vector>
 
 namespace RXNEngine {
-	class OpenGLTextureCube : public TextureCube
+	class OpenGLCubemap : public Cubemap
 	{
 	public:
-		OpenGLTextureCube(const std::vector<std::string>& paths);
-		OpenGLTextureCube(const std::string& path);
-		virtual ~OpenGLTextureCube();
+		OpenGLCubemap(const std::vector<std::string>& paths);
+		OpenGLCubemap(const std::string& path);
+		virtual ~OpenGLCubemap();
 
 		virtual uint32_t GetWidth() const override { return m_Specification.Width; }
 		virtual uint32_t GetHeight() const override { return m_Specification.Height; }
@@ -29,7 +29,7 @@ namespace RXNEngine {
 
 		virtual bool operator==(const Texture& other) const override
 		{
-			return m_RendererID == ((OpenGLTextureCube&)other).m_RendererID;
+			return m_RendererID == ((OpenGLCubemap&)other).m_RendererID;
 		}
 	private:
 		void CreateIrradianceMap();

@@ -1,5 +1,5 @@
 #include "rxnpch.h"
-#include "OpenGLTextureCube.h"
+#include "OpenGLCubemap.h"
 #include "RXNEngine/Renderer/VertexArray.h"
 
 #include <glad/glad.h>
@@ -94,7 +94,7 @@ namespace RXNEngine {
 	}
 
 
-	OpenGLTextureCube::OpenGLTextureCube(const std::vector<std::string>& paths)
+	OpenGLCubemap::OpenGLCubemap(const std::vector<std::string>& paths)
 	{
 		glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_RendererID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
@@ -133,7 +133,7 @@ namespace RXNEngine {
 		CreateBRDFLUT();
 	}
 
-	OpenGLTextureCube::OpenGLTextureCube(const std::string& path)
+	OpenGLCubemap::OpenGLCubemap(const std::string& path)
 	{
 		Ref<Texture2D> hdrTexture = Texture2D::Create(path);
 
@@ -197,7 +197,7 @@ namespace RXNEngine {
 		CreateBRDFLUT();
 	}
 
-	OpenGLTextureCube::~OpenGLTextureCube()
+	OpenGLCubemap::~OpenGLCubemap()
 	{
 		glDeleteTextures(1, &m_RendererID);
 		glDeleteTextures(1, &m_IrradianceMapID);
@@ -205,13 +205,13 @@ namespace RXNEngine {
 		glDeleteTextures(1, &m_BRDFLUTMapID);
 	}
 
-	void OpenGLTextureCube::Bind(uint32_t slot) const
+	void OpenGLCubemap::Bind(uint32_t slot) const
 	{
 		glBindTextureUnit(slot, m_RendererID);
 	}
 
 
-	void OpenGLTextureCube::CreateIrradianceMap()
+	void OpenGLCubemap::CreateIrradianceMap()
 	{
 		int res = 32;
 		uint32_t captureFBO, captureRBO;
@@ -264,7 +264,7 @@ namespace RXNEngine {
 		glDeleteRenderbuffers(1, &captureRBO);
 	}
 
-	void OpenGLTextureCube::CreatePrefilterMap()
+	void OpenGLCubemap::CreatePrefilterMap()
 	{
 		int res = 128;
 		uint32_t captureFBO, captureRBO;
@@ -333,7 +333,7 @@ namespace RXNEngine {
 		glDeleteRenderbuffers(1, &captureRBO);
 	}
 
-	void OpenGLTextureCube::CreateBRDFLUT()
+	void OpenGLCubemap::CreateBRDFLUT()
 	{
 		glGenTextures(1, &m_BRDFLUTMapID);
 		glBindTexture(GL_TEXTURE_2D, m_BRDFLUTMapID);

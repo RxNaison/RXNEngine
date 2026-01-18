@@ -1,14 +1,14 @@
 #pragma once
 
-#include "RXNEngine/Renderer/Framebuffer.h"
+#include "RXNEngine/Renderer/RenderTarget.h"
 
 namespace RXNEngine {
 
-	class OpenGLFramebuffer : public Framebuffer
+	class OpenGLRenderTarget : public RenderTarget
 	{
 	public:
-		OpenGLFramebuffer(const FramebufferSpecification& spec);
-		virtual ~OpenGLFramebuffer();
+		OpenGLRenderTarget(const RenderTargetSpecification& spec);
+		virtual ~OpenGLRenderTarget();
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
@@ -20,15 +20,15 @@ namespace RXNEngine {
 
 		virtual uint32_t GetColorAttachmentRendererID(uint32_t index = 0) const override { RXN_CORE_ASSERT(index < m_ColorAttachments.size()); return m_ColorAttachments[index]; }
 
-		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
+		virtual const RenderTargetSpecification& GetSpecification() const override { return m_Specification; }
 	private:
 		void UpdateState();
 	private:
 		uint32_t m_RendererID = 0;
-		FramebufferSpecification m_Specification;
+		RenderTargetSpecification m_Specification;
 
-		std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
-		FramebufferTextureSpecification m_DepthAttachmentSpecification = FramebufferTextureFormat::None;
+		std::vector<RenderTargetTextureSpecification> m_ColorAttachmentSpecifications;
+		RenderTargetTextureSpecification m_DepthAttachmentSpecification = RenderTargetTextureFormat::None;
 
 		std::vector<uint32_t> m_ColorAttachments;
 		uint32_t m_DepthAttachment = 0;

@@ -57,11 +57,11 @@ namespace RXNEngine {
 		static Ref<Texture2D> BlueTexture();
 	};
 
-	class TextureCube : public Texture
+	class Cubemap : public Texture
 	{
 	public:
-		static Ref<TextureCube> Create(const std::vector<std::string>& paths);
-		static Ref<TextureCube> Create(const std::string& path);
+		static Ref<Cubemap> Create(const std::vector<std::string>& paths);
+		static Ref<Cubemap> Create(const std::string& path);
 
 		virtual uint32_t GetIrradianceRendererID() const { return 0; }
 		virtual uint32_t GetPrefilterRendererID() const { return 0; }

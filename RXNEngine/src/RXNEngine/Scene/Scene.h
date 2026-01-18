@@ -3,7 +3,7 @@
 #include "entt.hpp"
 #include "RXNEngine/Core/UUID.h"
 #include "RXNEngine/Renderer/EditorCamera.h"
-#include "RXNEngine/Renderer/Framebuffer.h"
+#include "RXNEngine/Renderer/RenderTarget.h"
 
 namespace RXNEngine {
 
@@ -19,8 +19,8 @@ namespace RXNEngine {
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
-		void OnUpdateRuntime(float deltaTime, Ref<Framebuffer>& framebuffer);
-		void OnUpdateEditor(float deltaTime, EditorCamera& camera, Ref<Framebuffer>& framebuffer);
+		void OnUpdateSimulation(float deltaTime, Ref<RenderTarget>& renderTarget);
+		void OnUpdateEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 

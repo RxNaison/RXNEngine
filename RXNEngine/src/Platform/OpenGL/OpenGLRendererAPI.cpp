@@ -44,7 +44,7 @@ namespace RXNEngine {
 		glEnable(GL_CULL_FACE);
 	}
 
-	void OpenGLRendererAPI::BindDefaultFramebuffer()
+	void OpenGLRendererAPI::BindDefaultRenderTarget()
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}

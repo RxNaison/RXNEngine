@@ -4,7 +4,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "Light.h"
-#include "Framebuffer.h"
+#include "RenderTarget.h"
 #include "EditorCamera.h"
 #include "RendererAPI.h"
 #include "Model.h"
@@ -30,25 +30,25 @@ namespace RXNEngine {
         static void OnWindowResize(uint32_t width, uint32_t height);
 
         static void BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
-            const Ref<TextureCube>& environment = nullptr, const Ref<Framebuffer>& targetFramebuffer = nullptr);
+            const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr);
 
         static void BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
-            const Ref<TextureCube>& environment = nullptr, const Ref<Framebuffer>& targetFramebuffer = nullptr);
+            const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr);
 
         static void EndScene();
 
         static void Submit(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4& transform = glm::mat4(1.0f));
 
-        static void DrawSkybox(const Ref<TextureCube>& skybox, const EditorCamera& camera);
-        static void DrawSkybox(const Ref<TextureCube>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
-        static void DrawSkybox(const Ref<TextureCube>& skybox, const Camera& camera, const glm::mat4& transform);
+        static void DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera);
+        static void DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
+        static void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& transform);
 
-        static void DrawModel(const Model& model, const glm::mat4& transform);
+        static void SubmitMesh(const Model& model, const glm::mat4& transform, const Ref<Material>& material = nullptr);
 
         static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
     private:
         static void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
-            const LightEnvironment& lights, const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer);
+            const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget);
         static void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
         static void FlushBatch(const Ref<Mesh>& mesh, const Ref<Material>& material, const std::vector<glm::mat4>& transforms);
         static void Flush();

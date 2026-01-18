@@ -35,7 +35,7 @@ namespace RXNEngine {
         m_Registry.destroy(entity);
     }
 
-    void Scene::OnUpdateEditor(float deltaTime, EditorCamera& camera, Ref<Framebuffer>& framebuffer)
+    void Scene::OnUpdateEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget)
     {
         LightEnvironment lightEnv;
         {
@@ -66,7 +66,7 @@ namespace RXNEngine {
             }
         }
 
-        Ref<TextureCube> skybox = nullptr;
+        Ref<Cubemap> skybox = nullptr;
         {
             auto view = m_Registry.view<SkyboxComponent>();
             for (auto entity : view)
@@ -79,14 +79,14 @@ namespace RXNEngine {
             }
         }
 
-        Renderer::BeginScene(camera, lightEnv, skybox, framebuffer);
+        Renderer::BeginScene(camera, lightEnv, skybox, renderTarget);
 
         auto group = m_Registry.group<TransformComponent, MeshComponent>();
         for (auto entity : group)
         {
             auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
             if (mesh.ModelResource)
-                Renderer::DrawModel(*mesh.ModelResource, transform.GetTransform());
+                Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
         }
 
         if(skybox)
@@ -95,7 +95,7 @@ namespace RXNEngine {
         Renderer::EndScene();
     }
 
-    void Scene::OnUpdateRuntime(float deltaTime, Ref<Framebuffer>& framebuffer)
+    void Scene::OnUpdateSimulation(float deltaTime, Ref<RenderTarget>& renderTarget)
     {
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
             {
@@ -141,7 +141,7 @@ namespace RXNEngine {
             }
         }
 
-        Ref<TextureCube> skybox = nullptr;
+        Ref<Cubemap> skybox = nullptr;
         {
             auto view = m_Registry.view<SkyboxComponent>();
             for (auto entity : view)
@@ -173,14 +173,14 @@ namespace RXNEngine {
 
         if (ActiveSceneCamera)
         {
-            Renderer::BeginScene(*ActiveSceneCamera, ActiveSceneCameraTransform, lightEnv, skybox, framebuffer);
+            Renderer::BeginScene(*ActiveSceneCamera, ActiveSceneCameraTransform, lightEnv, skybox, renderTarget);
 
             auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
             for (auto entity : group)
             {
                 auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
                 if (mesh.ModelResource)
-                    Renderer::DrawModel(*mesh.ModelResource, transform.GetTransform());
+                    Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
             }
 
             if(skybox)

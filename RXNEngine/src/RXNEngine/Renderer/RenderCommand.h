@@ -73,9 +73,9 @@ namespace RXNEngine {
 			s_RendererAPI->SetCullFace(face);
 		}
 
-		inline static void BindDefaultFramebuffer()
+		inline static void BindDefaultRenderTarget()
 		{
-			s_RendererAPI->BindDefaultFramebuffer();
+			s_RendererAPI->BindDefaultRenderTarget();
 		}
 	private:
 		static Scope<RendererAPI> s_RendererAPI;

@@ -60,7 +60,7 @@ namespace RXNEngine {
 	struct MeshComponent
 	{
 		Ref<Model> ModelResource;
-		// In the future: Material overrides can go here
+		Ref<Material> MaterialInstance;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
@@ -92,7 +92,7 @@ namespace RXNEngine {
 
 	struct SkyboxComponent
 	{
-		Ref<TextureCube> Texture;
+		Ref<Cubemap> Texture;
 		float Intensity = 1.0f;
 
 		SkyboxComponent() = default;

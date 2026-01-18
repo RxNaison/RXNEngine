@@ -132,136 +132,105 @@ namespace RXNEngine {
 		Ref<Mesh> rxnMesh = CreateRef<Mesh>(vao);
 		rxnMesh->SetAABB({ minAABB, maxAABB });
 
-		Ref<Material> rxnMaterial = CreateRef<Material>(m_DefaultShader);
+		Ref<Material> rxnMaterial = Material::CreateDefault(m_DefaultShader);
 
 		if (mesh->mMaterialIndex >= 0)
 		{
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-			Ref<Texture2D> albedoMap = LoadMaterialTexture(material, aiTextureType_BASE_COLOR, scene);
-
-			if (!albedoMap)
-				albedoMap = LoadMaterialTexture(material, aiTextureType_DIFFUSE, scene);
-
+			Ref<Texture2D> albedoMap = LoadTextureWithFallback(material, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, scene);
 			if (albedoMap)
-				rxnMaterial->SetTexture("u_AlbedoMap", albedoMap);
-			else
-				rxnMaterial->SetTexture("u_AlbedoMap", Texture2D::WhiteTexture());
+				rxnMaterial->SetAlbedoMap(albedoMap);
 
 
-			Ref<Texture2D> normalMap = LoadMaterialTexture(material, aiTextureType_NORMALS, scene);
-
-			if (!normalMap)
-				normalMap = LoadMaterialTexture(material, aiTextureType_HEIGHT, scene);
-
+			Ref<Texture2D> normalMap = LoadTextureWithFallback(material, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, scene);
 			if (normalMap)
+				rxnMaterial->SetNormalMap(normalMap);
+
+
+			Ref<Texture2D> metalRoughMap = LoadTextureWithFallback(material, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS }, scene);
+			if (!metalRoughMap)
+				metalRoughMap = LoadTextureWithFallback(material, { aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene);
+
+			if (metalRoughMap) rxnMaterial->SetMetalnessRoughnessMap(metalRoughMap);
+
+
+			Ref<Texture2D> aoMap = LoadTextureWithFallback(material, { aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP, aiTextureType_AMBIENT }, scene);
+			if (aoMap) rxnMaterial->SetAOMap(aoMap);
+
+			Ref<Texture2D> emissiveMap = LoadTextureWithFallback(material, { aiTextureType_EMISSIVE }, scene);
+			if (emissiveMap) rxnMaterial->SetEmissiveMap(emissiveMap);
+
+			aiColor4D color(1.0f, 1.0f, 1.0f, 1.0f);
+
+			if (material->Get(AI_MATKEY_BASE_COLOR, color) != AI_SUCCESS)
+				material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+
+			rxnMaterial->SetAlbedoColor(glm::vec4(color.r, color.g, color.b, color.a));
+
+			aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
+			if (material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+				rxnMaterial->SetEmissiveColor(glm::vec3(emissiveColor.r, emissiveColor.g, emissiveColor.b));
+
+			float roughness = 0.5f;
+			float metalness = 0.0f;
+
+			if (metalRoughMap) metalness = 1.0f;
+
+			if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != AI_SUCCESS)
 			{
-				rxnMaterial->SetTexture("u_NormalMap", normalMap);
-				rxnMaterial->SetInt("u_UseNormalMap", 1);
+				float shininess;
+				if (material->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS)
+					roughness = 1.0f - (glm::sqrt(shininess) / 10.0f);
 			}
-			else
-			{
-				rxnMaterial->SetTexture("u_NormalMap", Texture2D::BlueTexture());
-				rxnMaterial->SetInt("u_UseNormalMap", 0);
-			}
+			rxnMaterial->SetRoughness(roughness);
 
-			Ref<Texture2D> metallicMap = LoadMaterialTexture(material, aiTextureType_METALNESS, scene);
-
-			if (!metallicMap)
-				metallicMap = LoadMaterialTexture(material, aiTextureType_SPECULAR, scene);
-
-			if (metallicMap)
-				rxnMaterial->SetTexture("u_MetallicMap", metallicMap);
-			else
-				rxnMaterial->SetTexture("u_MetallicMap", Texture2D::BlackTexture());
-
-
-			Ref<Texture2D> roughnessMap = LoadMaterialTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, scene);
-
-			if (!roughnessMap)
-				roughnessMap = LoadMaterialTexture(material, aiTextureType_SHININESS, scene);
-
-			if (!roughnessMap)
-				roughnessMap = LoadMaterialTexture(material, aiTextureType_SPECULAR, scene);
-
-			if (roughnessMap)
-				rxnMaterial->SetTexture("u_RoughnessMap", roughnessMap);
-			else
-				rxnMaterial->SetTexture("u_RoughnessMap", Texture2D::WhiteTexture());
-
-
-			Ref<Texture2D> aoMap = LoadMaterialTexture(material, aiTextureType_AMBIENT_OCCLUSION, scene);
-			if (!aoMap)
-				aoMap = LoadMaterialTexture(material, aiTextureType_AMBIENT, scene);
-
-			if (aoMap)
-				rxnMaterial->SetTexture("u_AOMap", aoMap);
-			else
-				rxnMaterial->SetTexture("u_AOMap", Texture2D::WhiteTexture());
-
-			rxnMaterial->SetFloat("u_Metallic", 1.0f);
-			rxnMaterial->SetFloat("u_Roughness", 1.0f);
-			rxnMaterial->SetFloat("u_AO", 1.0f);
-			aiColor4D baseColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-			float floatVal;
-			if (material->Get(AI_MATKEY_METALLIC_FACTOR, floatVal) == AI_SUCCESS)
-				rxnMaterial->SetFloat("u_Metallic", floatVal);
-
-			if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, floatVal) == AI_SUCCESS)
-				rxnMaterial->SetFloat("u_Roughness", floatVal);
-
-			if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) != AI_SUCCESS)
-				material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor);
-
-			rxnMaterial->SetFloat4("u_AlbedoColor", glm::vec4(baseColor.r, baseColor.g, baseColor.b, baseColor.a));
-
-			Ref<Texture2D> opacityMap = LoadMaterialTexture(material, aiTextureType_OPACITY, scene);
-			if (opacityMap)
-			{
-				rxnMaterial->SetTransparent(true);
-			}
+			if (material->Get(AI_MATKEY_METALLIC_FACTOR, metalness) != AI_SUCCESS)
+				metalness = 0.0f;
+			
+			rxnMaterial->SetMetalness(metalness);
 
 			float opacity = 1.0f;
 			if (material->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
 			{
-				if (opacity < 1.0f)
+				if (opacity < 1.0f || color.a < 1.0f)
 					rxnMaterial->SetTransparent(true);
 			}
-
 			aiString alphaMode;
 			if (material->Get("$mat.gltf.alphaMode", 0, 0, alphaMode) == AI_SUCCESS)
 			{
 				std::string mode = alphaMode.C_Str();
-
-				if (mode == "BLEND")
+				if (mode == "BLEND" || mode == "MASK")
 				{
 					rxnMaterial->SetTransparent(true);
 				}
-				else if (mode == "MASK")
+			}
+			else
+			{
+				float opacity = 1.0f;
+				material->Get(AI_MATKEY_OPACITY, opacity);
+
+				aiColor4D color;
+				material->Get(AI_MATKEY_BASE_COLOR, color);
+
+				if (opacity < 1.0f || color.a < 1.0f)
 				{
 					rxnMaterial->SetTransparent(true);
-					// read AI_MATKEY_GLTF_ALPHACUTOFF
 				}
 			}
 		}
 		else
 		{
-			rxnMaterial = std::make_shared<Material>(m_DefaultShader);
-			rxnMaterial->SetTexture("u_AlbedoMap", Texture2D::WhiteTexture());
-			rxnMaterial->SetTexture("u_NormalMap", Texture2D::WhiteTexture());
-			rxnMaterial->SetTexture("u_MetallicMap", Texture2D::WhiteTexture());
-			rxnMaterial->SetTexture("u_RoughnessMap", Texture2D::WhiteTexture());
-			rxnMaterial->SetTexture("u_AOMap", Texture2D::WhiteTexture());
-
-			rxnMaterial->SetFloat("u_Metallic", 0.0f);
-			rxnMaterial->SetFloat("u_Roughness", 0.5f);
+			rxnMaterial->SetAlbedoColor(glm::vec4(1.0f));
+			rxnMaterial->SetRoughness(0.8f);
+			rxnMaterial->SetMetalness(0.0f);
+			rxnMaterial->SetAO(1.0f);
 		}
 
 		ModelSubmesh submesh;
 		submesh.Geometry = rxnMesh;
 		submesh.Surface = rxnMaterial;
-		submesh.LocalTransform = transform; 
+		submesh.LocalTransform = transform;
 		submesh.BoundingBox = { minAABB, maxAABB };
 
 		m_Submeshes.push_back(submesh);
@@ -308,6 +277,16 @@ namespace RXNEngine {
 					return Texture2D::WhiteTexture();
 				}
 			}
+		}
+		return nullptr;
+	}
+
+	Ref<Texture2D> Model::LoadTextureWithFallback(aiMaterial* mat, const std::vector<aiTextureType>& types, const aiScene* scene)
+	{
+		for (auto type : types)
+		{
+			if (mat->GetTextureCount(type) > 0)
+				return LoadMaterialTexture(mat, type, scene);
 		}
 		return nullptr;
 	}

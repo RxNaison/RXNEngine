@@ -3,7 +3,7 @@
 
 #include "RXNEngine/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
-#include "Platform/OpenGL/OpenGLTextureCube.h"
+#include "Platform/OpenGL/OpenGLCubemap.h"
 
 namespace RXNEngine {
 
@@ -74,21 +74,21 @@ namespace RXNEngine {
 	{
 		switch (Renderer::GetAPI())
 		{
-		case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
-		case RendererAPI::API::OpenGL:
-		{
-			TextureSpecification spec;
-			spec.GenerateMips = false;
-
-			static Ref<Texture2D> s_BlackTexture;
-			if (!s_BlackTexture)
+			case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
+			case RendererAPI::API::OpenGL:
 			{
-				s_BlackTexture = CreateRef<OpenGLTexture2D>(spec);
-				uint32_t black = 0x00000000;
-				s_BlackTexture->SetData(&black, sizeof(uint32_t));
+				TextureSpecification spec;
+				spec.GenerateMips = false;
+
+				static Ref<Texture2D> s_BlackTexture;
+				if (!s_BlackTexture)
+				{
+					s_BlackTexture = CreateRef<OpenGLTexture2D>(spec);
+					uint32_t black = 0x00000000;
+					s_BlackTexture->SetData(&black, sizeof(uint32_t));
+				}
+				return s_BlackTexture;
 			}
-			return s_BlackTexture;
-		}
 		}
 		RXN_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -105,14 +105,14 @@ namespace RXNEngine {
 				TextureSpecification spec;
 				spec.GenerateMips = false;
 
-				static Ref<Texture2D> s_WhiteTexture;
-				if (!s_WhiteTexture)
+				static Ref<Texture2D> s_BlueTexture;
+				if (!s_BlueTexture)
 				{
-					s_WhiteTexture = CreateRef<OpenGLTexture2D>(spec);
+					s_BlueTexture = CreateRef<OpenGLTexture2D>(spec);
 					uint32_t white = 0xffff8080;
-					s_WhiteTexture->SetData(&white, sizeof(uint32_t));
+					s_BlueTexture->SetData(&white, sizeof(uint32_t));
 				}
-				return s_WhiteTexture;
+				return s_BlueTexture;
 			}
 		}
 
@@ -120,24 +120,24 @@ namespace RXNEngine {
 		return nullptr;
 	}
 
-	Ref<TextureCube> TextureCube::Create(const std::vector<std::string>& paths)
+	Ref<Cubemap> Cubemap::Create(const std::vector<std::string>& paths)
 	{
 		switch (Renderer::GetAPI())
 		{
 			case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
-			case RendererAPI::API::OpenGL:  return CreateRef<OpenGLTextureCube>(paths);
+			case RendererAPI::API::OpenGL:  return CreateRef<OpenGLCubemap>(paths);
 		}
 
 		RXN_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
 	}
 
-	Ref<TextureCube> TextureCube::Create(const std::string& path)
+	Ref<Cubemap> Cubemap::Create(const std::string& path)
 	{
 		switch (Renderer::GetAPI())
 		{
-		case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
-		case RendererAPI::API::OpenGL:  return CreateRef<OpenGLTextureCube>(path);
+			case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
+			case RendererAPI::API::OpenGL:  return CreateRef<OpenGLCubemap>(path);
 		}
 
 		RXN_CORE_ASSERT(false, "Unknown RendererAPI!");

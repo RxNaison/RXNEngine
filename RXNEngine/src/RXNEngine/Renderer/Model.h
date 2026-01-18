@@ -29,6 +29,7 @@ namespace RXNEngine {
 		void ProcessMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform);
 
 		Ref<Texture2D> LoadMaterialTexture(aiMaterial* mat, aiTextureType type, const aiScene* scene);
+		Ref<Texture2D> LoadTextureWithFallback(aiMaterial* mat, const std::vector<aiTextureType>& types, const aiScene* scene);
 
 	private:
 		std::vector<ModelSubmesh> m_Submeshes;

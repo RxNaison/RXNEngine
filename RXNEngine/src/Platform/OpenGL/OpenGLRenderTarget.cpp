@@ -1,5 +1,5 @@
 #include "rxnpch.h"
-#include "Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Platform/OpenGL/OpenGLRenderTarget.h"
 
 #include <glad/glad.h>
 
@@ -64,24 +64,24 @@ namespace RXNEngine {
 			glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, TextureTarget(multisampled), id, 0);
 		}
 
-		static bool IsDepthFormat(FramebufferTextureFormat format)
+		static bool IsDepthFormat(RenderTargetTextureFormat format)
 		{
 			switch (format)
 			{
-				case FramebufferTextureFormat::DEPTH24STENCIL8:  return true;
+				case RenderTargetTextureFormat::DEPTH24STENCIL8:  return true;
 			}
 
 			return false;
 		}
 
-		static GLenum TextureFormatToOpenGL(FramebufferTextureFormat format)
+		static GLenum TextureFormatToOpenGL(RenderTargetTextureFormat format)
 		{
 			switch (format)
 			{
-				case FramebufferTextureFormat::RGBA8:       return GL_RGBA8;
-				case FramebufferTextureFormat::RGBA16F:     return GL_RGBA16F;
-				case FramebufferTextureFormat::RGBA32F:     return GL_RGBA32F;
-				case FramebufferTextureFormat::RED_INTEGER: return GL_RED_INTEGER;
+				case RenderTargetTextureFormat::RGBA8:       return GL_RGBA8;
+				case RenderTargetTextureFormat::RGBA16F:     return GL_RGBA16F;
+				case RenderTargetTextureFormat::RGBA32F:     return GL_RGBA32F;
+				case RenderTargetTextureFormat::RED_INTEGER: return GL_RED_INTEGER;
 			}
 
 			RXN_CORE_ASSERT(false);
@@ -90,7 +90,7 @@ namespace RXNEngine {
 
 	}
 
-	OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpecification& spec)
+	OpenGLRenderTarget::OpenGLRenderTarget(const RenderTargetSpecification& spec)
 		: m_Specification(spec)
 	{
 		for (auto spec : m_Specification.Attachments.Attachments)
@@ -104,14 +104,14 @@ namespace RXNEngine {
 		UpdateState();
 	}
 
-	OpenGLFramebuffer::~OpenGLFramebuffer()
+	OpenGLRenderTarget::~OpenGLRenderTarget()
 	{
 		glDeleteFramebuffers(1, &m_RendererID);
 		glDeleteTextures(m_ColorAttachments.size(), m_ColorAttachments.data());
 		glDeleteTextures(1, &m_DepthAttachment);
 	}
 
-	void OpenGLFramebuffer::UpdateState()
+	void OpenGLRenderTarget::UpdateState()
 	{
 		if (m_RendererID)
 		{
@@ -137,22 +137,22 @@ namespace RXNEngine {
 			{
 				Utils::BindTexture(multisample, m_ColorAttachments[i]);
 
-				FramebufferTextureFormat currentTextureFormat = m_ColorAttachmentSpecifications[i].TextureFormat;
+				RenderTargetTextureFormat currentTextureFormat = m_ColorAttachmentSpecifications[i].TextureFormat;
 
-				if (currentTextureFormat == FramebufferTextureFormat::RED_INTEGER)
+				if (currentTextureFormat == RenderTargetTextureFormat::RED_INTEGER)
 					Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
 
 				Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, Utils::TextureFormatToOpenGL(currentTextureFormat), GL_RGBA, m_Specification.Width, m_Specification.Height, i);
 			}
 		}
 
-		if (m_DepthAttachmentSpecification.TextureFormat != FramebufferTextureFormat::None)
+		if (m_DepthAttachmentSpecification.TextureFormat != RenderTargetTextureFormat::None)
 		{
 			Utils::CreateTextures(multisample, &m_DepthAttachment, 1);
 			Utils::BindTexture(multisample, m_DepthAttachment);
 			switch (m_DepthAttachmentSpecification.TextureFormat)
 			{
-				case FramebufferTextureFormat::DEPTH24STENCIL8:
+				case RenderTargetTextureFormat::DEPTH24STENCIL8:
 					Utils::AttachDepthTexture(m_DepthAttachment, m_Specification.Samples, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, m_Specification.Width, m_Specification.Height);
 					break;
 			}
@@ -174,18 +174,18 @@ namespace RXNEngine {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void OpenGLFramebuffer::Bind()
+	void OpenGLRenderTarget::Bind()
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 		glViewport(0, 0, m_Specification.Width, m_Specification.Height);
 	}
 
-	void OpenGLFramebuffer::Unbind()
+	void OpenGLRenderTarget::Unbind()
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height)
+	void OpenGLRenderTarget::Resize(uint32_t width, uint32_t height)
 	{
 		if (width == 0 || height == 0)
 		{
@@ -198,7 +198,7 @@ namespace RXNEngine {
 		UpdateState();
 	}
 
-	int OpenGLFramebuffer::ReadPixel(uint32_t attachmentIndex, int x, int y)
+	int OpenGLRenderTarget::ReadPixel(uint32_t attachmentIndex, int x, int y)
 	{
 		RXN_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
 
@@ -209,7 +209,7 @@ namespace RXNEngine {
 
 	}
 
-	void OpenGLFramebuffer::ClearAttachment(uint32_t attachmentIndex, int value)
+	void OpenGLRenderTarget::ClearAttachment(uint32_t attachmentIndex, int value)
 	{
 		RXN_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
 

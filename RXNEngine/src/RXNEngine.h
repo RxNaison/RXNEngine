@@ -11,7 +11,7 @@
 
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
-#include "RXNEngine/Renderer/Framebuffer.h"
+#include "RXNEngine/Renderer/RenderTarget.h"
 
 #include "RXNEngine/Renderer/Buffer.h"
 #include "RXNEngine/Renderer/Shader.h"

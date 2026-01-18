@@ -18,21 +18,16 @@ namespace RXNEngine {
 		virtual void OnImGuiRenderer() override;
 
 	private:
-		Ref<Framebuffer> m_Framebuffer;
+		Ref<RenderTarget> m_RenderTarget;
 		Ref<Shader> m_ModelShader;
-		Ref<Model> m_Model;
-		Ref<Model> m_Model1;
-		Ref<Model> m_CubeModel;
 		Ref<EditorCamera> m_Camera;
-		Ref<TextureCube> m_Skybox;
-		LightEnvironment m_Lights;
 
 		Scene m_Scene;
 		Entity m_CameraEntity;
 		Entity m_ModelEntity;
 		Entity m_SkyboxEntity;
 
-		float m_FPS;
+		uint32_t m_FPS;
 	};
 
 	class CameraControllerScript : public ScriptableEntity

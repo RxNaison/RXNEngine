@@ -44,7 +44,7 @@ namespace RXNEngine {
 
     struct RendererData
     {
-        Ref<Framebuffer> CurrentFramebuffer = nullptr;
+        Ref<RenderTarget> CurrentRenderTarget = nullptr;
         std::vector<RenderCommandPacket> OpaqueQueue;
         std::vector<RenderCommandPacket> TransparentQueue;
         glm::mat4 ViewProjectionMatrix;
@@ -69,7 +69,7 @@ namespace RXNEngine {
         Ref<VertexArray> SkyboxVAO;
         Ref<Shader> SkyboxShader;
 
-        Ref<TextureCube> SceneEnvironment;
+        Ref<Cubemap> SceneEnvironment;
 		ShadowData ShadowData;
     };
 
@@ -95,7 +95,7 @@ namespace RXNEngine {
 
     void CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir)
     {
-        float aspect = (float)s_Data.CurrentFramebuffer->GetSpecification().Width / (float)s_Data.CurrentFramebuffer->GetSpecification().Height;
+        float aspect = (float)s_Data.CurrentRenderTarget->GetSpecification().Width / (float)s_Data.CurrentRenderTarget->GetSpecification().Height;
         float fov = s_Data.CameraFOV < 0.01f ? glm::radians(45.0f) : s_Data.CameraFOV;
         float nearPlane = 0.1f;
 
@@ -224,20 +224,20 @@ namespace RXNEngine {
     }
 
     void Renderer::BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
-        const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer)
+        const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
     {
-        PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, targetFramebuffer);
+        PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, renderTarget);
     }
 
     void Renderer::BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
-        const Ref<TextureCube>& environment, const Ref<Framebuffer>& targetFramebuffer)
+        const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
     {
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
         glm::mat4 view = glm::inverse(transform);
         glm::vec3 cameraPos = glm::vec3(transform[3]);
         float fov = 2.0f * glm::atan(1.0f / camera.GetProjection()[1][1]);
 
-        PrepareScene(viewProj, view, cameraPos, fov, lights, environment, targetFramebuffer);
+        PrepareScene(viewProj, view, cameraPos, fov, lights, environment, renderTarget);
     }
 
     void Renderer::PrepareScene(
@@ -246,8 +246,8 @@ namespace RXNEngine {
         const glm::vec3& cameraPosition,
         float cameraFOV,
         const LightEnvironment& lights,
-        const Ref<TextureCube>& environment,
-        const Ref<Framebuffer>& targetFramebuffer)
+        const Ref<Cubemap>& environment,
+        const Ref<RenderTarget>& renderTarget)
     {
 
         if (environment)
@@ -259,20 +259,20 @@ namespace RXNEngine {
             RenderCommand::BindTextureID(12, environment->GetBRDFLUTRendererID());
         }
 
-        s_Data.CurrentFramebuffer = targetFramebuffer;
+        s_Data.CurrentRenderTarget = renderTarget;
 
-        if (s_Data.CurrentFramebuffer)
+        if (s_Data.CurrentRenderTarget)
         {
-            s_Data.CurrentFramebuffer->Bind();
+            s_Data.CurrentRenderTarget->Bind();
             RenderCommand::SetViewport(0, 0,
-                s_Data.CurrentFramebuffer->GetSpecification().Width,
-                s_Data.CurrentFramebuffer->GetSpecification().Height);
+                s_Data.CurrentRenderTarget->GetSpecification().Width,
+                s_Data.CurrentRenderTarget->GetSpecification().Height);
             RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
             RenderCommand::Clear();
         }
         else
         {
-			RenderCommand::BindDefaultFramebuffer();
+			RenderCommand::BindDefaultRenderTarget();
 
             //RenderCommand::SetViewport(0, 0, s_Data.WindowWidth, s_Data.WindowHeight);
 
@@ -333,14 +333,14 @@ namespace RXNEngine {
     {
         Flush();
 
-        if (s_Data.CurrentFramebuffer)
+        if (s_Data.CurrentRenderTarget)
         {
-            s_Data.CurrentFramebuffer->Unbind();
-            s_Data.CurrentFramebuffer = nullptr;
+            s_Data.CurrentRenderTarget->Unbind();
+            s_Data.CurrentRenderTarget = nullptr;
         }
     }
 
-    void Renderer::DrawModel(const Model& model, const glm::mat4& transform)
+    void Renderer::SubmitMesh(const Model& model, const glm::mat4& transform, const Ref<Material>& material)
     {
         for (const auto& submesh : model.GetSubmeshes())
         {
@@ -350,17 +350,17 @@ namespace RXNEngine {
         }
     }
 
-    void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const EditorCamera& camera)
+    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera)
     {
         DrawSkybox(skybox, camera.GetViewMatrix(), camera.GetProjection());
     }
 
-    void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const Camera& camera, const glm::mat4& transform)
+    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& transform)
     {
         DrawSkybox(skybox, glm::inverse(transform), camera.GetProjection());
     }
 
-    void Renderer::DrawSkybox(const Ref<TextureCube>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
     {
         RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
 
@@ -387,12 +387,12 @@ namespace RXNEngine {
 
         FlushShadows();
 
-        if (s_Data.CurrentFramebuffer) s_Data.CurrentFramebuffer->Bind();
-        else RenderCommand::BindDefaultFramebuffer();
+        if (s_Data.CurrentRenderTarget) s_Data.CurrentRenderTarget->Bind();
+        else RenderCommand::BindDefaultRenderTarget();
 
         RenderCommand::SetViewport(0, 0, 
-            s_Data.CurrentFramebuffer ? s_Data.CurrentFramebuffer->GetSpecification().Width : 1280, 
-            s_Data.CurrentFramebuffer ? s_Data.CurrentFramebuffer->GetSpecification().Height : 720);
+            s_Data.CurrentRenderTarget ? s_Data.CurrentRenderTarget->GetSpecification().Width : 1280,
+            s_Data.CurrentRenderTarget ? s_Data.CurrentRenderTarget->GetSpecification().Height : 720);
 
         s_Data.ShadowData.ShadowTarget->BindRead(8);
 
@@ -455,6 +455,8 @@ namespace RXNEngine {
 
         s_Data.InstanceVertexBuffer->SetData(transforms.data(), transforms.size() * sizeof(glm::mat4));
 
+        material->Bind();
+
         Ref<Shader> shader = material->GetShader();
         if (s_Data.CurrentShaderID != shader->GetRendererID())
         {
@@ -465,35 +467,8 @@ namespace RXNEngine {
             shader->SetMat4("u_View", s_Data.ViewMatrix);
         }
 
-        for (auto& [name, val] : material->m_UniformsInt)
-            shader->SetInt(name, val);
-        for (auto& [name, val] : material->m_UniformsFloat)
-            shader->SetFloat(name, val);
-        for (auto& [name, val] : material->m_UniformsFloat3)
-            shader->SetFloat3(name, val);
-        for (auto& [name, val] : material->m_UniformsFloat4)
-            shader->SetFloat4(name, val);
-        for (auto& [name, val] : material->m_UniformsMat4)
-            shader->SetMat4(name, val);
-
-        uint32_t slotCounter = 0;
-        for (auto& [name, texture] : material->m_Textures)
-        {
-            if (slotCounter >= 31) break;
-            uint32_t texID = texture->GetRendererID();
-            if (s_Data.TextureSlots[slotCounter] != texID)
-            {
-                texture->Bind(slotCounter);
-                s_Data.TextureSlots[slotCounter] = texID;
-            }
-            shader->SetInt(name, slotCounter);
-            slotCounter++;
-        }
-
         mesh->GetVertexArray()->Bind();
-
         s_Data.InstanceVertexBuffer->Bind();
-
         RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transforms.size());
     }
 
