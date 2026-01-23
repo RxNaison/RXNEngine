@@ -40,8 +40,8 @@ namespace RXNEngine {
         static void Submit(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4& transform = glm::mat4(1.0f));
 
         static void DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera);
-        static void DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
-        static void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& transform);
+        static void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& cameraTransform);
+        static void DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& cameraViewMatrix, const glm::mat4& cameraProjectionMatrix);
 
         static void SubmitMesh(const Model& model, const glm::mat4& transform, const Ref<Material>& material = nullptr);
 

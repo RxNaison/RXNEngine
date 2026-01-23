@@ -12,15 +12,15 @@ namespace RXNEngine {
 		SceneCamera();
 		virtual ~SceneCamera() = default;
 
-		void SetPerspective(float verticalFOV, float nearClip, float farClip);
+		void SetPerspective(float FOV, float nearClip, float farClip);
 		void SetOrthographic(float size, float nearClip, float farClip);
 
 		void SetViewportSize(uint32_t width, uint32_t height);
 
-		float GetPerspectiveVerticalFOV() const { return m_PerspectiveFOV; }
+		float GetPerspectiveFOV() const { return m_PerspectiveFOV; }
 		float GetPerspectiveNearClip() const { return m_PerspectiveNear; }
 		float GetPerspectiveFarClip() const { return m_PerspectiveFar; }
-		void SetPerspectiveVerticalFOV(float verticalFov) { m_PerspectiveFOV = verticalFov; RecalculateProjection(); }
+		void SetPerspectiveFOV(float Fov) { m_PerspectiveFOV = Fov; RecalculateProjection(); }
 		void SetPerspectiveNearClip(float nearClip) { m_PerspectiveNear = nearClip; RecalculateProjection(); }
 		void SetPerspectiveFarClip(float farClip) { m_PerspectiveFar = farClip; RecalculateProjection(); }
 

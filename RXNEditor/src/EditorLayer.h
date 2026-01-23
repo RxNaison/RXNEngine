@@ -1,8 +1,11 @@
 #pragma once
-#include "RXNEngine.h"
+#include <RXNEngine.h>
 
+#include "SceneHierarchyPanel.h"
 
-namespace RXNEngine {
+using namespace RXNEngine;
+
+namespace RXNEditor {
 
 	class EditorLayer : public Layer
 	{
@@ -22,12 +25,14 @@ namespace RXNEngine {
 		Ref<Shader> m_ModelShader;
 		Ref<EditorCamera> m_Camera;
 
-		Scene m_Scene;
+		Ref<Scene> m_ActiveScene;
 		Entity m_CameraEntity;
 		Entity m_ModelEntity;
 		Entity m_SkyboxEntity;
 
 		uint32_t m_FPS;
+
+		SceneHierarchyPanel m_Panel;
 	};
 
 	class CameraControllerScript : public ScriptableEntity

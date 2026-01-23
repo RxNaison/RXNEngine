@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Scene.h"
-#include "entt.hpp"
+#include "Components.h"
+
+#include <entt.hpp>
 
 namespace RXNEngine {
 

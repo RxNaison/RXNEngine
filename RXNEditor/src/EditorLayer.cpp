@@ -3,7 +3,7 @@
 
 #include <imgui.h>
 
-namespace RXNEngine {
+namespace RXNEditor {
 
 	EditorLayer::EditorLayer(const std::string& name)
 		: Layer(name)
@@ -25,16 +25,19 @@ namespace RXNEngine {
         m_ModelShader = Shader::Create("assets/shaders/pbr.glsl");
 		m_Camera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
-        m_CameraEntity = m_Scene.CreateEntity("Scene Camera");
+        m_ActiveScene = CreateRef<Scene>();
+        m_CameraEntity = m_ActiveScene->CreateEntity("Scene Camera");
         m_CameraEntity.AddComponent<CameraComponent>();
-        m_CameraEntity.GetComponent<CameraComponent>().Camera.SetPerspective(45.0f, 0.01f, 500.0f);
+        m_CameraEntity.GetComponent<CameraComponent>().Camera.SetPerspective(glm::radians(45.0f), 0.01f, 500.0f);
         m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraControllerScript>();
 
-		m_ModelEntity = m_Scene.CreateEntity("Model Entity");
-		m_ModelEntity.AddComponent<MeshComponent>().ModelResource = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);;
+		m_ModelEntity = m_ActiveScene->CreateEntity("Model Entity");
+		m_ModelEntity.AddComponent<MeshComponent>().ModelResource = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);
 
-        m_SkyboxEntity = m_Scene.CreateEntity("Skybox Entity");
+        m_SkyboxEntity = m_ActiveScene->CreateEntity("Skybox Entity");
 		m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = Cubemap::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
+
+		m_Panel.SetContext(m_ActiveScene);
 	}
 
 	void EditorLayer::OnDetach()
@@ -46,8 +49,8 @@ namespace RXNEngine {
 
         m_Camera->OnUpdate(deltaTime);
 
-		m_Scene.OnUpdateEditor(deltaTime, *m_Camera, m_RenderTarget);
-		//m_Scene.OnUpdateRuntime(deltaTime, m_RenderTarget);
+        m_ActiveScene->OnRenderEditor(deltaTime, *m_Camera, m_RenderTarget);
+        //m_ActiveScene->OnUpdateRuntime(deltaTime, m_RenderTarget);
 
         m_FPS = 1.0f / deltaTime;
 	}
@@ -129,6 +132,8 @@ namespace RXNEngine {
             ImGui::EndMenuBar();
         }
 
+        m_Panel.OnImGuiRender();
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
@@ -138,7 +143,7 @@ namespace RXNEngine {
         {
             m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
             m_Camera->SetViewportSize(viewportSize.x, viewportSize.y);
-			m_Scene.OnViewportResize(viewportSize.x, viewportSize.y);
+            m_ActiveScene->OnViewportResize(viewportSize.x, viewportSize.y);
         }
 
         uint32_t textureID = m_RenderTarget->GetColorAttachmentRendererID();

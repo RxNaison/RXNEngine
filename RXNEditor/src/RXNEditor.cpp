@@ -3,7 +3,7 @@
 
 #include "EditorLayer.h"
 
-namespace RXNEngine {
+namespace RXNEditor {
 
 	class RXNEditor : public Application
 	{
@@ -13,10 +13,11 @@ namespace RXNEngine {
 			PushLayer(new EditorLayer());
 		}
 	};
+}
 
+namespace RXNEngine {
 	Application* CreateApplication()
 	{
-		return new RXNEditor();
+		return new RXNEditor::RXNEditor();
 	}
-
 }

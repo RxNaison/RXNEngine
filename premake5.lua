@@ -15,6 +15,7 @@ IncludeDir["glm"] = "RXNEngine/vendor/glm"
 IncludeDir["stb_image"] = "RXNEngine/vendor/stb_image"
 IncludeDir["entt"] = "RXNEngine/vendor/entt/include"
 IncludeDir["assimp"] = "RXNEngine/vendor/assimp/include"
+IncludeDir["yaml_cpp"] = "RXNEngine/vendor/yaml-cpp/include"
 
 group "Dependencies"
     include "RXNEngine/vendor/GLFW"
@@ -52,7 +53,8 @@ project "RXNEngine"
     {
 	    "_CRT_SECURE_NO_WARNINGS",
         "GLFW_INCLUDE_NONE",
-        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+        "YAML_CPP_STATIC_DEFINE"
     }
    
     includedirs
@@ -65,7 +67,8 @@ project "RXNEngine"
         "%{IncludeDir.glm}",
         "%{IncludeDir.stb_image}",
         "%{IncludeDir.entt}",
-        "%{IncludeDir.assimp}"
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.yaml_cpp}"
     }
 
 
@@ -83,7 +86,8 @@ project "RXNEngine"
       links 
       { 
           "RXNEngine/vendor/assimp/build/lib/Debug/assimp-vc143-mtd.lib",
-          "RXNEngine/vendor/assimp/build/contrib/zlib/Debug/zlibstaticd.lib"
+          "RXNEngine/vendor/assimp/build/contrib/zlib/Debug/zlibstaticd.lib",
+          "RXNEngine/vendor/yaml-cpp/build/Debug/yaml-cppd.lib"
       }
     filter "configurations:Release"
       defines "RXN_RELEASE"
@@ -92,7 +96,8 @@ project "RXNEngine"
       links 
       { 
           "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
-          "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib"
+          "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib",
+          "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cppd.lib"
       }
     filter "configurations:Dist"
       defines "RXN_DIST"
@@ -101,7 +106,8 @@ project "RXNEngine"
       links 
       { 
           "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
-          "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib"
+          "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib",
+          "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cppd.lib"
       }
 
 
@@ -135,7 +141,8 @@ project "RXNEditor"
         "%{IncludeDir.glm}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.Imgui}",
-        "%{IncludeDir.assimp}"
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.yaml_cpp}"
     }
     links "RXNEngine"
     
@@ -179,7 +186,9 @@ project "Sandbox"
     {
         "RXNEngine/vendor/spdlog/include",
         "RXNEngine/src",
-        "%{IncludeDir.glm}"
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.yaml_cpp}"
     }
     links "RXNEngine"
     

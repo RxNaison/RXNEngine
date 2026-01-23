@@ -43,6 +43,8 @@ namespace RXNEngine {
 		bool IsTransparent() const { return m_IsTransparent; }
 		void SetTransparent(bool transparent) { m_IsTransparent = transparent; }
 
+		const Parameters& GetParameters() const { return m_Parameters; }
+
 	public:
 		static Ref<Material> CreateDefault(const Ref<Shader>& shader);
 

@@ -12,7 +12,7 @@ layout(location = 6) in vec4 a_ModelRow2;
 layout(location = 7) in vec4 a_ModelRow3;
 
 uniform mat4 u_ViewProjection;
-uniform float u_Tiling; // <--- NEW: Texture Tiling Factor
+uniform float u_Tiling;
 
 out vec2 v_TexCoord;
 out vec3 v_WorldPos;

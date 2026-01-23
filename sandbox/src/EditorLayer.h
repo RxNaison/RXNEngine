@@ -17,7 +17,7 @@ namespace RXNEngine {
 		virtual void OnImGuiRenderer() override;
 
 	private:
-		Ref<Framebuffer> m_Framebuffer;
+		Ref<RenderTarget> m_Framebuffer;
 		//Ref<Scene> m_ActiveScene;
 	};
 

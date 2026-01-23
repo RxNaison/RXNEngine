@@ -355,19 +355,19 @@ namespace RXNEngine {
         DrawSkybox(skybox, camera.GetViewMatrix(), camera.GetProjection());
     }
 
-    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& transform)
+    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& cameraTransform)
     {
-        DrawSkybox(skybox, glm::inverse(transform), camera.GetProjection());
+        DrawSkybox(skybox, glm::inverse(cameraTransform), camera.GetProjection());
     }
 
-    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+    void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& cameraViewMatrix, const glm::mat4& cameraProjectionMatrix)
     {
         RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
 
         s_Data.SkyboxShader->Bind();
 
-        glm::mat4 view = glm::mat4(glm::mat3(viewMatrix));
-        glm::mat4 projection = projectionMatrix;
+        glm::mat4 view = glm::mat4(glm::mat3(cameraViewMatrix));
+        glm::mat4 projection = cameraProjectionMatrix;
 
         s_Data.SkyboxShader->SetMat4("u_ViewProjection", projection * view);
 
