@@ -134,6 +134,7 @@ namespace RXNEngine {
 	}
 
 	OpenGLCubemap::OpenGLCubemap(const std::string& path)
+		: m_Path(path)
 	{
 		Ref<Texture2D> hdrTexture = Texture2D::Create(path);
 

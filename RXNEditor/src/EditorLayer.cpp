@@ -29,6 +29,30 @@ namespace RXNEditor {
         m_CameraEntity = m_ActiveScene->CreateEntity("Scene Camera");
         m_CameraEntity.AddComponent<CameraComponent>();
         m_CameraEntity.GetComponent<CameraComponent>().Camera.SetPerspective(glm::radians(45.0f), 0.01f, 500.0f);
+
+        class CameraControllerScript : public ScriptableEntity
+        {
+        public:
+            void OnUpdate(float ts)
+            {
+                auto& translation = GetComponent<TransformComponent>().Translation;
+                float speed = 5.0f * ts;
+
+                if (Input::IsKeyPressed(KeyCode::W))
+                    translation.z -= speed;
+                if (Input::IsKeyPressed(KeyCode::A))
+                    translation.x -= speed;
+                if (Input::IsKeyPressed(KeyCode::S))
+                    translation.z += speed;
+                if (Input::IsKeyPressed(KeyCode::D))
+                    translation.x += speed;
+                if (Input::IsKeyPressed(KeyCode::Space))
+                    translation.y += speed;
+                if (Input::IsKeyPressed(KeyCode::LeftShift))
+                    translation.y -= speed;
+            }
+        };
+
         m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraControllerScript>();
 
 		m_ModelEntity = m_ActiveScene->CreateEntity("Model Entity");
@@ -121,10 +145,46 @@ namespace RXNEditor {
         {
             if (ImGui::BeginMenu("Options"))
             {
-                ImGui::Separator();
                 if (ImGui::MenuItem("Close", NULL, false, p_open != NULL))
 					Application::Get().Close();
+
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("New", NULL, false, p_open != NULL))
+                {
+                    m_ActiveScene = CreateRef<Scene>();
+                    m_Panel.SetContext(m_ActiveScene);
+                }
+
                 ImGui::Separator();
+
+                if (ImGui::MenuItem("Save As...", NULL, false, p_open != NULL))
+                {
+                    std::string path = FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0");
+
+                    if (!path.empty())
+                    {
+                        SceneSerializer m_SceneSerializer(m_ActiveScene);
+                        m_SceneSerializer.Serialize(path);
+                    }
+                }
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Open", NULL, false, p_open != NULL))
+                {
+                    std::string path = FileDialogs::OpenFile("Scene (*.rxns)\0*.rxns\0");
+
+                    if (!path.empty())
+                    {
+						m_ActiveScene = CreateRef<Scene>();
+                        SceneSerializer m_SceneSerializer(m_ActiveScene);
+                        m_SceneSerializer.Deserialize(path);
+                        m_Panel.SetContext(m_ActiveScene);
+                    }
+                }
 
                 ImGui::EndMenu();
             }

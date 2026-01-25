@@ -275,8 +275,15 @@ namespace RXNEditor {
                 ImGui::SetColumnWidth(0, 100.0f);
                 ImGui::Text("Mesh");
                 ImGui::NextColumn();
-                ImGui::Button("Drop Model Here", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
-                // TODO: Drag and Drop payload target here later
+
+                if (ImGui::Button("Drop Model Here", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+                {
+                    std::string path = FileDialogs::OpenFile("*.obj *.glb *.glft");
+
+                    if(!path.empty())
+                        component.ModelResource = CreateRef<Model>(path, Shader::Create("assets/shaders/pbr.glsl"));
+                }
+
                 ImGui::Columns(1);
 
                 if (component.MaterialInstance)

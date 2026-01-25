@@ -23,7 +23,7 @@ namespace RXNEngine {
 		Model(const std::string& path, const Ref<Shader>& defaultShader);
 		~Model() = default;
 		const std::vector<ModelSubmesh>& GetSubmeshes() const { return m_Submeshes; }
-
+		const std::string GetPath() { return m_Path; }
 	private:
 		void ProcessNode(aiNode* node, const aiScene* scene, const glm::mat4& parentTransform);
 		void ProcessMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform);
@@ -33,8 +33,11 @@ namespace RXNEngine {
 
 	private:
 		std::vector<ModelSubmesh> m_Submeshes;
+		std::string m_Path;
 		std::string m_Directory;
 		Ref<Shader> m_DefaultShader;
 		std::unordered_map<std::string, Ref<Texture2D>> m_TextureCache;
+
+		friend class ModelSerializer;
 	};
 }

@@ -4,6 +4,8 @@
 #include "RXNEngine/Core/Layer.h"
 #include "RXNEngine/Core/Log.h"
 
+#include "RXNEngine/Utils/PlatformUtils.h"
+
 #include "RXNEngine/Core/Input.h"
 #include "RXNEngine/Core/KeyCodes.h"
 
@@ -27,3 +29,4 @@
 #include "RXNEngine/Scene/Components.h"
 #include "RXNEngine/Scene/Scene.h"
 #include "RXNEngine/Scene/Entity.h"
+#include "RXNEngine/Scene/SceneSerializer.h"

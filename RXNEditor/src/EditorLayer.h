@@ -34,32 +34,4 @@ namespace RXNEditor {
 
 		SceneHierarchyPanel m_Panel;
 	};
-
-	class CameraControllerScript : public ScriptableEntity
-	{
-	public:
-		void OnCreate()
-		{
-			// Setup initial speed, etc.
-		}
-
-		void OnUpdate(float ts)
-		{
-			auto& translation = GetComponent<TransformComponent>().Translation;
-			float speed = 5.0f * ts;
-
-			if (Input::IsKeyPressed(KeyCode::W))
-				translation.z -= speed;
-			if (Input::IsKeyPressed(KeyCode::A))
-				translation.x -= speed;
-			if (Input::IsKeyPressed(KeyCode::S))
-				translation.z += speed;
-			if (Input::IsKeyPressed(KeyCode::D))
-				translation.x += speed;
-			if (Input::IsKeyPressed(KeyCode::Space))
-				translation.y += speed;
-			if (Input::IsKeyPressed(KeyCode::LeftShift))
-				translation.y -= speed;
-		}
-	};
 }

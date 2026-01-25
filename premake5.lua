@@ -97,7 +97,7 @@ project "RXNEngine"
       { 
           "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
           "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib",
-          "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cppd.lib"
+          "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cpp.lib"
       }
     filter "configurations:Dist"
       defines "RXN_DIST"
@@ -107,7 +107,7 @@ project "RXNEngine"
       { 
           "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
           "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib",
-          "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cppd.lib"
+          "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cpp.lib"
       }
 
 

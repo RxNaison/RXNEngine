@@ -38,6 +38,11 @@ namespace RXNEngine {
 		void SetAOMap(const Ref<Texture2D>& texture) { m_AOMap = texture; }
 		void SetEmissiveMap(const Ref<Texture2D>& texture) { m_EmissiveMap = texture; }
 
+		Ref<Texture2D> GetAlbedoMap() const { return m_AlbedoMap; }
+		Ref<Texture2D> GetNormalMap() const { return m_NormalMap; }
+		Ref<Texture2D> GetMetalnessRoughnessMap() const { return m_MetalnessRoughnessMap; }
+		Ref<Texture2D> GetAOMap() const { return m_AOMap; }
+
 		Ref<Shader> GetShader() const { return m_Shader; }
 
 		bool IsTransparent() const { return m_IsTransparent; }

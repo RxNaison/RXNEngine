@@ -18,8 +18,16 @@ namespace RXNEngine {
 
         void SetAABB(const AABB& aabb) { m_BoundingBox = aabb; }
         const AABB& GetAABB() const { return m_BoundingBox; }
+
+        const std::vector<float>& GetVertices() const { return m_Vertices; }
+        const std::vector<uint32_t>& GetIndices() const { return m_Indices; }
     private:
         Ref<VertexArray> m_VertexArray;
         AABB m_BoundingBox;
+
+        std::vector<float> m_Vertices;
+        std::vector<uint32_t> m_Indices;
+
+        friend class Model;
     };
 }

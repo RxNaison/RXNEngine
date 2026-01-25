@@ -2,6 +2,7 @@
 #include "Model.h"
 #include "Renderer.h"
 #include "RXNEngine/Core/Math.h"
+#include "ModelSerializer.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <assimp/Importer.hpp>
@@ -21,8 +22,21 @@ namespace RXNEngine {
 	}
 
 	Model::Model(const std::string& path, const Ref<Shader>& defaultShader)
-		: m_DefaultShader(defaultShader)
+		: m_DefaultShader(defaultShader), m_Path(path)
 	{
+		auto startTimepoint = std::chrono::steady_clock::now();
+
+		std::string cachePath = path + ".rxn";
+
+		if (std::filesystem::exists(cachePath))
+		{
+			RXN_CORE_INFO("Loading Cached Model: {0}", cachePath);
+			if (ModelSerializer::Deserialize(cachePath, *this))
+				return;
+		}
+
+		RXN_CORE_WARN("Cache miss. Importing raw model: {0}", path);
+
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path,
 			aiProcess_Triangulate |
@@ -40,9 +54,12 @@ namespace RXNEngine {
 			return;
 		}
 
-		m_Directory = path.substr(0, path.find_last_of('/'));
+		std::replace(m_Path.begin(), m_Path.end(), '\\', '/');
+		m_Directory = m_Path.substr(0, m_Path.find_last_of('/'));
 
 		ProcessNode(scene->mRootNode, scene, glm::mat4(1.0f));
+
+		ModelSerializer::Serialize(cachePath, *this);
 	}
 
 	void Model::ProcessNode(aiNode* node, const aiScene* scene, const glm::mat4& parentTransform)
@@ -131,6 +148,9 @@ namespace RXNEngine {
 
 		Ref<Mesh> rxnMesh = CreateRef<Mesh>(vao);
 		rxnMesh->SetAABB({ minAABB, maxAABB });
+
+		rxnMesh->m_Vertices = vertices;
+		rxnMesh->m_Indices = indices;
 
 		Ref<Material> rxnMaterial = Material::CreateDefault(m_DefaultShader);
 
