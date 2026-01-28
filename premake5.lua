@@ -16,6 +16,7 @@ IncludeDir["stb_image"] = "RXNEngine/vendor/stb_image"
 IncludeDir["entt"] = "RXNEngine/vendor/entt/include"
 IncludeDir["assimp"] = "RXNEngine/vendor/assimp/include"
 IncludeDir["yaml_cpp"] = "RXNEngine/vendor/yaml-cpp/include"
+IncludeDir["ImGuizmo"] = "RXNEngine/vendor/ImGuizmo"
 
 group "Dependencies"
     include "RXNEngine/vendor/GLFW"
@@ -46,7 +47,9 @@ project "RXNEngine"
         "%{prj.name}/vendor/glm/glm/**.h",
         "%{prj.name}/vendor/stb_image/**.h",
         "%{prj.name}/vendor/stb_image/**.cpp",
-        "%{prj.name}/vendor/entt/include/**.hpp"
+        "%{prj.name}/vendor/entt/include/**.hpp",
+        "%{prj.name}/vendor/ImGuizmo/**.h",
+        "%{prj.name}/vendor/ImGuizmo/*.cpp"
     }
    
     defines
@@ -68,11 +71,21 @@ project "RXNEngine"
         "%{IncludeDir.stb_image}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.assimp}",
-        "%{IncludeDir.yaml_cpp}"
+        "%{IncludeDir.yaml_cpp}",
+        "%{IncludeDir.ImGuizmo}"
     }
 
 
     links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
+
+    removefiles
+    {
+        "RXNEngine/vendor/ImGuizmo/example/**"
+    }
+
+    filter "files:RXNEngine/vendor/ImGuizmo/*.cpp"
+    flags { "NoPCH" }
+    filter {}
 
     filter "system:windows"
     systemversion "latest"
@@ -142,7 +155,8 @@ project "RXNEditor"
         "%{IncludeDir.entt}",
         "%{IncludeDir.Imgui}",
         "%{IncludeDir.assimp}",
-        "%{IncludeDir.yaml_cpp}"
+        "%{IncludeDir.yaml_cpp}",
+        "%{IncludeDir.ImGuizmo}"
     }
     links "RXNEngine"
     
@@ -188,7 +202,8 @@ project "Sandbox"
         "RXNEngine/src",
         "%{IncludeDir.glm}",
         "%{IncludeDir.assimp}",
-        "%{IncludeDir.yaml_cpp}"
+        "%{IncludeDir.yaml_cpp}",
+        "%{IncludeDir.entt}"
     }
     links "RXNEngine"
     

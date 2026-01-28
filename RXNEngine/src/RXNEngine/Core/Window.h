@@ -7,14 +7,24 @@
 
 namespace RXNEngine {
 
+	enum class WindowMode
+	{
+		Windowed,
+		Maximized,
+		Borderless,
+		Fullscreen
+	};
+
 	struct WindowProps
 	{
 		std::string Title;
 		uint32_t Width;
 		uint32_t Height;
+		WindowMode Mode;
 
-		WindowProps(const std::string& title = "RXNEngine", uint32_t width = 1280, uint32_t height = 720)
-			: Title(title), Width(width), Height(height)
+		WindowProps(const std::string& title = "RXNEngine",
+			uint32_t width = 1600, uint32_t height = 900, WindowMode mode = WindowMode::Windowed)
+			: Title(title), Width(width), Height(height), Mode(mode)
 		{
 		}
 	};

@@ -258,6 +258,10 @@ namespace RXNEngine {
             RenderCommand::BindTextureID(11, environment->GetPrefilterRendererID());
             RenderCommand::BindTextureID(12, environment->GetBRDFLUTRendererID());
         }
+        else
+        {
+            s_Data.SceneEnvironment = nullptr;
+        }
 
         s_Data.CurrentRenderTarget = renderTarget;
 

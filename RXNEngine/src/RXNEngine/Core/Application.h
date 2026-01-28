@@ -13,7 +13,7 @@ namespace RXNEngine {
 	class Application
 	{
 	public:
-		Application();
+		Application(const WindowProps& props = WindowProps());
 		virtual ~Application();
 
 		void Run();
@@ -24,6 +24,7 @@ namespace RXNEngine {
 		void PushOverlay(Layer* layer);
 
 		inline Window& GetWindow() { return *m_Window; }
+		inline ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
 
 		inline static Application& Get() { return *s_Instance; }
 

@@ -2,6 +2,9 @@
 #include "EditorLayer.h"
 
 #include <imgui.h>
+#include <ImGuizmo.h>
+
+#include <glm/gtc/type_ptr.hpp>
 
 namespace RXNEditor {
 
@@ -86,6 +89,38 @@ namespace RXNEditor {
 	void EditorLayer::OnEvent(Event& event)
 	{
         m_Camera->OnEvent(event);
+
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e)->bool { return OnKeyPressed(e); });
+
+        dispatcher.Dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& e) -> bool
+            {
+                if (e.GetMouseButton() == MouseCode::ButtonLeft)
+                {
+                    // Only pick if we are hovering the viewport and NOT using a Gizmo
+                    if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(KeyCode::LeftAlt))
+                    {
+                        auto [mx, my] = ImGui::GetMousePos(); // Global mouse pos
+
+                        // Convert global mouse to viewport-relative mouse
+                        mx -= m_ViewportBounds[0].x;
+                        my -= m_ViewportBounds[0].y;
+
+                        // Ensure click is actually inside viewport bounds
+                        glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+                        if (mx >= 0 && my >= 0 && mx < viewportSize.x && my < viewportSize.y)
+                        {
+                            Ray ray = CastRayFromMouse(mx, my);
+                            Entity pickedEntity = m_ActiveScene->GetEntityByRay(ray);
+
+                            // Update Selection
+                            m_Panel.SetSelectedEntity(pickedEntity);
+                            return true; // Consumed
+                        }
+                    }
+                }
+                return false;
+            });
 	}
 
 	void EditorLayer::OnImGuiRenderer()
@@ -155,8 +190,7 @@ namespace RXNEditor {
             {
                 if (ImGui::MenuItem("New", NULL, false, p_open != NULL))
                 {
-                    m_ActiveScene = CreateRef<Scene>();
-                    m_Panel.SetContext(m_ActiveScene);
+                    NewScene();
                 }
 
                 ImGui::Separator();
@@ -165,11 +199,7 @@ namespace RXNEditor {
                 {
                     std::string path = FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0");
 
-                    if (!path.empty())
-                    {
-                        SceneSerializer m_SceneSerializer(m_ActiveScene);
-                        m_SceneSerializer.Serialize(path);
-                    }
+                    SaveSceneAs(path);
                 }
                 ImGui::Separator();
 
@@ -177,13 +207,7 @@ namespace RXNEditor {
                 {
                     std::string path = FileDialogs::OpenFile("Scene (*.rxns)\0*.rxns\0");
 
-                    if (!path.empty())
-                    {
-						m_ActiveScene = CreateRef<Scene>();
-                        SceneSerializer m_SceneSerializer(m_ActiveScene);
-                        m_SceneSerializer.Deserialize(path);
-                        m_Panel.SetContext(m_ActiveScene);
-                    }
+                    OpenScene(path);
                 }
 
                 ImGui::EndMenu();
@@ -196,6 +220,19 @@ namespace RXNEditor {
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
+
+        auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+        auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+        auto viewportOffset = ImGui::GetWindowPos();
+
+        // Calculate strict bounds of the viewport image
+        m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+        m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+
+        m_ViewportFocused = ImGui::IsWindowFocused();
+        m_ViewportHovered = ImGui::IsWindowHovered();
+        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
         const auto& renderTargetSpec = m_RenderTarget->GetSpecification();
 
@@ -208,6 +245,40 @@ namespace RXNEditor {
 
         uint32_t textureID = m_RenderTarget->GetColorAttachmentRendererID();
         ImGui::Image((void*)textureID, ImVec2{ renderTargetSpec.Width, renderTargetSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		Entity selectedEntity = m_Panel.GetSelectedEntity();
+        if (selectedEntity && m_GizmoType != -1)
+        {
+            ImGuizmo::SetOrthographic(false);
+            ImGuizmo::SetDrawlist();
+			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+
+            const glm::mat4& cameraView = m_Camera->GetViewMatrix();
+            const glm::mat4& cameraProj = m_Camera->GetProjection();
+
+            auto& entityTC = selectedEntity.GetComponent<TransformComponent>();
+
+            glm::mat4 entityTransform = entityTC.GetTransform();
+
+            bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
+            float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 10.0f : 0.5f;
+            float snapValues[3] = { snapValue, snapValue, snapValue };
+
+            ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,
+                ImGuizmo::LOCAL, glm::value_ptr(entityTransform), nullptr, snap ? snapValues : nullptr);
+
+            if (ImGuizmo::IsUsing())
+            {
+                glm::vec3 translation, rotation, scale;
+                Math::DecomposeTransform(entityTransform, translation, rotation, scale);
+
+                entityTC.Translation = translation;
+                entityTC.Rotation = rotation;
+                entityTC.Scale = scale;
+            }
+
+        }
+
         ImGui::End();
         ImGui::PopStyleVar();
 
@@ -218,6 +289,113 @@ namespace RXNEditor {
 
         ImGui::End();
 
+    }
+
+    bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
+    {
+        // Shortcuts
+        if (e.GetRepeatCount() > 1)
+            return false;
+
+        bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+        bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+
+        switch (e.GetKeyCode())
+        {
+            case KeyCode::N:
+            {
+                if (control)
+                    NewScene();
+
+                break;
+            }
+            case KeyCode::O:
+            {
+                if (control)
+                    OpenScene(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+
+                break;
+            }
+            case KeyCode::S:
+            {
+                if (control)
+                {
+                    if (shift)
+                        SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+                }
+
+                break;
+            }
+
+            case KeyCode::Q:
+            {
+                if (!ImGuizmo::IsUsing())
+                    m_GizmoType = -1;
+                break;
+            }
+            case KeyCode::W:
+            {
+                if (!ImGuizmo::IsUsing())
+                    m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+                break;
+            }
+            case KeyCode::E:
+            {
+                if (!ImGuizmo::IsUsing())
+                    m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+                break;
+            }
+            case KeyCode::R:
+            {
+                if (!ImGuizmo::IsUsing())
+                    m_GizmoType = ImGuizmo::OPERATION::SCALE;
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    Ray EditorLayer::CastRayFromMouse(float mx, float my)
+    {
+
+        float x = (2.0f * mx) / m_RenderTarget->GetSpecification().Width - 1.0f;
+        float y = 1.0f - (2.0f * my) / m_RenderTarget->GetSpecification().Height;
+
+        glm::vec4 ray_clip = glm::vec4(x, y, -1.0f, 1.0f);
+
+        glm::vec4 ray_eye = glm::inverse(m_Camera->GetProjection()) * ray_clip;
+        ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
+
+        glm::vec3 ray_wor = glm::vec3(glm::inverse(m_Camera->GetViewMatrix()) * ray_eye);
+        ray_wor = glm::normalize(ray_wor);
+
+        return { m_Camera->GetPosition(), ray_wor };
+    }
+
+    void EditorLayer::SaveSceneAs(const std::string& path)
+    {
+        if (!path.empty())
+        {
+            SceneSerializer m_SceneSerializer(m_ActiveScene);
+            m_SceneSerializer.Serialize(path);
+        }
+    }
+
+    void EditorLayer::OpenScene(const std::string& path)
+    {
+        if (!path.empty())
+        {
+            m_ActiveScene = CreateRef<Scene>();
+            SceneSerializer m_SceneSerializer(m_ActiveScene);
+            m_SceneSerializer.Deserialize(path);
+            m_Panel.SetContext(m_ActiveScene);
+        }
+    }
+    void EditorLayer::NewScene()
+    {
+        m_ActiveScene = CreateRef<Scene>();
+        m_Panel.SetContext(m_ActiveScene);
     }
 
 }

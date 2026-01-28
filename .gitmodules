@@ -16,3 +16,6 @@
 [submodule "RXNEngine/vendor/yaml-cpp"]
 	path = RXNEngine/vendor/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "RXNEngine/vendor/ImGuizmo"]
+	path = RXNEngine/vendor/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

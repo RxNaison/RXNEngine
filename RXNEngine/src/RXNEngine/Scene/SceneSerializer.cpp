@@ -183,7 +183,6 @@ namespace RXNEngine {
 			out << YAML::Key << "OrthographicFar" << YAML::Value << camera.GetOrthographicFarClip();
 			out << YAML::EndMap; // Camera
 
-			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
 
 			out << YAML::EndMap; // CameraComponent
@@ -228,18 +227,6 @@ namespace RXNEngine {
 			out << YAML::EndMap; // DirectionalLightComponent
 		}
 
-		if (entity.HasComponent<DirectionalLightComponent>())
-		{
-			out << YAML::Key << "DirectionalLightComponent";
-			out << YAML::BeginMap; // DirectionalLightComponent
-
-			auto& tc = entity.GetComponent<DirectionalLightComponent>();
-			out << YAML::Key << "Color" << YAML::Value << tc.Color;
-			out << YAML::Key << "Intensity" << YAML::Value << tc.Intensity;
-
-			out << YAML::EndMap; // DirectionalLightComponent
-		}
-
 		if (entity.HasComponent<PointLightComponent>())
 		{
 			out << YAML::Key << "PointLightComponent";
@@ -262,6 +249,11 @@ namespace RXNEngine {
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Scene" << YAML::Value << "Untitled";
+
+		Entity primaryCam = m_Scene->GetPrimaryCameraEntity();
+		if (primaryCam)
+			out << YAML::Key << "PrimaryCameraID" << YAML::Value << primaryCam.GetUUID();
+
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 		m_Scene->GetRaw().view<entt::entity>().each([&](auto entityID)
 			{
@@ -302,6 +294,10 @@ namespace RXNEngine {
 
 		std::string sceneName = data["Scene"].as<std::string>();
 		RXN_CORE_TRACE("Deserializing scene '{0}'", sceneName);
+
+		UUID primaryCameraID = UUID::Null;
+		if (data["PrimaryCameraID"])
+			primaryCameraID = data["PrimaryCameraID"].as<UUID>();
 
 		auto entities = data["Entities"];
 		if (entities)
@@ -345,7 +341,6 @@ namespace RXNEngine {
 					cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
 					cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
 
-					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}
 
@@ -395,6 +390,11 @@ namespace RXNEngine {
 					plc.Intensity = pointLightComponent["Intensity"].as<float>();
 					plc.Radius = pointLightComponent["Radius"].as<float>();
 					plc.Falloff = pointLightComponent["Falloff"].as<float>();
+				}
+
+				if (primaryCameraID != UUID::Null && uuid == (uint64_t)primaryCameraID)
+				{
+					m_Scene->SetPrimaryCameraEntity(deserializedEntity);
 				}
 			}
 		}

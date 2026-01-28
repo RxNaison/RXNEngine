@@ -83,7 +83,6 @@ namespace RXNEngine {
 	struct CameraComponent
 	{
 		SceneCamera Camera;
-		bool Primary = true;
 		bool FixedAspectRatio = false;
 
 		CameraComponent() = default;

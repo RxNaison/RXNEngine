@@ -48,9 +48,40 @@ namespace RXNEngine {
 			s_GLFWInitialized = true;
 		}
 
-		m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
+		GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+
+		if (props.Mode == WindowMode::Fullscreen)
+		{
+			m_Window = glfwCreateWindow(mode->width, mode->height, m_Data.Title.c_str(), primaryMonitor, nullptr);
+
+			m_Data.Width = mode->width;
+			m_Data.Height = mode->height;
+		}
+		else if (props.Mode == WindowMode::Borderless)
+		{
+			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+			glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+			glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
+			m_Window = glfwCreateWindow(mode->width, mode->height, m_Data.Title.c_str(), nullptr, nullptr);
+
+			m_Data.Width = mode->width;
+			m_Data.Height = mode->height;
+		}
+		else
+		{
+			m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
+
+			if (props.Mode == WindowMode::Maximized)
+			{
+				glfwMaximizeWindow(m_Window);
+			}
+		}
 		
-		m_Context = new OpenGLContext(m_Window);
+		m_Context = GraphicsContext::Create((void*)m_Window);
 		m_Context->Init();
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);

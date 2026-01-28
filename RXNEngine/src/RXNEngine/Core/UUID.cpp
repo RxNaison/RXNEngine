@@ -10,13 +10,22 @@ namespace RXNEngine {
 	static std::uniform_int_distribution<uint64_t> s_UniformDistribution;
 
 	UUID::UUID()
-		: m_UUID(s_UniformDistribution(s_Engine))
 	{
+		uint64_t uuid = s_UniformDistribution(s_Engine);
+
+		while (uuid == 0)
+		{
+			uuid = s_UniformDistribution(s_Engine);
+		}
+
+		m_UUID = uuid;
 	}
 
 	UUID::UUID(uint64_t uuid)
 		: m_UUID(uuid)
 	{
 	}
+
+	const UUID UUID::Null = UUID(0);
 
 }

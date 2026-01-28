@@ -3,6 +3,7 @@
 #include "RXNEngine/Core/UUID.h"
 #include "RXNEngine/Renderer/EditorCamera.h"
 #include "RXNEngine/Renderer/RenderTarget.h"
+#include "RXNEngine/Core/Math.h"
 
 #include <entt.hpp>
 
@@ -20,6 +21,7 @@ namespace RXNEngine {
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
+		Entity GetEntityByRay(const Ray& ray);
 
 		void OnUpdateSimulation(float deltaTime);
 		void OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget);
@@ -30,9 +32,13 @@ namespace RXNEngine {
 
 		Entity GetEntityByUUID(UUID uuid);
 
+		Entity GetPrimaryCameraEntity();
+		void SetPrimaryCameraEntity(Entity entity);
+
 		const entt::registry& GetRaw() { return m_Registry; }
 	private:
 		entt::registry m_Registry;
+		UUID m_PrimaryCameraID = UUID::Null;
 
 		friend class Entity;
 	};

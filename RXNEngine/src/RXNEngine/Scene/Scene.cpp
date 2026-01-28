@@ -35,6 +35,45 @@ namespace RXNEngine {
         m_Registry.destroy(entity);
     }
 
+    Entity Scene::GetEntityByRay(const Ray& ray)
+    {
+        Entity closestEntity = {};
+        float closestDistance = FLT_MAX;
+
+        auto view = m_Registry.view<TransformComponent, MeshComponent>();
+        for (auto entity : view)
+        {
+            auto [tc, mc] = view.get<TransformComponent, MeshComponent>(entity);
+            if (!mc.ModelResource) continue;
+
+            glm::mat4 entityTransform = tc.GetTransform();
+
+            for (const auto& submesh : mc.ModelResource->GetSubmeshes())
+            {
+                glm::mat4 submeshGlobalTransform = entityTransform * submesh.LocalTransform;
+
+                glm::mat4 inverseTransform = glm::inverse(submeshGlobalTransform);
+
+                glm::vec3 localRayOrigin = glm::vec3(inverseTransform * glm::vec4(ray.Origin, 1.0f));
+                glm::vec3 localRayDirection = glm::vec3(inverseTransform * glm::vec4(ray.Direction, 0.0f));
+
+                Ray localRay = { localRayOrigin, localRayDirection };
+
+                float t = 0.0f;
+                if (Math::IntersectRayAABB(localRay, submesh.BoundingBox.Min, submesh.BoundingBox.Max, t))
+                {
+                    if (t < closestDistance && t > 0.0f)
+                    {
+                        closestDistance = t;
+                        closestEntity = { entity, this };
+                    }
+                }
+            }
+        }
+
+        return closestEntity;
+    }
+
     void Scene::OnUpdateSimulation(float deltaTime)
     {
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
@@ -178,24 +217,15 @@ namespace RXNEngine {
     {
         OnUpdateSimulation(deltaTime);
 
-        SceneCamera* ActiveSceneCamera = nullptr;
-        glm::mat4 ActiveSceneCameraTransform(1.0f);
-        {
-            auto view = m_Registry.view<TransformComponent, CameraComponent>();
-            for (auto entity : view)
-            {
-                auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
-                if (camera.Primary)
-                {
-                    ActiveSceneCamera = &camera.Camera;
-                    ActiveSceneCameraTransform = transform.GetTransform();
-                    break;
-                }
-            }
-        }
+        Entity cameraEntity = GetPrimaryCameraEntity();
 
-        if (ActiveSceneCamera)
-            OnRender(*ActiveSceneCamera, ActiveSceneCameraTransform, renderTarget);
+        if (cameraEntity)
+        {
+            auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
+            auto transform = cameraEntity.GetComponent<TransformComponent>().GetTransform();
+
+            OnRender(camera, transform, renderTarget);
+        }
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -221,5 +251,22 @@ namespace RXNEngine {
                 return { entity, this };
         }
         return {};
+    }
+
+    Entity Scene::GetPrimaryCameraEntity()
+    {
+        Entity entity = GetEntityByUUID(m_PrimaryCameraID);
+        if (entity && entity.HasComponent<CameraComponent>())
+            return entity;
+
+        return {};
+    }
+
+    void Scene::SetPrimaryCameraEntity(Entity entity)
+    {
+        if (entity.HasComponent<CameraComponent>())
+        {
+            m_PrimaryCameraID = entity.GetUUID();
+        }
     }
 }

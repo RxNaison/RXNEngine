@@ -74,6 +74,9 @@ namespace RXNEditor {
                     DrawEntityNode(entity);
                 });
 
+            if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+                m_SelectedEntity = {};
+
             if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
             {
                 if (ImGui::MenuItem("Create New Entity"))
@@ -210,11 +213,22 @@ namespace RXNEditor {
 
 
         // --- 3. Camera Component ---
-        DrawComponent<CameraComponent>("Camera", entity, [](auto& component)
+        DrawComponent<CameraComponent>("Camera", entity, [&](auto& component)
             {
                 auto& camera = component.Camera;
+                auto primaryCamera = m_Context->GetPrimaryCameraEntity();
+                bool isPrimary = false;
 
-                ImGui::Checkbox("Primary", &component.Primary);
+                if (primaryCamera)
+                {
+                    isPrimary = (entity.GetUUID() == primaryCamera.GetUUID());
+                }
+
+                if (ImGui::Checkbox("Primary", &isPrimary))
+                {
+                    if (isPrimary)
+                        m_Context->SetPrimaryCameraEntity(entity);
+                }
 
                 const char* projectionTypeStrings[] = { "Perspective", "Orthographic" };
                 const char* currentProjectionTypeString = projectionTypeStrings[(int)camera.GetProjectionType()];
