@@ -141,6 +141,8 @@ namespace RXNEngine {
 
 				if (currentTextureFormat == RenderTargetTextureFormat::RED_INTEGER)
 					Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
+				else
+					Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, Utils::TextureFormatToOpenGL(currentTextureFormat), GL_RGBA, m_Specification.Width, m_Specification.Height, i);
 
 				Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, Utils::TextureFormatToOpenGL(currentTextureFormat), GL_RGBA, m_Specification.Width, m_Specification.Height, i);
 			}
@@ -167,6 +169,10 @@ namespace RXNEngine {
 		else if (m_ColorAttachments.empty())
 		{
 			glDrawBuffer(GL_NONE);
+		}
+		else
+		{
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		}
 
 		RXN_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Framebuffer is incomplete!");

@@ -4,6 +4,7 @@
 #include "RXNEngine/Renderer/EditorCamera.h"
 #include "RXNEngine/Renderer/RenderTarget.h"
 #include "RXNEngine/Core/Math.h"
+#include "RXNEngine/Renderer/Texture.h"
 
 #include <entt.hpp>
 
@@ -26,7 +27,7 @@ namespace RXNEngine {
 		void OnUpdateSimulation(float deltaTime);
 		void OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget);
 		void OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget);
-		void OnUpdateRuntime(float deltaTime, Ref<RenderTarget>& renderTarget);
+		void OnUpdateRuntime(float deltaTime);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 
@@ -35,12 +36,18 @@ namespace RXNEngine {
 		Entity GetPrimaryCameraEntity();
 		void SetPrimaryCameraEntity(Entity entity);
 
+		void SetSkybox(Ref<Cubemap>& skybox) { m_Skybox = skybox; }
+
 		const entt::registry& GetRaw() { return m_Registry; }
 	private:
 		entt::registry m_Registry;
 		UUID m_PrimaryCameraID = UUID::Null;
 
+		Ref<Cubemap> m_Skybox = nullptr;
+		float m_SkyboxIntensity = 1.0f;
+
 		friend class Entity;
+		friend class SceneSerializer;
 	};
 
 }

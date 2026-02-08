@@ -19,52 +19,15 @@ namespace RXNEditor {
 
 	void EditorLayer::OnAttach()
 	{
-        RenderTargetSpecification fbSpec;
-		fbSpec.Attachments = { RenderTargetTextureFormat::RGBA16F, RenderTargetTextureFormat::Depth };
-		fbSpec.Width = 1280;
-		fbSpec.Height = 720;
-		m_RenderTarget = RenderTarget::Create(fbSpec);
-
-        m_ModelShader = Shader::Create("assets/shaders/pbr.glsl");
-		m_Camera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
+		m_EditorCamera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
         m_ActiveScene = CreateRef<Scene>();
-        m_CameraEntity = m_ActiveScene->CreateEntity("Scene Camera");
-        m_CameraEntity.AddComponent<CameraComponent>();
-        m_CameraEntity.GetComponent<CameraComponent>().Camera.SetPerspective(glm::radians(45.0f), 0.01f, 500.0f);
 
-        class CameraControllerScript : public ScriptableEntity
-        {
-        public:
-            void OnUpdate(float ts)
-            {
-                auto& translation = GetComponent<TransformComponent>().Translation;
-                float speed = 5.0f * ts;
-
-                if (Input::IsKeyPressed(KeyCode::W))
-                    translation.z -= speed;
-                if (Input::IsKeyPressed(KeyCode::A))
-                    translation.x -= speed;
-                if (Input::IsKeyPressed(KeyCode::S))
-                    translation.z += speed;
-                if (Input::IsKeyPressed(KeyCode::D))
-                    translation.x += speed;
-                if (Input::IsKeyPressed(KeyCode::Space))
-                    translation.y += speed;
-                if (Input::IsKeyPressed(KeyCode::LeftShift))
-                    translation.y -= speed;
-            }
-        };
-
-        m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraControllerScript>();
-
-		m_ModelEntity = m_ActiveScene->CreateEntity("Model Entity");
-		m_ModelEntity.AddComponent<MeshComponent>().ModelResource = CreateRef<Model>("assets/models/porsche/scene.gltf", m_ModelShader);
-
-        m_SkyboxEntity = m_ActiveScene->CreateEntity("Skybox Entity");
-		m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = Cubemap::Create("assets/textures/skyboxes/autumn_hill_view_4k.hdr");
-
-		m_Panel.SetContext(m_ActiveScene);
+        m_SceneRenderer = CreateRef<SceneRenderer>(m_ActiveScene);
+        //m_SkyboxEntity = m_ActiveScene->CreateEntity("Skybox Entity");
+		//m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = Cubemap::Create("assets/textures/skyboxes/sunny_country_road_4k.hdr");
+        //
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
 
 	void EditorLayer::OnDetach()
@@ -74,9 +37,9 @@ namespace RXNEditor {
 	void EditorLayer::OnUpdate(float deltaTime)
 	{
 
-        m_Camera->OnUpdate(deltaTime);
+        m_EditorCamera->OnUpdate(deltaTime);
 
-        m_ActiveScene->OnRenderEditor(deltaTime, *m_Camera, m_RenderTarget);
+        m_SceneRenderer->RenderEditor(*m_EditorCamera);
         //m_ActiveScene->OnUpdateRuntime(deltaTime, m_RenderTarget);
 
         m_FPS = 1.0f / deltaTime;
@@ -88,7 +51,7 @@ namespace RXNEditor {
 
 	void EditorLayer::OnEvent(Event& event)
 	{
-        m_Camera->OnEvent(event);
+        m_EditorCamera->OnEvent(event);
 
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e)->bool { return OnKeyPressed(e); });
@@ -97,25 +60,21 @@ namespace RXNEditor {
             {
                 if (e.GetMouseButton() == MouseCode::ButtonLeft)
                 {
-                    // Only pick if we are hovering the viewport and NOT using a Gizmo
                     if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(KeyCode::LeftAlt))
                     {
-                        auto [mx, my] = ImGui::GetMousePos(); // Global mouse pos
+                        auto [mx, my] = ImGui::GetMousePos();
 
-                        // Convert global mouse to viewport-relative mouse
                         mx -= m_ViewportBounds[0].x;
                         my -= m_ViewportBounds[0].y;
 
-                        // Ensure click is actually inside viewport bounds
                         glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
                         if (mx >= 0 && my >= 0 && mx < viewportSize.x && my < viewportSize.y)
                         {
                             Ray ray = CastRayFromMouse(mx, my);
                             Entity pickedEntity = m_ActiveScene->GetEntityByRay(ray);
 
-                            // Update Selection
-                            m_Panel.SetSelectedEntity(pickedEntity);
-                            return true; // Consumed
+                            m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
+                            return true;
                         }
                     }
                 }
@@ -216,7 +175,8 @@ namespace RXNEditor {
             ImGui::EndMenuBar();
         }
 
-        m_Panel.OnImGuiRender();
+        m_SceneHierarchyPanel.OnImGuiRender();
+        m_ContentBrowserPanel.OnImGuiRender();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
@@ -225,36 +185,39 @@ namespace RXNEditor {
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
 
-        // Calculate strict bounds of the viewport image
         m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
         m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+
+        if(!ImGui::IsAnyItemActive())
+            Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+        else
+            Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered);
 
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-        const auto& renderTargetSpec = m_RenderTarget->GetSpecification();
+        const auto& renderTargetSpec = m_SceneRenderer->GetFinalPass()->GetSpecification();
 
         if (renderTargetSpec.Width != viewportSize.x || renderTargetSpec.Height != viewportSize.y)
         {
-            m_RenderTarget->Resize(viewportSize.x, viewportSize.y);
-            m_Camera->SetViewportSize(viewportSize.x, viewportSize.y);
+            m_SceneRenderer->SetViewportSize(viewportSize.x, viewportSize.y);
+            m_EditorCamera->SetViewportSize(viewportSize.x, viewportSize.y);
             m_ActiveScene->OnViewportResize(viewportSize.x, viewportSize.y);
         }
 
-        uint32_t textureID = m_RenderTarget->GetColorAttachmentRendererID();
+        uint32_t textureID = m_SceneRenderer->GetFinalColorAttachmentRendererID();
         ImGui::Image((void*)textureID, ImVec2{ renderTargetSpec.Width, renderTargetSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-		Entity selectedEntity = m_Panel.GetSelectedEntity();
+		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
         if (selectedEntity && m_GizmoType != -1)
         {
             ImGuizmo::SetOrthographic(false);
             ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
 
-            const glm::mat4& cameraView = m_Camera->GetViewMatrix();
-            const glm::mat4& cameraProj = m_Camera->GetProjection();
+            const glm::mat4& cameraView = m_EditorCamera->GetViewMatrix();
+            const glm::mat4& cameraProj = m_EditorCamera->GetProjection();
 
             auto& entityTC = selectedEntity.GetComponent<TransformComponent>();
 
@@ -277,6 +240,26 @@ namespace RXNEditor {
                 entityTC.Scale = scale;
             }
 
+        }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                std::string path = (const char*)payload->Data;
+
+                if (path.contains(".hdr"))
+                {
+                    Ref<Cubemap> skybox = Cubemap::Create(path);
+                    m_ActiveScene->SetSkybox(skybox);
+                }
+                else
+                {
+                    OpenScene(std::filesystem::path(path).string());
+                    m_SceneRenderer->SetScene(m_ActiveScene);
+                }
+            }
+            ImGui::EndDragDropTarget();
         }
 
         ImGui::End();
@@ -359,18 +342,18 @@ namespace RXNEditor {
     Ray EditorLayer::CastRayFromMouse(float mx, float my)
     {
 
-        float x = (2.0f * mx) / m_RenderTarget->GetSpecification().Width - 1.0f;
-        float y = 1.0f - (2.0f * my) / m_RenderTarget->GetSpecification().Height;
+        float x = (2.0f * mx) / m_SceneRenderer->GetFinalPass()->GetSpecification().Width - 1.0f;
+        float y = 1.0f - (2.0f * my) / m_SceneRenderer->GetFinalPass()->GetSpecification().Height;
 
         glm::vec4 ray_clip = glm::vec4(x, y, -1.0f, 1.0f);
 
-        glm::vec4 ray_eye = glm::inverse(m_Camera->GetProjection()) * ray_clip;
+        glm::vec4 ray_eye = glm::inverse(m_EditorCamera->GetProjection()) * ray_clip;
         ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
 
-        glm::vec3 ray_wor = glm::vec3(glm::inverse(m_Camera->GetViewMatrix()) * ray_eye);
+        glm::vec3 ray_wor = glm::vec3(glm::inverse(m_EditorCamera->GetViewMatrix()) * ray_eye);
         ray_wor = glm::normalize(ray_wor);
 
-        return { m_Camera->GetPosition(), ray_wor };
+        return { m_EditorCamera->GetPosition(), ray_wor };
     }
 
     void EditorLayer::SaveSceneAs(const std::string& path)
@@ -389,13 +372,13 @@ namespace RXNEditor {
             m_ActiveScene = CreateRef<Scene>();
             SceneSerializer m_SceneSerializer(m_ActiveScene);
             m_SceneSerializer.Deserialize(path);
-            m_Panel.SetContext(m_ActiveScene);
+            m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         }
     }
     void EditorLayer::NewScene()
     {
         m_ActiveScene = CreateRef<Scene>();
-        m_Panel.SetContext(m_ActiveScene);
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
 
 }

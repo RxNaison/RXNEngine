@@ -200,20 +200,20 @@ namespace RXNEngine {
 			out << YAML::EndMap;
 		}
 
-		if (entity.HasComponent<SkyboxComponent>())
-		{
-			out << YAML::Key << "SkyboxComponent";
-			out << YAML::BeginMap;
-
-			auto& sc = entity.GetComponent<SkyboxComponent>();
-
-			if (sc.Texture)
-				out << YAML::Key << "TexturePath" << YAML::Value << sc.Texture->GetPath();
-
-			out << YAML::Key << "Intensity" << YAML::Value << sc.Intensity;
-
-			out << YAML::EndMap;
-		}
+		//if (entity.HasComponent<SkyboxComponent>())
+		//{
+		//	out << YAML::Key << "SkyboxComponent";
+		//	out << YAML::BeginMap;
+		//
+		//	auto& sc = entity.GetComponent<SkyboxComponent>();
+		//
+		//	if (sc.Texture)
+		//		out << YAML::Key << "TexturePath" << YAML::Value << sc.Texture->GetPath();
+		//
+		//	out << YAML::Key << "Intensity" << YAML::Value << sc.Intensity;
+		//
+		//	out << YAML::EndMap;
+		//}
 
 		if (entity.HasComponent<DirectionalLightComponent>())
 		{
@@ -253,6 +253,18 @@ namespace RXNEngine {
 		Entity primaryCam = m_Scene->GetPrimaryCameraEntity();
 		if (primaryCam)
 			out << YAML::Key << "PrimaryCameraID" << YAML::Value << primaryCam.GetUUID();
+
+		if (m_Scene->m_Skybox)
+		{
+			out << YAML::Key << "Skybox";
+			out << YAML::BeginMap;
+						
+			out << YAML::Key << "TexturePath" << YAML::Value << m_Scene->m_Skybox->GetPath();
+			
+			out << YAML::Key << "Intensity" << YAML::Value << m_Scene->m_SkyboxIntensity;
+			
+			out << YAML::EndMap;
+		}
 
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 		m_Scene->GetRaw().view<entt::entity>().each([&](auto entityID)
@@ -298,6 +310,15 @@ namespace RXNEngine {
 		UUID primaryCameraID = UUID::Null;
 		if (data["PrimaryCameraID"])
 			primaryCameraID = data["PrimaryCameraID"].as<UUID>();
+
+		if (data["Skybox"])
+		{
+			if (data["TexturePath"])
+				m_Scene->m_Skybox = Cubemap::Create(data["TexturePath"].as<std::string>());
+	
+			if (data["Intensity"])
+				m_Scene->m_SkyboxIntensity = data["Intensity"].as<float>();
+		}
 
 		auto entities = data["Entities"];
 		if (entities)
@@ -358,18 +379,6 @@ namespace RXNEngine {
 
 						mc.ModelResource = CreateRef<Model>(path, defaultShader);
 					}
-				}
-
-				auto skyboxComponent = entity["SkyboxComponent"];
-				if (skyboxComponent)
-				{
-					auto& sc = deserializedEntity.AddComponent<SkyboxComponent>();
-
-					if (skyboxComponent["TexturePath"])
-						sc.Texture = Cubemap::Create(skyboxComponent["TexturePath"].as<std::string>());
-
-					if (skyboxComponent["Intensity"])
-						sc.Intensity = skyboxComponent["Intensity"].as<float>();
 				}
 
 				auto directionalLightComponent = entity["DirectionalLightComponent"];

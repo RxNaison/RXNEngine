@@ -89,15 +89,6 @@ namespace RXNEngine {
 		CameraComponent(const CameraComponent&) = default;
 	};
 
-	struct SkyboxComponent
-	{
-		Ref<Cubemap> Texture;
-		float Intensity = 1.0f;
-
-		SkyboxComponent() = default;
-		SkyboxComponent(const SkyboxComponent&) = default;
-	};
-
 	class ScriptableEntity;
 	struct NativeScriptComponent
 	{

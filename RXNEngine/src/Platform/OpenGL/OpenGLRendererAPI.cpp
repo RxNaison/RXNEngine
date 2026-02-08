@@ -79,7 +79,15 @@ namespace RXNEngine {
 
 	void OpenGLRendererAPI::SetCullFace(CullFace face)
 	{
-		glCullFace(GLCullFace(face));
+		if (face == CullFace::None)
+		{
+			glDisable(GL_CULL_FACE);
+		}
+		else
+		{
+			glEnable(GL_CULL_FACE);
+			glCullFace(GLCullFace(face));
+		}
 	}
 
 	void OpenGLRendererAPI::BindTextureID(uint32_t slot, uint32_t textureID)

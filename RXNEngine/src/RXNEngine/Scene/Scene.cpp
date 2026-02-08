@@ -123,20 +123,7 @@ namespace RXNEngine {
             }
         }
 
-        Ref<Cubemap> skybox = nullptr;
-        {
-            auto view = m_Registry.view<SkyboxComponent>();
-            for (auto entity : view)
-            {
-                const auto& sb = view.get<SkyboxComponent>(entity);
-                skybox = sb.Texture;
-
-                // TODO: apply sb.Intensity
-                break;
-            }
-        }
-
-        Renderer::BeginScene(camera, cameraTransform, lightEnv, skybox, renderTarget);
+        Renderer::BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
 
         auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
         for (auto entity : group)
@@ -146,8 +133,8 @@ namespace RXNEngine {
                 Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
         }
 
-        if (skybox)
-            Renderer::DrawSkybox(skybox, camera, cameraTransform);
+        if (m_Skybox)
+            Renderer::DrawSkybox(m_Skybox, camera, cameraTransform);
 
         Renderer::EndScene();
 
@@ -184,20 +171,7 @@ namespace RXNEngine {
             }
         }
 
-        Ref<Cubemap> skybox = nullptr;
-        {
-            auto view = m_Registry.view<SkyboxComponent>();
-            for (auto entity : view)
-            {
-                const auto& sb = view.get<SkyboxComponent>(entity);
-                skybox = sb.Texture;
-
-                // TODO: apply sb.Intensity
-                break;
-            }
-        }
-
-        Renderer::BeginScene(camera, lightEnv, skybox, renderTarget);
+        Renderer::BeginScene(camera, lightEnv, m_Skybox, renderTarget);
 
         auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
         for (auto entity : group)
@@ -207,25 +181,15 @@ namespace RXNEngine {
                 Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
         }
 
-        if (skybox)
-            Renderer::DrawSkybox(skybox, camera);
+        if (m_Skybox)
+            Renderer::DrawSkybox(m_Skybox, camera);
 
         Renderer::EndScene();
     }
 
-    void Scene::OnUpdateRuntime(float deltaTime, Ref<RenderTarget>& renderTarget)
+    void Scene::OnUpdateRuntime(float deltaTime)
     {
         OnUpdateSimulation(deltaTime);
-
-        Entity cameraEntity = GetPrimaryCameraEntity();
-
-        if (cameraEntity)
-        {
-            auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-            auto transform = cameraEntity.GetComponent<TransformComponent>().GetTransform();
-
-            OnRender(camera, transform, renderTarget);
-        }
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)

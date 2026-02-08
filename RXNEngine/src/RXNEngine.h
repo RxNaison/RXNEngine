@@ -3,6 +3,7 @@
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Core/Layer.h"
 #include "RXNEngine/Core/Log.h"
+#include "RXNEngine/Core/Time.h"
 
 #include "RXNEngine/Utils/PlatformUtils.h"
 
@@ -12,6 +13,7 @@
 #include "RXNEngine/ImGui/ImGuiLayer.h"
 
 #include "RXNEngine/Renderer/Renderer.h"
+#include "RXNEngine/Renderer/SceneRenderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
 #include "RXNEngine/Renderer/RenderTarget.h"
 

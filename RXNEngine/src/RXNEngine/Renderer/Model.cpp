@@ -45,7 +45,8 @@ namespace RXNEngine {
 			aiProcess_CalcTangentSpace |
 			aiProcess_OptimizeMeshes |
 			aiProcess_OptimizeGraph |
-			aiProcess_JoinIdenticalVertices
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_PreTransformVertices
 		);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)

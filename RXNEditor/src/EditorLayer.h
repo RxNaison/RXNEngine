@@ -2,6 +2,7 @@
 #include <RXNEngine.h>
 
 #include "SceneHierarchyPanel.h"
+#include "ContentBrowserPanel.h"
 
 using namespace RXNEngine;
 
@@ -30,23 +31,19 @@ namespace RXNEditor {
 		Ray CastRayFromMouse(float mx, float my);
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
-		void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color);
-
 	private:
-		Ref<RenderTarget> m_RenderTarget;
-		Ref<Shader> m_ModelShader;
-		Ref<EditorCamera> m_Camera;
+		Ref<SceneRenderer> m_SceneRenderer;
+		Ref<EditorCamera> m_EditorCamera;
 
 		Ref<Scene> m_ActiveScene;
 		Entity m_CameraEntity;
-		Entity m_ModelEntity;
-		Entity m_SkyboxEntity;
 
 		uint32_t m_FPS = 0;
 
 		uint32_t m_GizmoType = -1;
 
-		SceneHierarchyPanel m_Panel;
+		SceneHierarchyPanel m_SceneHierarchyPanel;
+		ContentBrowserPanel m_ContentBrowserPanel;
 
 		glm::vec2 m_ViewportBounds[2];
 		bool m_ViewportFocused = false;

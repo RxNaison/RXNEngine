@@ -28,7 +28,8 @@ namespace RXNEngine {
 
 		enum class CullFace
 		{
-			Back = 0,
+			None = 0,
+			Back,
 			Front,
 			FrontAndBack
 		};

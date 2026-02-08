@@ -186,14 +186,6 @@ namespace RXNEditor {
                     ImGui::CloseCurrentPopup();
                 }
             }
-            if (!m_SelectedEntity.HasComponent<SkyboxComponent>())
-            {
-                if (ImGui::MenuItem("Skybox"))
-                {
-                    m_SelectedEntity.AddComponent<SkyboxComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();
@@ -297,6 +289,16 @@ namespace RXNEditor {
                     if(!path.empty())
                         component.ModelResource = CreateRef<Model>(path, Shader::Create("assets/shaders/pbr.glsl"));
                 }
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string path = (const char*)payload->Data;
+                        if (!path.empty())
+                            component.ModelResource = CreateRef<Model>(path, Shader::Create("assets/shaders/pbr.glsl"));
+                    }
+                    ImGui::EndDragDropTarget();
+                }
 
                 ImGui::Columns(1);
 
@@ -340,15 +342,6 @@ namespace RXNEditor {
                 ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 100.0f);
                 ImGui::DragFloat("Radius", &component.Radius, 0.1f, 0.0f, 1000.0f);
                 ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 1.0f);
-            });
-
-
-        // --- 7. Skybox Component ---
-        DrawComponent<SkyboxComponent>("Skybox", entity, [](auto& component)
-            {
-                ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 10.0f);
-                ImGui::Text("Texture: %s", component.Texture ? "Loaded" : "None");
-                // Future: Add DragDrop target for HDR texture here
             });
     }
 
