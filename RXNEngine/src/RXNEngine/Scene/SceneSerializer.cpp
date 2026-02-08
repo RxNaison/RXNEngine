@@ -311,13 +311,15 @@ namespace RXNEngine {
 		if (data["PrimaryCameraID"])
 			primaryCameraID = data["PrimaryCameraID"].as<UUID>();
 
-		if (data["Skybox"])
+		auto skyboxData = data["Skybox"];
+
+		if (skyboxData)
 		{
-			if (data["TexturePath"])
-				m_Scene->m_Skybox = Cubemap::Create(data["TexturePath"].as<std::string>());
+			if (skyboxData["TexturePath"])
+				m_Scene->m_Skybox = Cubemap::Create(skyboxData["TexturePath"].as<std::string>());
 	
-			if (data["Intensity"])
-				m_Scene->m_SkyboxIntensity = data["Intensity"].as<float>();
+			if (skyboxData["Intensity"])
+				m_Scene->m_SkyboxIntensity = skyboxData["Intensity"].as<float>();
 		}
 
 		auto entities = data["Entities"];
