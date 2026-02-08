@@ -25,28 +25,28 @@ const float PI = 3.14159265359;
 void main()
 {		
     vec3 N = normalize(v_WorldPos);
-    vec3 irradiance = vec3(0.0);   
-    
-    // Tangent space calculation
-    vec3 up    = vec3(0.0, 1.0, 0.0);
+    vec3 irradiance = vec3(0.0);
+
+    vec3 up = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
     vec3 right = normalize(cross(up, N));
-    up         = normalize(cross(N, right));
+    up = cross(N, right);
        
     float sampleDelta = 0.025;
     float nrSamples = 0.0;
 
-    // Convolution loop
     for(float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
     {
         for(float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta)
         {
-            // Spherical to Cartesian (in tangent space)
             vec3 tangentSample = vec3(sin(theta) * cos(phi),  sin(theta) * sin(phi), cos(theta));
             
-            // Tangent space to World
             vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * N; 
 
-            irradiance += texture(u_EnvironmentMap, sampleVec).rgb * cos(theta) * sin(theta);
+            vec3 envColor = textureLod(u_EnvironmentMap, sampleVec, 3.0).rgb;
+            
+            envColor = min(envColor, vec3(50.0));
+
+            irradiance += envColor * cos(theta) * sin(theta);
             nrSamples++;
         }
     }

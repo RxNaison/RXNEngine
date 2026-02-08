@@ -20,6 +20,7 @@ in vec3 v_WorldPos;
 
 uniform samplerCube u_EnvironmentMap;
 uniform float u_Roughness;
+const float u_Resolution = 512.0;
 
 const float PI = 3.14159265359;
 
@@ -61,6 +62,17 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
     return normalize(sampleVec);
 }
 
+float D_GGX(float NdotH, float roughness)
+{
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH2 = NdotH * NdotH;
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+    return nom / denom;
+}
+
 void main()
 {		
     vec3 N = normalize(v_WorldPos);
@@ -80,7 +92,22 @@ void main()
         float NdotL = max(dot(N, L), 0.0);
         if(NdotL > 0.0)
         {
-            prefilteredColor += texture(u_EnvironmentMap, L).rgb * NdotL;
+            float NdotH = max(dot(N, H), 0.0);
+            float HdotV = max(dot(H, V), 0.0);
+            float D   = D_GGX(NdotH, u_Roughness);
+            float pdf = (D * NdotH) / (4.0 * HdotV) + 0.0001; 
+            
+            float saTexel  = 4.0 * PI / (6.0 * u_Resolution * u_Resolution);
+            float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
+            float mipLevel = u_Roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
+
+            mipLevel += 1.0; 
+
+            vec3 envColor = textureLod(u_EnvironmentMap, L, mipLevel).rgb;
+            
+            envColor = min(envColor, vec3(50.0));
+            
+            prefilteredColor += envColor * NdotL;
             totalWeight      += NdotL;
         }
     }
