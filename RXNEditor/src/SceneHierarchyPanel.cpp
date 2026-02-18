@@ -202,6 +202,22 @@ namespace RXNEditor {
                     ImGui::CloseCurrentPopup();
                 }
             }
+            if (!m_SelectedEntity.HasComponent<SphereColliderComponent>())
+            {
+                if (ImGui::MenuItem("Sphere Collider"))
+                {
+                    m_SelectedEntity.AddComponent<SphereColliderComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!m_SelectedEntity.HasComponent<CapsuleColliderComponent>())
+            {
+                if (ImGui::MenuItem("Capsule Collider"))
+                {
+                    m_SelectedEntity.AddComponent<CapsuleColliderComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();
@@ -393,6 +409,26 @@ namespace RXNEditor {
 				ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+            });
+        // --- 9. Sphere Collider ---
+        DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
+            {
+                ImGui::DragFloat("Radius", &component.Radius, 0.05f, 0.0f, 100.0f);
+                DrawVec3Control("Offset", component.Offset);
+                ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
+                ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
+                ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+            });
+
+        // --- 10. Capsule Collider ---
+        DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
+            {
+                ImGui::DragFloat("Radius", &component.Radius, 0.05f, 0.0f, 100.0f);
+                ImGui::DragFloat("Height", &component.Height, 0.05f, 0.0f, 100.0f);
+                DrawVec3Control("Offset", component.Offset);
+                ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
+                ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
+                ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
             });
     }
 

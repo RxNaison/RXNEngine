@@ -136,4 +136,37 @@ namespace RXNEngine {
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const BoxColliderComponent&) = default;
 	};
+
+	struct SphereColliderComponent
+	{
+		float Radius = 0.5f;
+		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
+
+		float StaticFriction = 0.5f;
+		float DynamicFriction = 0.5f;
+		float Restitution = 0.1f;
+
+		void* RuntimeShape = nullptr;
+		void* RuntimeMaterial = nullptr;
+
+		SphereColliderComponent() = default;
+		SphereColliderComponent(const SphereColliderComponent&) = default;
+	};
+
+	struct CapsuleColliderComponent
+	{
+		float Radius = 0.5f;
+		float Height = 1.0f;
+		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
+
+		float StaticFriction = 0.5f;
+		float DynamicFriction = 0.5f;
+		float Restitution = 0.1f;
+
+		void* RuntimeShape = nullptr;
+		void* RuntimeMaterial = nullptr;
+
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+	};
 }

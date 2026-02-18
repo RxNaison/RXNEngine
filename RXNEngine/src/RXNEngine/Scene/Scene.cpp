@@ -303,7 +303,6 @@ namespace RXNEngine {
             if (entity.HasComponent<BoxColliderComponent>())
             {
                 auto& bc = entity.GetComponent<BoxColliderComponent>();
-
                 physx::PxMaterial* material = physics->createMaterial(bc.StaticFriction, bc.DynamicFriction, bc.Restitution);
                 bc.RuntimeMaterial = material;
 
@@ -311,10 +310,40 @@ namespace RXNEngine {
                 physx::PxBoxGeometry boxGeom(PhysicsUtils::GLMToPhysX(colliderSize));
 
                 physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
-
                 shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(bc.Offset)));
-
                 bc.RuntimeShape = shape;
+            }
+
+            if (entity.HasComponent<SphereColliderComponent>())
+            {
+                auto& sc = entity.GetComponent<SphereColliderComponent>();
+                physx::PxMaterial* material = physics->createMaterial(sc.StaticFriction, sc.DynamicFriction, sc.Restitution);
+                sc.RuntimeMaterial = material;
+
+                float maxScale = glm::max(transform.Scale.x, glm::max(transform.Scale.y, transform.Scale.z));
+                physx::PxSphereGeometry sphereGeom(sc.Radius * maxScale);
+
+                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, sphereGeom, *material);
+                shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(sc.Offset)));
+                sc.RuntimeShape = shape;
+            }
+
+            if (entity.HasComponent<CapsuleColliderComponent>())
+            {
+                auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                physx::PxMaterial* material = physics->createMaterial(cc.StaticFriction, cc.DynamicFriction, cc.Restitution);
+                cc.RuntimeMaterial = material;
+
+                float radiusScale = glm::max(transform.Scale.x, transform.Scale.z);
+                physx::PxCapsuleGeometry capsuleGeom(cc.Radius * radiusScale, (cc.Height / 2.0f) * transform.Scale.y);
+
+                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, capsuleGeom, *material);
+
+                // align it to the Y
+                physx::PxQuat relativeRot(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f));
+
+                shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(cc.Offset), relativeRot));
+                cc.RuntimeShape = shape;
             }
 
             if (rb.Type != RigidbodyComponent::BodyType::Static)
