@@ -20,7 +20,7 @@ namespace RXNEditor {
 		RXNEngine::Ref<RXNEngine::Texture2D> m_DirectoryIcon;
 		RXNEngine::Ref<RXNEngine::Texture2D> m_FileIcon;
 
-		bool m_SettingsWindow;
+		bool m_SettingsWindow = false;
 	};
 
 }

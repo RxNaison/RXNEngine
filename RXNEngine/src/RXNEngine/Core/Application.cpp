@@ -4,6 +4,7 @@
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
 #include "RXNEngine/Core/Time.h"
+#include "RXNEngine/Physics/PhysicsSystem.h"
 
 namespace RXNEngine {
 
@@ -18,6 +19,7 @@ namespace RXNEngine {
 		m_Window->SetEventCallback([this](Event& e) { OnEvent(e); });
 
 		Renderer::Init();
+		PhysicsSystem::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -25,7 +27,7 @@ namespace RXNEngine {
 
 	Application::~Application()
 	{
-
+		PhysicsSystem::Shutdown();
 	}
 
 	void Application::PushLayer(Layer* layer)

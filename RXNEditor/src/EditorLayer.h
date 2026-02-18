@@ -3,6 +3,7 @@
 
 #include "SceneHierarchyPanel.h"
 #include "ContentBrowserPanel.h"
+#include "EnvironmentPanel.h"
 
 using namespace RXNEngine;
 
@@ -29,7 +30,11 @@ namespace RXNEditor {
 		void SaveSceneAs(const std::string& path);
 
 		Ray CastRayFromMouse(float mx, float my);
-		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+	private:
+		enum class SceneState
+		{
+			Edit = 0, Play = 1, Simulate = 2
+		};
 
 	private:
 		Ref<SceneRenderer> m_SceneRenderer;
@@ -44,9 +49,12 @@ namespace RXNEditor {
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
+		EnvironmentPanel m_EnvironmentPanel;
 
 		glm::vec2 m_ViewportBounds[2];
 		bool m_ViewportFocused = false;
 		bool m_ViewportHovered = false;
+
+		SceneState m_SceneState = SceneState::Edit;
 	};
 }

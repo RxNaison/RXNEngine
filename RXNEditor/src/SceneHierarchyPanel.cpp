@@ -186,6 +186,22 @@ namespace RXNEditor {
                     ImGui::CloseCurrentPopup();
                 }
             }
+            if (!m_SelectedEntity.HasComponent<RigidbodyComponent>())
+            {
+                if (ImGui::MenuItem("Rigidbody"))
+                {
+                    m_SelectedEntity.AddComponent<RigidbodyComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!m_SelectedEntity.HasComponent<BoxColliderComponent>())
+            {
+                if (ImGui::MenuItem("Box Collider"))
+                {
+                    m_SelectedEntity.AddComponent<BoxColliderComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();
@@ -342,6 +358,41 @@ namespace RXNEditor {
                 ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 100.0f);
                 ImGui::DragFloat("Radius", &component.Radius, 0.1f, 0.0f, 1000.0f);
                 ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 1.0f);
+            });
+
+        // --- 7. Rigidbody ---
+        DrawComponent<RigidbodyComponent>("Rigidbody", entity, [](auto& component)
+            {
+                const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+                const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
+                if (ImGui::BeginCombo("Body Type", currentBodyTypeString))
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
+                        if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
+                        {
+                            currentBodyTypeString = bodyTypeStrings[i];
+                            component.Type = (RigidbodyComponent::BodyType)i;
+                        }
+                        if (isSelected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::DragFloat("Mass", &component.Mass, 0.1f, 0.0f, 1000.0f);
+                ImGui::DragFloat("Linear Drag", &component.LinearDrag, 0.01f, 0.0f, 1.0f);
+				ImGui::DragFloat("Angular Drag", &component.AngularDrag, 0.01f, 0.0f, 1.0f);
+            });
+
+        // --- 8. Box Collider ---
+        DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
+            {
+				DrawVec3Control("HalfExtents", component.HalfExtents, 0.5f);
+				DrawVec3Control("Offset", component.Offset);
+				ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
+				ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
+				ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
             });
     }
 

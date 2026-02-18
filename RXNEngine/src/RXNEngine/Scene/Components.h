@@ -40,7 +40,7 @@ namespace RXNEngine {
 	struct TransformComponent
 	{
 		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
-		glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f }; // Euler angles in radians
+		glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f }; // in radians
 		glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
 
 		TransformComponent() = default;
@@ -103,5 +103,37 @@ namespace RXNEngine {
 			InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
 			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
 		}
+	};
+
+	struct RigidbodyComponent
+	{
+		enum class BodyType { Static = 0, Dynamic, Kinematic };
+
+		BodyType Type = BodyType::Dynamic;
+		float Mass = 1.0f;
+
+		float LinearDrag = 0.05f;
+		float AngularDrag = 0.05f;
+
+		void* RuntimeActor = nullptr;
+
+		RigidbodyComponent() = default;
+		RigidbodyComponent(const RigidbodyComponent&) = default;
+	};
+
+	struct BoxColliderComponent
+	{
+		glm::vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
+		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
+
+		float StaticFriction = 0.5f;
+		float DynamicFriction = 0.5f;
+		float Restitution = 0.1f;
+
+		void* RuntimeShape = nullptr;
+		void* RuntimeMaterial = nullptr;
+
+		BoxColliderComponent() = default;
+		BoxColliderComponent(const BoxColliderComponent&) = default;
 	};
 }

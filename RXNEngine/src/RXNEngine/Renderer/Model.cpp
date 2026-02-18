@@ -24,8 +24,6 @@ namespace RXNEngine {
 	Model::Model(const std::string& path, const Ref<Shader>& defaultShader)
 		: m_DefaultShader(defaultShader), m_Path(path)
 	{
-		auto startTimepoint = std::chrono::steady_clock::now();
-
 		std::string cachePath = path + ".rxn";
 
 		if (std::filesystem::exists(cachePath))
@@ -45,8 +43,8 @@ namespace RXNEngine {
 			aiProcess_CalcTangentSpace |
 			aiProcess_OptimizeMeshes |
 			aiProcess_OptimizeGraph |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_PreTransformVertices
+			aiProcess_JoinIdenticalVertices// |
+			//aiProcess_PreTransformVertices
 		);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)

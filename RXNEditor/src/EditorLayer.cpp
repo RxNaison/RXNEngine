@@ -24,10 +24,9 @@ namespace RXNEditor {
         m_ActiveScene = CreateRef<Scene>();
 
         m_SceneRenderer = CreateRef<SceneRenderer>(m_ActiveScene);
-        //m_SkyboxEntity = m_ActiveScene->CreateEntity("Skybox Entity");
-		//m_SkyboxEntity.AddComponent<SkyboxComponent>().Texture = Cubemap::Create("assets/textures/skyboxes/sunny_country_road_4k.hdr");
-        //
+
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_EnvironmentPanel.SetContext(m_SceneRenderer);
 	}
 
 	void EditorLayer::OnDetach()
@@ -36,11 +35,28 @@ namespace RXNEditor {
 
 	void EditorLayer::OnUpdate(float deltaTime)
 	{
-
-        m_EditorCamera->OnUpdate(deltaTime);
-
-        m_SceneRenderer->RenderEditor(*m_EditorCamera);
-        //m_ActiveScene->OnUpdateRuntime(deltaTime, m_RenderTarget);
+        switch (m_SceneState)
+        {
+            case SceneState::Edit:
+            {
+                m_EditorCamera->OnUpdate(deltaTime);
+                m_SceneRenderer->RenderEditor(*m_EditorCamera);
+                break;
+            }
+            case SceneState::Simulate:
+            {
+                m_EditorCamera->OnUpdate(deltaTime);
+                m_ActiveScene->OnUpdateSimulation(deltaTime);
+                m_SceneRenderer->RenderEditor(*m_EditorCamera);
+                break;
+            }
+            case SceneState::Play:
+            {
+                m_ActiveScene->OnUpdateRuntime(deltaTime);
+                m_SceneRenderer->RenderRuntime();
+                break;
+            }
+        }
 
         m_FPS = 1.0f / deltaTime;
 	}
@@ -177,6 +193,7 @@ namespace RXNEditor {
 
         m_SceneHierarchyPanel.OnImGuiRender();
         m_ContentBrowserPanel.OnImGuiRender();
+        m_EnvironmentPanel.OnImGuiRender();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
@@ -210,7 +227,7 @@ namespace RXNEditor {
         ImGui::Image((void*)textureID, ImVec2{ renderTargetSpec.Width, renderTargetSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-        if (selectedEntity && m_GizmoType != -1)
+        if (selectedEntity && m_GizmoType != -1 && m_SceneState != SceneState::Play)
         {
             ImGuizmo::SetOrthographic(false);
             ImGuizmo::SetDrawlist();
@@ -253,7 +270,7 @@ namespace RXNEditor {
                     Ref<Cubemap> skybox = Cubemap::Create(path);
                     m_ActiveScene->SetSkybox(skybox);
                 }
-                else
+                else if(path.contains(".rxns"))
                 {
                     OpenScene(std::filesystem::path(path).string());
                     m_SceneRenderer->SetScene(m_ActiveScene);
@@ -334,6 +351,33 @@ namespace RXNEditor {
                     m_GizmoType = ImGuizmo::OPERATION::SCALE;
                 break;
             }
+            case KeyCode::Delete:
+            {
+                if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
+                {
+                    Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+                    if (selectedEntity)
+                    {
+                        m_SceneHierarchyPanel.SetSelectedEntity({});
+                        m_ActiveScene->DestroyEntity(selectedEntity);
+                    }
+                }
+                break;
+            }
+            case KeyCode::P:
+            {
+                if (m_SceneState == SceneState::Play)
+                {
+                    m_ActiveScene->OnRuntimeStop();
+                    m_SceneState = SceneState::Edit;
+                }
+                else
+                {
+					m_ActiveScene->OnRuntimeStart();
+                    m_SceneState = SceneState::Play;
+                }
+                break;
+            }
         }
 
         return false;
@@ -341,7 +385,6 @@ namespace RXNEditor {
 
     Ray EditorLayer::CastRayFromMouse(float mx, float my)
     {
-
         float x = (2.0f * mx) / m_SceneRenderer->GetFinalPass()->GetSpecification().Width - 1.0f;
         float y = 1.0f - (2.0f * my) / m_SceneRenderer->GetFinalPass()->GetSpecification().Height;
 
@@ -379,6 +422,7 @@ namespace RXNEditor {
     {
         m_ActiveScene = CreateRef<Scene>();
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneRenderer->SetScene(m_ActiveScene);
     }
 
 }

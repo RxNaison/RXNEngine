@@ -21,7 +21,7 @@ namespace RXNEngine {
             float Exposure = 1.0f;
             float Gamma = 2.2f;
             bool AutoExposure = false; //TODO
-            bool ShowBoundingBoxes = false;
+            bool ShowBoundingBoxes = false; //TODO
         };
     public:
         SceneRenderer(Ref<Scene> scene, const SceneRendererSpecification& spec = SceneRendererSpecification());
@@ -37,6 +37,8 @@ namespace RXNEngine {
 
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }
         uint32_t GetFinalColorAttachmentRendererID() { return m_FinalPass->GetColorAttachmentRendererID(); }
+
+        Settings& GetSettings() { return m_Settings; }
 
      private:
         void RenderGeometry(const Camera& camera, const glm::mat4& viewProj);

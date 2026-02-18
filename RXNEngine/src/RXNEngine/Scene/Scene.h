@@ -29,6 +29,9 @@ namespace RXNEngine {
 		void OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget);
 		void OnUpdateRuntime(float deltaTime);
 
+		void OnRuntimeStart();
+		void OnRuntimeStop();
+
 		void OnViewportResize(uint32_t width, uint32_t height);
 
 		Entity GetEntityByUUID(UUID uuid);

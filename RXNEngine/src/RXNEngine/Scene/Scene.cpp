@@ -3,8 +3,17 @@
 #include "Components.h"
 #include "Entity.h"
 #include "RXNEngine/Renderer/Renderer.h"
+#include "RXNEngine/Physics/PhysicsSystem.h"
 
 namespace RXNEngine {
+
+    namespace PhysicsUtils {
+        inline physx::PxVec3 GLMToPhysX(const glm::vec3& vec) { return { vec.x, vec.y, vec.z }; }
+        inline glm::vec3 PhysXToGLM(const physx::PxVec3& vec) { return { vec.x, vec.y, vec.z }; }
+
+        inline physx::PxQuat GLMToPhysX(const glm::quat& q) { return { q.x, q.y, q.z, q.w }; }
+        inline glm::quat PhysXToGLM(const physx::PxQuat& q) { return { q.w, q.x, q.y, q.z }; }
+    }
 
     Scene::Scene()
     {
@@ -76,20 +85,25 @@ namespace RXNEngine {
 
     void Scene::OnUpdateSimulation(float deltaTime)
     {
-        m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+        PhysicsSystem::Update(deltaTime);
+        auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
+        for (auto e : view)
+        {
+            Entity entity = { e, this };
+            auto& transform = entity.GetComponent<TransformComponent>();
+            auto& rb = entity.GetComponent<RigidbodyComponent>();
+
+            if (rb.Type != RigidbodyComponent::BodyType::Static && rb.RuntimeActor)
             {
-                if (!nsc.Instance)
-                {
-                    nsc.Instance = nsc.InstantiateScript();
+                physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)rb.RuntimeActor;
+                physx::PxTransform pxTransform = actor->getGlobalPose();
 
-                    nsc.Instance->m_EntityHandle = entity;
-                    nsc.Instance->m_Scene = this;
+                transform.Translation = PhysicsUtils::PhysXToGLM(pxTransform.p);
 
-                    nsc.Instance->OnCreate();
-                }
-
-                nsc.Instance->OnUpdate(deltaTime);
-            });
+                glm::quat q = PhysicsUtils::PhysXToGLM(pxTransform.q);
+                transform.Rotation = glm::eulerAngles(q);
+            }
+        }
     }
 
     void Scene::OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget)
@@ -190,6 +204,21 @@ namespace RXNEngine {
     void Scene::OnUpdateRuntime(float deltaTime)
     {
         OnUpdateSimulation(deltaTime);
+
+        m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+            {
+                if (!nsc.Instance)
+                {
+                    nsc.Instance = nsc.InstantiateScript();
+
+                    nsc.Instance->m_EntityHandle = entity;
+                    nsc.Instance->m_Scene = this;
+
+                    nsc.Instance->OnCreate();
+                }
+
+                nsc.Instance->OnUpdate(deltaTime);
+            });
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -232,5 +261,74 @@ namespace RXNEngine {
         {
             m_PrimaryCameraID = entity.GetUUID();
         }
+    }
+
+    void Scene::OnRuntimeStart()
+    {
+        PhysicsSystem::CreateScene();
+        physx::PxPhysics* physics = PhysicsSystem::GetPhysics();
+        physx::PxScene* physicsScene = PhysicsSystem::GetScene();
+
+        auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
+        for (auto e : view)
+        {
+            Entity entity = { e, this };
+            auto& transform = entity.GetComponent<TransformComponent>();
+            auto& rb = entity.GetComponent<RigidbodyComponent>();
+
+            glm::quat rotation = glm::quat(transform.Rotation);
+            physx::PxTransform pxTransform(
+                PhysicsUtils::GLMToPhysX(transform.Translation),
+                PhysicsUtils::GLMToPhysX(rotation)
+            );
+
+            physx::PxRigidActor* actor = nullptr;
+
+            if (rb.Type == RigidbodyComponent::BodyType::Static)
+            {
+                actor = physics->createRigidStatic(pxTransform);
+            }
+            else
+            {
+                physx::PxRigidDynamic* dynamicActor = physics->createRigidDynamic(pxTransform);
+
+                if (rb.Type == RigidbodyComponent::BodyType::Kinematic)
+                    dynamicActor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
+
+                dynamicActor->setLinearDamping(rb.LinearDrag);
+                dynamicActor->setAngularDamping(rb.AngularDrag);
+                actor = dynamicActor;
+            }
+
+            if (entity.HasComponent<BoxColliderComponent>())
+            {
+                auto& bc = entity.GetComponent<BoxColliderComponent>();
+
+                physx::PxMaterial* material = physics->createMaterial(bc.StaticFriction, bc.DynamicFriction, bc.Restitution);
+                bc.RuntimeMaterial = material;
+
+                glm::vec3 colliderSize = bc.HalfExtents * transform.Scale;
+                physx::PxBoxGeometry boxGeom(PhysicsUtils::GLMToPhysX(colliderSize));
+
+                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
+
+                shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(bc.Offset)));
+
+                bc.RuntimeShape = shape;
+            }
+
+            if (rb.Type != RigidbodyComponent::BodyType::Static)
+            {
+                physx::PxRigidBodyExt::updateMassAndInertia(*(physx::PxRigidDynamic*)actor, rb.Mass);
+            }
+
+            physicsScene->addActor(*actor);
+            rb.RuntimeActor = actor;
+        }
+    }
+
+    void Scene::OnRuntimeStop()
+    {
+        PhysicsSystem::DestroyScene();
     }
 }

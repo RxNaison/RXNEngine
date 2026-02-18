@@ -19,3 +19,6 @@
 [submodule "RXNEngine/vendor/ImGuizmo"]
 	path = RXNEngine/vendor/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "RXNEngine/vendor/PhysX"]
+	path = RXNEngine/vendor/PhysX
+	url = https://github.com/NVIDIA-Omniverse/PhysX.git
