@@ -115,7 +115,7 @@ namespace RXNEngine {
 
         const auto& layout = instanceData->GetLayout();
 
-        // calculate this offset automatically. 
+        // calculate this offset automatically
         uint32_t attribIndex = 4;
 
         for (const auto& element : layout)
@@ -135,8 +135,7 @@ namespace RXNEngine {
 					attribIndex++;
 					break;
 				}
-            // Handle Mat4/Mat3 if your layout used them directly (splitting into columns)
-            // ...
+            // TODO: Mat4/Mat3
             }
         }
 

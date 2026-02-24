@@ -63,6 +63,9 @@ namespace RXNEngine {
 
         s_Scene = s_Physics->createScene(sceneDesc);
 
+        s_Scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
+        s_Scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+
         s_ControllerManager = PxCreateControllerManager(*s_Scene);
 
         PxPvdSceneClient* pvdClient = s_Scene->getScenePvdClient();

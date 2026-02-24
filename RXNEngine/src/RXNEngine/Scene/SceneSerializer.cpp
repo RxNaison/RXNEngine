@@ -200,21 +200,6 @@ namespace RXNEngine {
 			out << YAML::EndMap;
 		}
 
-		//if (entity.HasComponent<SkyboxComponent>())
-		//{
-		//	out << YAML::Key << "SkyboxComponent";
-		//	out << YAML::BeginMap;
-		//
-		//	auto& sc = entity.GetComponent<SkyboxComponent>();
-		//
-		//	if (sc.Texture)
-		//		out << YAML::Key << "TexturePath" << YAML::Value << sc.Texture->GetPath();
-		//
-		//	out << YAML::Key << "Intensity" << YAML::Value << sc.Intensity;
-		//
-		//	out << YAML::EndMap;
-		//}
-
 		if (entity.HasComponent<DirectionalLightComponent>())
 		{
 			out << YAML::Key << "DirectionalLightComponent";
@@ -239,6 +224,66 @@ namespace RXNEngine {
 			out << YAML::Key << "Falloff" << YAML::Value << tc.Falloff;
 
 			out << YAML::EndMap; // PointLightComponent
+		}
+
+		if (entity.HasComponent<RigidbodyComponent>())
+		{
+			out << YAML::Key << "RigidbodyComponent";
+			out << YAML::BeginMap; // RigidbodyComponent
+
+			auto& rb = entity.GetComponent<RigidbodyComponent>();
+			out << YAML::Key << "Type" << YAML::Value << (int)rb.Type;
+			out << YAML::Key << "Mass" << YAML::Value << rb.Mass;
+			out << YAML::Key << "LinearDrag" << YAML::Value << rb.LinearDrag;
+			out << YAML::Key << "AngularDrag" << YAML::Value << rb.AngularDrag;
+
+			out << YAML::EndMap; // RigidbodyComponent
+		}
+
+		if (entity.HasComponent<BoxColliderComponent>())
+		{
+			out << YAML::Key << "BoxColliderComponent";
+			out << YAML::BeginMap; // BoxColliderComponent
+
+			auto& bc = entity.GetComponent<BoxColliderComponent>();
+			out << YAML::Key << "HalfExtents" << YAML::Value << bc.HalfExtents;
+			out << YAML::Key << "Offset" << YAML::Value << bc.Offset;
+			out << YAML::Key << "StaticFriction" << YAML::Value << bc.StaticFriction;
+			out << YAML::Key << "DynamicFriction" << YAML::Value << bc.DynamicFriction;
+			out << YAML::Key << "Restitution" << YAML::Value << bc.Restitution;
+
+			out << YAML::EndMap; // BoxColliderComponent
+		}
+
+		if (entity.HasComponent<SphereColliderComponent>())
+		{
+			out << YAML::Key << "SphereColliderComponent";
+			out << YAML::BeginMap; // SphereColliderComponent
+
+			auto& sc = entity.GetComponent<SphereColliderComponent>();
+			out << YAML::Key << "Radius" << YAML::Value << sc.Radius;
+			out << YAML::Key << "Offset" << YAML::Value << sc.Offset;
+			out << YAML::Key << "StaticFriction" << YAML::Value << sc.StaticFriction;
+			out << YAML::Key << "DynamicFriction" << YAML::Value << sc.DynamicFriction;
+			out << YAML::Key << "Restitution" << YAML::Value << sc.Restitution;
+
+			out << YAML::EndMap; // SphereColliderComponent
+		}
+
+		if (entity.HasComponent<CapsuleColliderComponent>())
+		{
+			out << YAML::Key << "CapsuleColliderComponent";
+			out << YAML::BeginMap; // CapsuleColliderComponent
+
+			auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+			out << YAML::Key << "Radius" << YAML::Value << cc.Radius;
+			out << YAML::Key << "Height" << YAML::Value << cc.Height;
+			out << YAML::Key << "Offset" << YAML::Value << cc.Offset;
+			out << YAML::Key << "StaticFriction" << YAML::Value << cc.StaticFriction;
+			out << YAML::Key << "DynamicFriction" << YAML::Value << cc.DynamicFriction;
+			out << YAML::Key << "Restitution" << YAML::Value << cc.Restitution;
+
+			out << YAML::EndMap; // CapsuleColliderComponent
 		}
 
 		out << YAML::EndMap; // Entity
@@ -401,6 +446,50 @@ namespace RXNEngine {
 					plc.Intensity = pointLightComponent["Intensity"].as<float>();
 					plc.Radius = pointLightComponent["Radius"].as<float>();
 					plc.Falloff = pointLightComponent["Falloff"].as<float>();
+				}
+
+				auto rigidbodyComponent = entity["RigidbodyComponent"];
+				if (rigidbodyComponent)
+				{
+					auto& rb = deserializedEntity.AddComponent<RigidbodyComponent>();
+					rb.Type = (RigidbodyComponent::BodyType)rigidbodyComponent["Type"].as<int>();
+					rb.Mass = rigidbodyComponent["Mass"].as<float>();
+					rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
+					rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
+				}
+
+				auto boxColliderComponent = entity["BoxColliderComponent"];
+				if (boxColliderComponent)
+				{
+					auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
+					bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
+					bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+					bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
+					bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
+					bc.Restitution = boxColliderComponent["Restitution"].as<float>();
+				}
+
+				auto sphereColliderComponent = entity["SphereColliderComponent"];
+				if (sphereColliderComponent)
+				{
+					auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
+					sc.Radius = sphereColliderComponent["Radius"].as<float>();
+					sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
+					sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
+					sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
+					sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
+				}
+
+				auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
+				if (capsuleColliderComponent)
+				{
+					auto& cc = deserializedEntity.AddComponent<CapsuleColliderComponent>();
+					cc.Radius = capsuleColliderComponent["Radius"].as<float>();
+					cc.Height = capsuleColliderComponent["Height"].as<float>();
+					cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
+					cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
+					cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
+					cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
 				}
 
 				if (primaryCameraID != UUID::Null && uuid == (uint64_t)primaryCameraID)

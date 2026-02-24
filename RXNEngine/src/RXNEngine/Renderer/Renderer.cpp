@@ -42,6 +42,12 @@ namespace RXNEngine {
         std::vector<float> CascadeSplits;
     };
 
+    struct LineVertex
+    {
+        glm::vec3 Position;
+        glm::vec4 Color;
+    };
+
     struct RendererData
     {
         Ref<RenderTarget> CurrentRenderTarget = nullptr;
@@ -71,6 +77,13 @@ namespace RXNEngine {
 
         Ref<Cubemap> SceneEnvironment;
 		ShadowData ShadowData;
+
+        Ref<VertexArray> LineVAO;
+        Ref<VertexBuffer> LineVBO;
+        Ref<Shader> LineShader;
+
+        std::vector<LineVertex> LineVertices;
+        const uint32_t MaxLineVertices = 100000;
     };
 
     static RendererData s_Data;
@@ -211,6 +224,15 @@ namespace RXNEngine {
         s_Data.ShadowData.ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowData::ShadowDataGPU), 2);
 
         s_Data.ShadowData.CascadeSplits = { 7.0f, 25.0f, 90.0f, 1000.0f };
+
+        s_Data.LineVAO = VertexArray::Create();
+        s_Data.LineVBO = VertexBuffer::Create(s_Data.MaxLineVertices * sizeof(LineVertex));
+        s_Data.LineVBO->SetLayout({
+            { ShaderDataType::Float3, "a_Position" },
+            { ShaderDataType::Float4, "a_Color" }
+            });
+        s_Data.LineVAO->AddVertexBuffer(s_Data.LineVBO);
+        s_Data.LineShader = Shader::Create("assets/shaders/line.glsl");
     }
 
     void Renderer::Shutdown()
@@ -310,6 +332,7 @@ namespace RXNEngine {
         s_Data.CurrentShaderID = 0;
         s_Data.CurrentVertexArrayID = 0;
         std::fill(s_Data.TextureSlots.begin(), s_Data.TextureSlots.end(), 0);
+        s_Data.LineVertices.clear();
     }
 
     void Renderer::Submit(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4& transform)
@@ -351,6 +374,120 @@ namespace RXNEngine {
             glm::mat4 finalTransform = transform * submesh.LocalTransform;
 
             Renderer::Submit(submesh.Geometry, submesh.Surface, finalTransform);
+        }
+    }
+
+    void Renderer::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color)
+    {
+        if (s_Data.LineVertices.size() >= s_Data.MaxLineVertices)
+            return;
+
+        s_Data.LineVertices.push_back({ p0, color });
+        s_Data.LineVertices.push_back({ p1, color });
+    }
+
+    void Renderer::DrawWireBox(const glm::mat4& transform, const glm::vec4& color)
+    {
+        glm::vec3 lineVertices[8];
+        for (size_t i = 0; i < 8; i++)
+        {
+            float x = (i & 1) ? 0.5f : -0.5f;
+            float y = (i & 2) ? 0.5f : -0.5f;
+            float z = (i & 4) ? 0.5f : -0.5f;
+            lineVertices[i] = transform * glm::vec4(x, y, z, 1.0f);
+        }
+
+        // bottom face
+        DrawLine(lineVertices[0], lineVertices[1], color);
+        DrawLine(lineVertices[1], lineVertices[3], color);
+        DrawLine(lineVertices[3], lineVertices[2], color);
+        DrawLine(lineVertices[2], lineVertices[0], color);
+
+        // top face
+        DrawLine(lineVertices[4], lineVertices[5], color);
+        DrawLine(lineVertices[5], lineVertices[7], color);
+        DrawLine(lineVertices[7], lineVertices[6], color);
+        DrawLine(lineVertices[6], lineVertices[4], color);
+
+        // pillars
+        DrawLine(lineVertices[0], lineVertices[4], color);
+        DrawLine(lineVertices[1], lineVertices[5], color);
+        DrawLine(lineVertices[2], lineVertices[6], color);
+        DrawLine(lineVertices[3], lineVertices[7], color);
+    }
+
+    void Renderer::DrawWireSphere(const glm::mat4& transform, const glm::vec4& color)
+    {
+        const int segments = 32;
+        constexpr float angleStep = glm::two_pi<float>() / segments;
+
+        for (int i = 0; i < segments; i++)
+        {
+            float a0 = i * angleStep;
+            float a1 = (i + 1) * angleStep;
+
+            glm::vec3 p0_xy = glm::vec3(glm::cos(a0), glm::sin(a0), 0.0f);
+            glm::vec3 p1_xy = glm::vec3(glm::cos(a1), glm::sin(a1), 0.0f);
+            DrawLine(transform * glm::vec4(p0_xy, 1.0f), transform * glm::vec4(p1_xy, 1.0f), color);
+
+            glm::vec3 p0_xz = glm::vec3(glm::cos(a0), 0.0f, glm::sin(a0));
+            glm::vec3 p1_xz = glm::vec3(glm::cos(a1), 0.0f, glm::sin(a1));
+            DrawLine(transform * glm::vec4(p0_xz, 1.0f), transform * glm::vec4(p1_xz, 1.0f), color);
+
+            glm::vec3 p0_yz = glm::vec3(0.0f, glm::cos(a0), glm::sin(a0));
+            glm::vec3 p1_yz = glm::vec3(0.0f, glm::cos(a1), glm::sin(a1));
+            DrawLine(transform * glm::vec4(p0_yz, 1.0f), transform * glm::vec4(p1_yz, 1.0f), color);
+        }
+    }
+
+    void Renderer::DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color)
+    {
+        const int segments = 32;
+        const float angleStep = glm::two_pi<float>() / segments;
+        const float halfHeight = height / 2.0f;
+
+        DrawLine(transform * glm::vec4(radius, halfHeight, 0.0f, 1.0f), transform * glm::vec4(radius, -halfHeight, 0.0f, 1.0f), color);
+        DrawLine(transform * glm::vec4(-radius, halfHeight, 0.0f, 1.0f), transform * glm::vec4(-radius, -halfHeight, 0.0f, 1.0f), color);
+        DrawLine(transform * glm::vec4(0.0f, halfHeight, radius, 1.0f), transform * glm::vec4(0.0f, -halfHeight, radius, 1.0f), color);
+        DrawLine(transform * glm::vec4(0.0f, halfHeight, -radius, 1.0f), transform * glm::vec4(0.0f, -halfHeight, -radius, 1.0f), color);
+
+        for (int i = 0; i < segments; i++)
+        {
+            float a0 = i * angleStep;
+            float a1 = (i + 1) * angleStep;
+
+            glm::vec3 p0_top = glm::vec3(glm::cos(a0) * radius, halfHeight, glm::sin(a0) * radius);
+            glm::vec3 p1_top = glm::vec3(glm::cos(a1) * radius, halfHeight, glm::sin(a1) * radius);
+            DrawLine(transform * glm::vec4(p0_top, 1.0f), transform * glm::vec4(p1_top, 1.0f), color);
+
+            glm::vec3 p0_bot = glm::vec3(glm::cos(a0) * radius, -halfHeight, glm::sin(a0) * radius);
+            glm::vec3 p1_bot = glm::vec3(glm::cos(a1) * radius, -halfHeight, glm::sin(a1) * radius);
+            DrawLine(transform * glm::vec4(p0_bot, 1.0f), transform * glm::vec4(p1_bot, 1.0f), color);
+
+            if (i < segments / 2)
+            {
+                float ha0 = a0;
+                float ha1 = a1;
+
+                glm::vec3 p0_xy_top = glm::vec3(glm::cos(ha0) * radius, glm::sin(ha0) * radius + halfHeight, 0.0f);
+                glm::vec3 p1_xy_top = glm::vec3(glm::cos(ha1) * radius, glm::sin(ha1) * radius + halfHeight, 0.0f);
+                DrawLine(transform * glm::vec4(p0_xy_top, 1.0f), transform * glm::vec4(p1_xy_top, 1.0f), color);
+
+                glm::vec3 p0_yz_top = glm::vec3(0.0f, glm::sin(ha0) * radius + halfHeight, glm::cos(ha0) * radius);
+                glm::vec3 p1_yz_top = glm::vec3(0.0f, glm::sin(ha1) * radius + halfHeight, glm::cos(ha1) * radius);
+                DrawLine(transform * glm::vec4(p0_yz_top, 1.0f), transform * glm::vec4(p1_yz_top, 1.0f), color);
+
+                float ba0 = ha0 + glm::pi<float>();
+                float ba1 = ha1 + glm::pi<float>();
+
+                glm::vec3 p0_xy_bot = glm::vec3(glm::cos(ba0) * radius, glm::sin(ba0) * radius - halfHeight, 0.0f);
+                glm::vec3 p1_xy_bot = glm::vec3(glm::cos(ba1) * radius, glm::sin(ba1) * radius - halfHeight, 0.0f);
+                DrawLine(transform * glm::vec4(p0_xy_bot, 1.0f), transform * glm::vec4(p1_xy_bot, 1.0f), color);
+
+                glm::vec3 p0_yz_bot = glm::vec3(0.0f, glm::sin(ba0) * radius - halfHeight, glm::cos(ba0) * radius);
+                glm::vec3 p1_yz_bot = glm::vec3(0.0f, glm::sin(ba1) * radius - halfHeight, glm::cos(ba1) * radius);
+                DrawLine(transform * glm::vec4(p0_yz_bot, 1.0f), transform * glm::vec4(p1_yz_bot, 1.0f), color);
+            }
         }
     }
 
@@ -418,6 +555,17 @@ namespace RXNEngine {
             });
 
         ExecuteQueue(s_Data.TransparentQueue);
+
+        if (!s_Data.LineVertices.empty())
+        {
+            s_Data.LineVBO->SetData(s_Data.LineVertices.data(), s_Data.LineVertices.size() * sizeof(LineVertex));
+
+            s_Data.LineShader->Bind();
+            s_Data.LineShader->SetMat4("u_ViewProjection", s_Data.ViewProjectionMatrix);
+
+            RenderCommand::SetLineWidth(2.0f);
+            RenderCommand::DrawLines(s_Data.LineVAO, s_Data.LineVertices.size());
+        }
     }
 
     void Renderer::ExecuteQueue(const std::vector<RenderCommandPacket>& queue)

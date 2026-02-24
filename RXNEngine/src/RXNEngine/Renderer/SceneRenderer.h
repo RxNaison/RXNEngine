@@ -22,6 +22,7 @@ namespace RXNEngine {
             float Gamma = 2.2f;
             bool AutoExposure = false; //TODO
             bool ShowBoundingBoxes = false; //TODO
+            bool ShowColliders = false;
         };
     public:
         SceneRenderer(Ref<Scene> scene, const SceneRendererSpecification& spec = SceneRendererSpecification());
@@ -41,7 +42,6 @@ namespace RXNEngine {
         Settings& GetSettings() { return m_Settings; }
 
      private:
-        void RenderGeometry(const Camera& camera, const glm::mat4& viewProj);
         void RenderPostProcess();
 
     private:

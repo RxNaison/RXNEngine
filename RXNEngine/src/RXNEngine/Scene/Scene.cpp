@@ -13,6 +13,14 @@ namespace RXNEngine {
 
         inline physx::PxQuat GLMToPhysX(const glm::quat& q) { return { q.x, q.y, q.z, q.w }; }
         inline glm::quat PhysXToGLM(const physx::PxQuat& q) { return { q.w, q.x, q.y, q.z }; }
+
+        static glm::vec4 UnpackPhysXColor(physx::PxU32 color)
+        {
+            float b = (float)((color >> 16) & 0xFF) / 255.0f;
+            float g = (float)((color >> 8) & 0xFF) / 255.0f;
+            float r = (float)((color >> 0) & 0xFF) / 255.0f;
+            return { r, g, b, 1.0f };
+        }
     }
 
     Scene::Scene()
@@ -106,7 +114,7 @@ namespace RXNEngine {
         }
     }
 
-    void Scene::OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget)
+    void Scene::OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
         LightEnvironment lightEnv;
         {
@@ -147,6 +155,23 @@ namespace RXNEngine {
                 Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
         }
 
+        if (showColliders)
+        {
+            if (PhysicsSystem::GetScene())
+            {
+                const physx::PxRenderBuffer& rb = PhysicsSystem::GetScene()->getRenderBuffer();
+                for (physx::PxU32 i = 0; i < rb.getNbLines(); i++)
+                {
+                    const physx::PxDebugLine& line = rb.getLines()[i];
+                    Renderer::DrawLine(
+                        PhysicsUtils::PhysXToGLM(line.pos0),
+                        PhysicsUtils::PhysXToGLM(line.pos1),
+                        PhysicsUtils::UnpackPhysXColor(line.color0)
+                    );
+                }
+            }
+        }
+
         if (m_Skybox)
             Renderer::DrawSkybox(m_Skybox, camera, cameraTransform);
 
@@ -154,7 +179,7 @@ namespace RXNEngine {
 
     }
 
-    void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget)
+    void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
         LightEnvironment lightEnv;
         {
@@ -197,6 +222,62 @@ namespace RXNEngine {
 
         if (m_Skybox)
             Renderer::DrawSkybox(m_Skybox, camera);
+
+        if (showColliders)
+        {
+            {
+                auto view = m_Registry.view<TransformComponent, BoxColliderComponent>();
+                for (auto entity : view)
+                {
+                    auto [tc, bc] = view.get<TransformComponent, BoxColliderComponent>(entity);
+
+                    glm::vec3 scale = tc.Scale * bc.HalfExtents * 2.0f;
+
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), tc.Translation)
+                        * glm::toMat4(glm::quat(tc.Rotation))
+                        * glm::translate(glm::mat4(1.0f), bc.Offset)
+                        * glm::scale(glm::mat4(1.0f), scale);
+
+                    Renderer::DrawWireBox(transform, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+                }
+            }
+
+            {
+                auto view = m_Registry.view<TransformComponent, SphereColliderComponent>();
+                for (auto entity : view)
+                {
+                    auto [tc, sc] = view.get<TransformComponent, SphereColliderComponent>(entity);
+
+                    float maxScale = glm::max(tc.Scale.x, glm::max(tc.Scale.y, tc.Scale.z));
+                    glm::vec3 scale = glm::vec3(sc.Radius * maxScale);
+
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), tc.Translation)
+                        * glm::toMat4(glm::quat(tc.Rotation))
+                        * glm::translate(glm::mat4(1.0f), sc.Offset)
+                        * glm::scale(glm::mat4(1.0f), scale);
+
+                    Renderer::DrawWireSphere(transform, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+                }
+            }
+
+            {
+                auto view = m_Registry.view<TransformComponent, CapsuleColliderComponent>();
+                for (auto entity : view)
+                {
+                    auto [tc, cc] = view.get<TransformComponent, CapsuleColliderComponent>(entity);
+
+                    float radiusScale = glm::max(tc.Scale.x, tc.Scale.z);
+                    float radius = cc.Radius * radiusScale;
+                    float height = cc.Height * tc.Scale.y;
+
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), tc.Translation)
+                        * glm::toMat4(glm::quat(tc.Rotation))
+                        * glm::translate(glm::mat4(1.0f), cc.Offset);
+
+                    Renderer::DrawWireCapsule(transform, radius, height, glm::vec4(0.0f, 0.8f, 1.0f, 1.0f));
+                }
+            }
+        }
 
         Renderer::EndScene();
     }

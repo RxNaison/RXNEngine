@@ -63,7 +63,7 @@ namespace RXNEngine {
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
         RenderCommand::Clear();
 
-        m_Scene->OnRenderEditor(0.0f, (EditorCamera&)camera, m_GeoPass);
+        m_Scene->OnRenderEditor(0.0f, (EditorCamera&)camera, m_GeoPass, m_Settings.ShowColliders);
 
         m_GeoPass->Unbind();
 
@@ -86,7 +86,7 @@ namespace RXNEngine {
         RenderCommand::Clear();
 
 
-        m_Scene->OnRender(camera, transform, m_GeoPass);
+        m_Scene->OnRender(camera, transform, m_GeoPass, m_Settings.ShowColliders);
 
         m_GeoPass->Unbind();
 

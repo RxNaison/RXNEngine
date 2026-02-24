@@ -41,7 +41,7 @@ namespace RXNEditor {
 		Ref<EditorCamera> m_EditorCamera;
 
 		Ref<Scene> m_ActiveScene;
-		Entity m_CameraEntity;
+		std::string m_ActiveScenePath;
 
 		uint32_t m_FPS = 0;
 

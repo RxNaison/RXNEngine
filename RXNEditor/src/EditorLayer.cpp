@@ -322,6 +322,8 @@ namespace RXNEditor {
                 {
                     if (shift)
                         SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+                    else
+                        SaveSceneAs(m_ActiveScenePath);
                 }
 
                 break;
@@ -416,6 +418,8 @@ namespace RXNEditor {
             SceneSerializer m_SceneSerializer(m_ActiveScene);
             m_SceneSerializer.Deserialize(path);
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+            m_ActiveScenePath = path;
         }
     }
     void EditorLayer::NewScene()
@@ -423,6 +427,8 @@ namespace RXNEditor {
         m_ActiveScene = CreateRef<Scene>();
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
+
+        m_ActiveScenePath = {};
     }
 
 }

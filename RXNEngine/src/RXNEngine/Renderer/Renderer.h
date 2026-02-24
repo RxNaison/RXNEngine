@@ -45,6 +45,11 @@ namespace RXNEngine {
 
         static void SubmitMesh(const Model& model, const glm::mat4& transform, const Ref<Material>& material = nullptr);
 
+        static void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color);
+        static void DrawWireBox(const glm::mat4& transform, const glm::vec4& color);
+        static void DrawWireSphere(const glm::mat4& transform, const glm::vec4& color);
+        static void DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color);
+
         static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
     private:
         static void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
