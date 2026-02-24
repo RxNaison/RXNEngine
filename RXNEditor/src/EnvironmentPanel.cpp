@@ -16,9 +16,10 @@ namespace RXNEditor {
 
 	void EnvironmentPanel::OnImGuiRender()
 	{
-		ImGui::Begin("Environment");
+		ImGui::Begin("Settings");
 		ImGui::SliderFloat("Exposure", &m_Context->GetSettings().Exposure, 0, 100);
 		ImGui::SliderFloat("Gamma", &m_Context->GetSettings().Gamma, 0, 100);
+		ImGui::Checkbox("Show Colliders", &m_Context->GetSettings().ShowColliders);
 		ImGui::End();
 	}
 }

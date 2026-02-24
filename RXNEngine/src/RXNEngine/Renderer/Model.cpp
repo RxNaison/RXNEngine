@@ -266,10 +266,46 @@ namespace RXNEngine {
 
 			if (embeddedTexture)
 			{
-				if (embeddedTexture->mHeight == 0)
-					return Texture2D::Create(embeddedTexture->pcData, embeddedTexture->mWidth);
+				std::filesystem::path modelPath = m_Path;
+				std::string modelName = modelPath.stem().string();
+
+				std::string texIdentifier = str.C_Str();
+				std::replace(texIdentifier.begin(), texIdentifier.end(), '*', '_');
+
+				std::string extractedPath = m_Directory + "/" + modelName + "_tex" + texIdentifier + ".png";
+
+				if (m_TextureCache.find(extractedPath) != m_TextureCache.end())
+				{
+					return m_TextureCache[extractedPath];
+				}
+
+				if (!std::filesystem::exists(extractedPath))
+				{
+					if (embeddedTexture->mHeight == 0)
+					{
+						std::ofstream out(extractedPath, std::ios::binary);
+						out.write((const char*)embeddedTexture->pcData, embeddedTexture->mWidth);
+						out.close();
+						RXN_CORE_INFO("Extracted embedded texture to: {0}", extractedPath);
+					}
+					else
+					{
+						RXN_CORE_WARN("Uncompressed embedded textures not supported for extraction!");
+						return Texture2D::WhiteTexture();
+					}
+				}
+
+				Ref<Texture2D> newTexture = Texture2D::Create(extractedPath);
+				if (newTexture->IsLoaded())
+				{
+					m_TextureCache[extractedPath] = newTexture;
+					return newTexture;
+				}
 				else
-					RXN_CORE_WARN("Uncompressed embedded textures not yet implemented!");
+				{
+					RXN_CORE_WARN("Extracted texture failed to load: {0}", extractedPath);
+					return Texture2D::WhiteTexture();
+				}
 			}
 			else
 			{
