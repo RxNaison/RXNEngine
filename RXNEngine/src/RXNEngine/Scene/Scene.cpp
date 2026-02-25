@@ -41,6 +41,7 @@ namespace RXNEngine {
         Entity entity = { m_Registry.create(), this };
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<RelationshipComponent>();
         auto& tag = entity.AddComponent<TagComponent>();
         tag.Tag = name.empty() ? "Entity" : name;
 
@@ -49,7 +50,92 @@ namespace RXNEngine {
 
     void Scene::DestroyEntity(Entity entity)
     {
+        auto& rc = entity.GetComponent<RelationshipComponent>();
+
+        std::vector<UUID> childrenToDestroy = rc.Children;
+        for (auto childID : childrenToDestroy)
+        {
+            Entity child = GetEntityByUUID(childID);
+            if (child)
+                DestroyEntity(child);
+        }
+
+        if (rc.ParentHandle != 0)
+        {
+            Entity parent = GetEntityByUUID(rc.ParentHandle);
+            if (parent)
+            {
+                auto& parentRC = parent.GetComponent<RelationshipComponent>();
+                auto it = std::find(parentRC.Children.begin(), parentRC.Children.end(), entity.GetUUID());
+                if (it != parentRC.Children.end())
+                    parentRC.Children.erase(it);
+            }
+        }
+
         m_Registry.destroy(entity);
+    }
+
+    void Scene::ParentEntity(Entity entity, Entity parent)
+    {
+        if (entity == parent)
+            return;
+
+        if (parent && IsDescendantOf(parent, entity))
+            return;
+
+        auto& rc = entity.GetComponent<RelationshipComponent>();
+
+        if (rc.ParentHandle != 0)
+        {
+            Entity oldParent = GetEntityByUUID(rc.ParentHandle);
+            if (oldParent)
+            {
+                auto& oldParentRC = oldParent.GetComponent<RelationshipComponent>();
+                auto it = std::find(oldParentRC.Children.begin(), oldParentRC.Children.end(), entity.GetUUID());
+                if (it != oldParentRC.Children.end())
+                    oldParentRC.Children.erase(it);
+            }
+        }
+
+        rc.ParentHandle = parent ? parent.GetUUID() : UUID::Null;
+
+        if (parent)
+        {
+            auto& parentRC = parent.GetComponent<RelationshipComponent>();
+            parentRC.Children.push_back(entity.GetUUID());
+        }
+    }
+
+    bool Scene::IsDescendantOf(Entity entity, Entity potentialAscendant)
+    {
+        auto& rc = entity.GetComponent<RelationshipComponent>();
+
+        if (rc.ParentHandle == 0)
+            return false;
+
+        if (rc.ParentHandle == potentialAscendant.GetUUID())
+            return true;
+
+        Entity parent = GetEntityByUUID(rc.ParentHandle);
+
+        if (!parent)
+            return false;
+
+        return IsDescendantOf(parent, potentialAscendant);
+    }
+
+    glm::mat4 Scene::GetWorldTransform(Entity entity)
+    {
+        glm::mat4 transform = entity.GetComponent<TransformComponent>().GetTransform();
+        auto& rc = entity.GetComponent<RelationshipComponent>();
+
+        if (rc.ParentHandle != 0)
+        {
+            Entity parent = GetEntityByUUID(rc.ParentHandle);
+            if (parent)
+                transform = GetWorldTransform(parent) * transform;
+        }
+        return transform;
     }
 
     Entity Scene::GetEntityByRay(const Ray& ray)
@@ -57,13 +143,13 @@ namespace RXNEngine {
         Entity closestEntity = {};
         float closestDistance = FLT_MAX;
 
-        auto view = m_Registry.view<TransformComponent, MeshComponent>();
+        auto view = m_Registry.view<MeshComponent>();
         for (auto entity : view)
         {
-            auto [tc, mc] = view.get<TransformComponent, MeshComponent>(entity);
+            auto mc = view.get<MeshComponent>(entity);
             if (!mc.ModelResource) continue;
 
-            glm::mat4 entityTransform = tc.GetTransform();
+            glm::mat4 entityTransform = GetWorldTransform({ entity, this });
 
             for (const auto& submesh : mc.ModelResource->GetSubmeshes())
             {
@@ -98,18 +184,39 @@ namespace RXNEngine {
         for (auto e : view)
         {
             Entity entity = { e, this };
-            auto& transform = entity.GetComponent<TransformComponent>();
+            auto& tc = entity.GetComponent<TransformComponent>();
             auto& rb = entity.GetComponent<RigidbodyComponent>();
+            auto& rc = entity.GetComponent<RelationshipComponent>();
 
             if (rb.Type != RigidbodyComponent::BodyType::Static && rb.RuntimeActor)
             {
                 physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)rb.RuntimeActor;
                 physx::PxTransform pxTransform = actor->getGlobalPose();
 
-                transform.Translation = PhysicsUtils::PhysXToGLM(pxTransform.p);
+                glm::vec3 worldPos = PhysicsUtils::PhysXToGLM(pxTransform.p);
+                glm::quat worldRot = PhysicsUtils::PhysXToGLM(pxTransform.q);
 
-                glm::quat q = PhysicsUtils::PhysXToGLM(pxTransform.q);
-                transform.Rotation = glm::eulerAngles(q);
+                if (rc.ParentHandle != 0)
+                {
+                    Entity parent = GetEntityByUUID(rc.ParentHandle);
+                    if (parent)
+                    {
+                        glm::mat4 parentWorldTransform = GetWorldTransform(parent);
+                        glm::mat4 entityWorldTransform = glm::translate(glm::mat4(1.0f), worldPos) * glm::toMat4(worldRot) * glm::scale(glm::mat4(1.0f), tc.Scale);
+                        glm::mat4 localTransform = glm::inverse(parentWorldTransform) * entityWorldTransform;
+
+                        glm::vec3 localPos, localRotEuler, localScale;
+                        Math::DecomposeTransform(localTransform, localPos, localRotEuler, localScale);
+
+                        tc.Translation = localPos;
+                        tc.Rotation = localRotEuler;
+                    }
+                }
+                else
+                {
+                    tc.Translation = worldPos;
+                    tc.Rotation = glm::eulerAngles(worldRot);
+                }
             }
         }
     }
@@ -131,12 +238,14 @@ namespace RXNEngine {
             }
         }
         {
-            auto group = m_Registry.group<PointLightComponent>(entt::get<TransformComponent>);
+            auto group = m_Registry.group<PointLightComponent>();
             for (auto entity : group)
             {
-                auto [light, transform] = group.get<PointLightComponent, TransformComponent>(entity);
+                auto light = group.get<PointLightComponent>(entity);
+                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+
                 PointLight pl;
-                pl.Position = transform.Translation;
+                pl.Position = glm::vec3(worldTransform[3]);
                 pl.Color = light.Color;
                 pl.Intensity = light.Intensity;
                 pl.Radius = light.Radius;
@@ -147,12 +256,12 @@ namespace RXNEngine {
 
         Renderer::BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
 
-        auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
+        auto group = m_Registry.group<MeshComponent>();
         for (auto entity : group)
         {
-            auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
+            auto mesh = group.get<MeshComponent>(entity);
             if (mesh.ModelResource)
-                Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
+                Renderer::SubmitMesh(*mesh.ModelResource, GetWorldTransform({ entity, this }));
         }
 
         if (showColliders)
@@ -196,12 +305,14 @@ namespace RXNEngine {
             }
         }
         {
-            auto group = m_Registry.group<PointLightComponent>(entt::get<TransformComponent>);
+            auto group = m_Registry.group<PointLightComponent>();
             for (auto entity : group)
             {
-                auto [light, transform] = group.get<PointLightComponent, TransformComponent>(entity);
+                auto light = group.get<PointLightComponent>(entity);
+                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+
                 PointLight pl;
-                pl.Position = transform.Translation;
+                pl.Position = glm::vec3(worldTransform[3]);
                 pl.Color = light.Color;
                 pl.Intensity = light.Intensity;
                 pl.Radius = light.Radius;
@@ -212,12 +323,12 @@ namespace RXNEngine {
 
         Renderer::BeginScene(camera, lightEnv, m_Skybox, renderTarget);
 
-        auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
+        auto group = m_Registry.group<MeshComponent>();
         for (auto entity : group)
         {
-            auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
+            auto mesh = group.get<MeshComponent>(entity);
             if (mesh.ModelResource)
-                Renderer::SubmitMesh(*mesh.ModelResource, transform.GetTransform());
+                Renderer::SubmitMesh(*mesh.ModelResource, GetWorldTransform({ entity, this }));
         }
 
         if (m_Skybox)
@@ -231,10 +342,14 @@ namespace RXNEngine {
                 {
                     auto [tc, bc] = view.get<TransformComponent, BoxColliderComponent>(entity);
 
-                    glm::vec3 scale = tc.Scale * bc.HalfExtents * 2.0f;
+                    glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+                    glm::vec3 worldTranslation, worldRotation, worldScale;
+                    Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
 
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), tc.Translation)
-                        * glm::toMat4(glm::quat(tc.Rotation))
+                    glm::vec3 scale = worldScale * bc.HalfExtents * 2.0f;
+
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), worldTranslation)
+                        * glm::toMat4(glm::quat(worldRotation))
                         * glm::translate(glm::mat4(1.0f), bc.Offset)
                         * glm::scale(glm::mat4(1.0f), scale);
 
@@ -248,11 +363,15 @@ namespace RXNEngine {
                 {
                     auto [tc, sc] = view.get<TransformComponent, SphereColliderComponent>(entity);
 
-                    float maxScale = glm::max(tc.Scale.x, glm::max(tc.Scale.y, tc.Scale.z));
+                    glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+                    glm::vec3 worldTranslation, worldRotation, worldScale;
+                    Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
+
+                    float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
                     glm::vec3 scale = glm::vec3(sc.Radius * maxScale);
 
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), tc.Translation)
-                        * glm::toMat4(glm::quat(tc.Rotation))
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), worldTranslation)
+                        * glm::toMat4(glm::quat(worldRotation))
                         * glm::translate(glm::mat4(1.0f), sc.Offset)
                         * glm::scale(glm::mat4(1.0f), scale);
 
@@ -266,12 +385,16 @@ namespace RXNEngine {
                 {
                     auto [tc, cc] = view.get<TransformComponent, CapsuleColliderComponent>(entity);
 
-                    float radiusScale = glm::max(tc.Scale.x, tc.Scale.z);
-                    float radius = cc.Radius * radiusScale;
-                    float height = cc.Height * tc.Scale.y;
+                    glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+                    glm::vec3 worldTranslation, worldRotation, worldScale;
+                    Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
 
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), tc.Translation)
-                        * glm::toMat4(glm::quat(tc.Rotation))
+                    float radiusScale = glm::max(worldScale.x, worldScale.z);
+                    float radius = cc.Radius * radiusScale;
+                    float height = cc.Height * worldScale.y;
+
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), worldTranslation)
+                        * glm::toMat4(glm::quat(worldRotation))
                         * glm::translate(glm::mat4(1.0f), cc.Offset);
 
                     Renderer::DrawWireCapsule(transform, radius, height, glm::vec4(0.0f, 0.8f, 1.0f, 1.0f));
@@ -357,11 +480,12 @@ namespace RXNEngine {
             auto& transform = entity.GetComponent<TransformComponent>();
             auto& rb = entity.GetComponent<RigidbodyComponent>();
 
-            glm::quat rotation = glm::quat(transform.Rotation);
-            physx::PxTransform pxTransform(
-                PhysicsUtils::GLMToPhysX(transform.Translation),
-                PhysicsUtils::GLMToPhysX(rotation)
-            );
+            glm::mat4 worldTransform = GetWorldTransform(entity);
+            glm::vec3 worldTranslation, worldRotation, worldScale;
+            Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
+
+            glm::quat rotation = glm::quat(worldRotation);
+            physx::PxTransform pxTransform(PhysicsUtils::GLMToPhysX(worldTranslation), PhysicsUtils::GLMToPhysX(rotation));
 
             physx::PxRigidActor* actor = nullptr;
 
@@ -387,7 +511,7 @@ namespace RXNEngine {
                 physx::PxMaterial* material = physics->createMaterial(bc.StaticFriction, bc.DynamicFriction, bc.Restitution);
                 bc.RuntimeMaterial = material;
 
-                glm::vec3 colliderSize = bc.HalfExtents * transform.Scale;
+                glm::vec3 colliderSize = bc.HalfExtents * worldScale;
                 physx::PxBoxGeometry boxGeom(PhysicsUtils::GLMToPhysX(colliderSize));
 
                 physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
@@ -401,7 +525,7 @@ namespace RXNEngine {
                 physx::PxMaterial* material = physics->createMaterial(sc.StaticFriction, sc.DynamicFriction, sc.Restitution);
                 sc.RuntimeMaterial = material;
 
-                float maxScale = glm::max(transform.Scale.x, glm::max(transform.Scale.y, transform.Scale.z));
+                float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
                 physx::PxSphereGeometry sphereGeom(sc.Radius * maxScale);
 
                 physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, sphereGeom, *material);
@@ -415,8 +539,8 @@ namespace RXNEngine {
                 physx::PxMaterial* material = physics->createMaterial(cc.StaticFriction, cc.DynamicFriction, cc.Restitution);
                 cc.RuntimeMaterial = material;
 
-                float radiusScale = glm::max(transform.Scale.x, transform.Scale.z);
-                physx::PxCapsuleGeometry capsuleGeom(cc.Radius * radiusScale, (cc.Height / 2.0f) * transform.Scale.y);
+                float radiusScale = glm::max(worldScale.x, worldScale.z);
+                physx::PxCapsuleGeometry capsuleGeom(cc.Radius * radiusScale, (cc.Height / 2.0f) * worldScale.y);
 
                 physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, capsuleGeom, *material);
 

@@ -237,20 +237,31 @@ namespace RXNEditor {
             const glm::mat4& cameraProj = m_EditorCamera->GetProjection();
 
             auto& entityTC = selectedEntity.GetComponent<TransformComponent>();
+            auto& entityRC = selectedEntity.GetComponent<RelationshipComponent>();
 
-            glm::mat4 entityTransform = entityTC.GetTransform();
+            glm::mat4 entityWorldTransform = m_ActiveScene->GetWorldTransform(selectedEntity);
 
             bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
             float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 10.0f : 0.5f;
             float snapValues[3] = { snapValue, snapValue, snapValue };
 
             ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,
-                ImGuizmo::LOCAL, glm::value_ptr(entityTransform), nullptr, snap ? snapValues : nullptr);
+                ImGuizmo::LOCAL, glm::value_ptr(entityWorldTransform), nullptr, snap ? snapValues : nullptr);
 
             if (ImGuizmo::IsUsing())
             {
+                if (entityRC.ParentHandle != 0)
+                {
+                    Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
+                    if (parent)
+                    {
+                        glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
+                        entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                    }
+                }
+
                 glm::vec3 translation, rotation, scale;
-                Math::DecomposeTransform(entityTransform, translation, rotation, scale);
+                Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
 
                 entityTC.Translation = translation;
                 entityTC.Rotation = rotation;
@@ -368,15 +379,31 @@ namespace RXNEditor {
             }
             case KeyCode::P:
             {
-                if (m_SceneState == SceneState::Play)
+				if (control && shift)
                 {
-                    m_ActiveScene->OnRuntimeStop();
-                    m_SceneState = SceneState::Edit;
+                    if (m_SceneState == SceneState::Simulate)
+                    {
+                        m_ActiveScene->OnRuntimeStop();
+                        m_SceneState = SceneState::Edit;
+                    }
+                    else
+                    {
+                        m_ActiveScene->OnRuntimeStart();
+                        m_SceneState = SceneState::Simulate;
+                    }
                 }
-                else
+                else if (control)
                 {
-					m_ActiveScene->OnRuntimeStart();
-                    m_SceneState = SceneState::Play;
+                    if (m_SceneState == SceneState::Play)
+                    {
+                        m_ActiveScene->OnRuntimeStop();
+                        m_SceneState = SceneState::Edit;
+                    }
+                    else
+                    {
+                        m_ActiveScene->OnRuntimeStart();
+                        m_SceneState = SceneState::Play;
+                    }
                 }
                 break;
             }

@@ -22,6 +22,10 @@ namespace RXNEngine {
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
+		void ParentEntity(Entity entity, Entity parent);
+		bool IsDescendantOf(Entity entity, Entity potentialAscendant);
+		glm::mat4 GetWorldTransform(Entity entity);
+
 		Entity GetEntityByRay(const Ray& ray);
 
 		void OnUpdateSimulation(float deltaTime);

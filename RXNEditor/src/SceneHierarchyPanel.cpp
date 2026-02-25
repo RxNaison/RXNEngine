@@ -71,8 +71,25 @@ namespace RXNEditor {
             m_Context->GetRaw().view<entt::entity>().each([&](auto entityID)
                 {
                     Entity entity{ entityID, m_Context.get() };
-                    DrawEntityNode(entity);
+                    if (entity.GetComponent<RelationshipComponent>().ParentHandle == 0)
+                        DrawEntityNode(entity);
                 });
+
+            ImVec2 availRegion = ImGui::GetContentRegionAvail();
+
+            ImGui::InvisibleButton("##WindowDropZone", ImVec2(availRegion.x, glm::max(availRegion.y, 20.0f)));
+
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY"))
+                {
+                    UUID droppedEntityID = *(UUID*)payload->Data;
+                    Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
+                    if (droppedEntity)
+                        m_Context->ParentEntity(droppedEntity, {});
+                }
+                ImGui::EndDragDropTarget();
+            }
 
             if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
                 m_SelectedEntity = {};
@@ -97,11 +114,35 @@ namespace RXNEditor {
     void SceneHierarchyPanel::DrawEntityNode(Entity entity)
     {
         auto& tag = entity.GetComponent<TagComponent>().Tag;
+        auto& rc = entity.GetComponent<RelationshipComponent>();
 
         ImGuiTreeNodeFlags flags = ((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
         flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 
+        if (rc.Children.empty())
+            flags |= ImGuiTreeNodeFlags_Leaf;
+
         bool opened = ImGui::TreeNodeEx((void*)(uint64_t)entity.GetUUID(), flags, tag.c_str());
+
+        if (ImGui::BeginDragDropSource())
+        {
+            UUID entityID = entity.GetUUID();
+            ImGui::SetDragDropPayload("SCENE_HIERARCHY_ENTITY", &entityID, sizeof(UUID));
+            ImGui::Text("%s", tag.c_str());
+            ImGui::EndDragDropSource();
+        }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY"))
+            {
+                UUID droppedEntityID = *(UUID*)payload->Data;
+                Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
+                if (droppedEntity)
+                    m_Context->ParentEntity(droppedEntity, entity);
+            }
+            ImGui::EndDragDropTarget();
+        }
 
         if (ImGui::IsItemClicked())
         {
@@ -114,11 +155,23 @@ namespace RXNEditor {
             if (ImGui::MenuItem("Delete Entity"))
                 entityDeleted = true;
 
+            if (ImGui::MenuItem("Create Child Entity"))
+            {
+                Entity child = m_Context->CreateEntity("New Child");
+                m_Context->ParentEntity(child, entity);
+            }
+
             ImGui::EndPopup();
         }
 
         if (opened)
         {
+            for (UUID childID : rc.Children)
+            {
+                Entity child = m_Context->GetEntityByUUID(childID);
+                if (child)
+                    DrawEntityNode(child);
+            }
             ImGui::TreePop();
         }
 

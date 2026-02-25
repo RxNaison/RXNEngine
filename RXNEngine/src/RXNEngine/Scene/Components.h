@@ -57,6 +57,15 @@ namespace RXNEngine {
 		}
 	};
 
+	struct RelationshipComponent
+	{
+		UUID ParentHandle = 0;
+		std::vector<UUID> Children;
+
+		RelationshipComponent() = default;
+		RelationshipComponent(const RelationshipComponent&) = default;
+	};
+
 	struct MeshComponent
 	{
 		Ref<Model> ModelResource;

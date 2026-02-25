@@ -164,6 +164,24 @@ namespace RXNEngine {
 			out << YAML::EndMap; // TransformComponent
 		}
 
+		if (entity.HasComponent<RelationshipComponent>())
+		{
+			out << YAML::Key << "RelationshipComponent";
+			out << YAML::BeginMap; // RelationshipComponent
+
+			auto& rc = entity.GetComponent<RelationshipComponent>();
+			out << YAML::Key << "ParentHandle" << YAML::Value << rc.ParentHandle;
+
+			out << YAML::Key << "Children" << YAML::Value << YAML::BeginSeq;
+			for (auto child : rc.Children)
+			{
+				out << child;
+			}
+			out << YAML::EndSeq;
+
+			out << YAML::EndMap; // RelationshipComponent
+		}
+
 		if (entity.HasComponent<CameraComponent>())
 		{
 			out << YAML::Key << "CameraComponent";
@@ -391,6 +409,22 @@ namespace RXNEngine {
 					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
 					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
 					tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+				}
+
+				auto relationshipComponent = entity["RelationshipComponent"];
+				if (relationshipComponent)
+				{
+					auto& rc = deserializedEntity.GetComponent<RelationshipComponent>();
+					rc.ParentHandle = relationshipComponent["ParentHandle"].as<uint64_t>();
+
+					auto children = relationshipComponent["Children"];
+					if (children)
+					{
+						for (auto child : children)
+						{
+							rc.Children.push_back(child.as<uint64_t>());
+						}
+					}
 				}
 
 				auto cameraComponent = entity["CameraComponent"];
