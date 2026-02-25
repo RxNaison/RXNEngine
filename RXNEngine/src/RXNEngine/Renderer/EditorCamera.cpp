@@ -59,12 +59,12 @@ namespace RXNEngine {
 
 	void EditorCamera::OnUpdate(float ts)
 	{
+		const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
+		glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
+		m_InitialMousePosition = mouse;
+
 		if (Input::IsKeyPressed(KeyCode::LeftAlt))
 		{
-			const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
-			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
-			m_InitialMousePosition = mouse;
-
 			if (Input::IsMouseButtonPressed(MouseCode::ButtonMiddle))
 				MousePan(delta);
 			else if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft))
@@ -72,6 +72,28 @@ namespace RXNEngine {
 			else if (Input::IsMouseButtonPressed(MouseCode::ButtonRight))
 				MouseZoom(delta.y);
 		}
+		else if (Input::IsMouseButtonPressed(MouseCode::ButtonRight))
+		{
+			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
+			m_Yaw += yawSign * delta.x * RotationSpeed();
+			m_Pitch += delta.y * RotationSpeed();
+
+			float moveSpeed = 15.0f;
+			if (Input::IsKeyPressed(KeyCode::LeftShift))
+				moveSpeed *= 3.0f;
+
+			m_Position = CalculatePosition();
+
+			if (Input::IsKeyPressed(KeyCode::W)) m_Position += GetForwardDirection() * moveSpeed * ts;
+			if (Input::IsKeyPressed(KeyCode::S)) m_Position -= GetForwardDirection() * moveSpeed * ts;
+			if (Input::IsKeyPressed(KeyCode::A)) m_Position -= GetRightDirection() * moveSpeed * ts;
+			if (Input::IsKeyPressed(KeyCode::D)) m_Position += GetRightDirection() * moveSpeed * ts;
+			if (Input::IsKeyPressed(KeyCode::Q)) m_Position -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * ts;
+			if (Input::IsKeyPressed(KeyCode::E)) m_Position += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * ts;
+
+			m_FocalPoint = m_Position + GetForwardDirection() * m_Distance;
+		}
+
 		UpdateView();
 	}
 
