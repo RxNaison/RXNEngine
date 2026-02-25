@@ -90,6 +90,55 @@ namespace RXNEngine {
 		}
 	}
 
+	void OpenGLRendererAPI::SetBlend(bool enabled)
+	{
+		if (enabled)
+			glEnable(GL_BLEND);
+		else
+			glDisable(GL_BLEND);
+	}
+
+	void OpenGLRendererAPI::SetBlendFunc(BlendFactor source, BlendFactor destination)
+	{
+		auto BlendFactorToGL = [](BlendFactor factor) -> GLenum
+			{
+				switch (factor)
+				{
+					case BlendFactor::Zero:             return GL_ZERO;
+					case BlendFactor::One:              return GL_ONE;
+					case BlendFactor::SrcColor:         return GL_SRC_COLOR;
+					case BlendFactor::OneMinusSrcColor: return GL_ONE_MINUS_SRC_COLOR;
+					case BlendFactor::DstColor:         return GL_DST_COLOR;
+					case BlendFactor::OneMinusDstColor: return GL_ONE_MINUS_DST_COLOR;
+					case BlendFactor::SrcAlpha:         return GL_SRC_ALPHA;
+					case BlendFactor::OneMinusSrcAlpha: return GL_ONE_MINUS_SRC_ALPHA;
+					case BlendFactor::DstAlpha:         return GL_DST_ALPHA;
+					case BlendFactor::OneMinusDstAlpha: return GL_ONE_MINUS_DST_ALPHA;
+				}
+				return GL_ZERO;
+			};
+
+		glBlendFunc(BlendFactorToGL(source), BlendFactorToGL(destination));
+	}
+
+	void OpenGLRendererAPI::SetBlendEquation(BlendEquation equation)
+	{
+		auto BlendEquationToGL = [](BlendEquation eq) -> GLenum
+			{
+				switch (eq)
+				{
+				case BlendEquation::Add:             return GL_FUNC_ADD;
+				case BlendEquation::Subtract:        return GL_FUNC_SUBTRACT;
+				case BlendEquation::ReverseSubtract: return GL_FUNC_REVERSE_SUBTRACT;
+				case BlendEquation::Min:             return GL_MIN;
+				case BlendEquation::Max:             return GL_MAX;
+				}
+				return GL_FUNC_ADD;
+			};
+
+		glBlendEquation(BlendEquationToGL(equation));
+	}
+
 	void OpenGLRendererAPI::BindTextureID(uint32_t slot, uint32_t textureID)
 	{
 		glBindTextureUnit(slot, textureID);

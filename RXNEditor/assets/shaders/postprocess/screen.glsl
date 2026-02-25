@@ -1,7 +1,6 @@
 #type vertex
 #version 450 core
 
-// Standard Screen Quad Attributes
 layout(location = 0) in vec2 a_Position; 
 layout(location = 1) in vec2 a_TexCoord;
 
@@ -24,10 +23,9 @@ uniform sampler2D u_ScreenTexture;
 uniform float u_Exposure; // Default to 1.0
 uniform float u_Gamma;    // Default to 2.2
 
-// ----------------------------------------------------------------------------
-// ACES TONE MAPPING (Narkowicz approximation)
-// The "AAA" Standard for PBR Engines.
-// ----------------------------------------------------------------------------
+uniform sampler2D u_BloomTexture;
+uniform float u_BloomIntensity; // Default 0.04
+
 vec3 ACESFilm(vec3 x)
 {
     float a = 2.51;
@@ -40,19 +38,13 @@ vec3 ACESFilm(vec3 x)
 
 void main()
 {
-    // 1. Sample the HDR buffer
     vec3 hdrColor = texture(u_ScreenTexture, v_TexCoord).rgb;
+    vec3 bloomColor = texture(u_BloomTexture, v_TexCoord).rgb;
 
-    // 2. Exposure Tone Mapping
-    // Simple exposure adjustment before curve
+    hdrColor += bloomColor * u_BloomIntensity;
+
     vec3 mapped = hdrColor * u_Exposure;
-
-    // 3. Apply ACES Filmic Curve
-    // This compresses HDR values (>1.0) into LDR (0.0 - 1.0) nicely
     mapped = ACESFilm(mapped);
-
-    // 4. Gamma Correction
-    // Transform from Linear Space (Math) to sRGB Space (Monitor)
     mapped = pow(mapped, vec3(1.0 / u_Gamma));
 
     FragColor = vec4(mapped, 1.0);

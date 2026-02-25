@@ -33,6 +33,29 @@ namespace RXNEngine {
 			Front,
 			FrontAndBack
 		};
+
+		enum class BlendFactor
+		{
+			Zero = 0,
+			One,
+			SrcColor,
+			OneMinusSrcColor,
+			DstColor,
+			OneMinusDstColor,
+			SrcAlpha,
+			OneMinusSrcAlpha,
+			DstAlpha,
+			OneMinusDstAlpha
+		};
+
+		enum class BlendEquation
+		{
+			Add = 0,
+			Subtract,
+			ReverseSubtract,
+			Min,
+			Max
+		};
 	public:
 		virtual void Init() = 0;
 
@@ -45,6 +68,10 @@ namespace RXNEngine {
 		virtual void SetDepthTest(bool enabled) = 0;
 		virtual void SetDepthFunc(DepthFunc func) = 0;
 		virtual void SetCullFace(CullFace face) = 0;
+
+		virtual void SetBlend(bool enabled) = 0;
+		virtual void SetBlendFunc(BlendFactor source, BlendFactor destination) = 0;
+		virtual void SetBlendEquation(BlendEquation equation) = 0;
 
 		virtual void BindTextureID(uint32_t slot, uint32_t textureID) = 0;
 

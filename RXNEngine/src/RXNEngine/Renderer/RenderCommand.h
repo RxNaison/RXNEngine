@@ -73,6 +73,21 @@ namespace RXNEngine {
 			s_RendererAPI->SetCullFace(face);
 		}
 
+		inline static void SetBlend(bool enabled)
+		{
+			s_RendererAPI->SetBlend(enabled);
+		}
+
+		inline static void SetBlendFunc(RendererAPI::BlendFactor source, RendererAPI::BlendFactor destination)
+		{
+			s_RendererAPI->SetBlendFunc(source, destination);
+		}
+
+		inline static void SetBlendEquation(RendererAPI::BlendEquation equation)
+		{
+			s_RendererAPI->SetBlendEquation(equation);
+		}
+
 		inline static void BindDefaultRenderTarget()
 		{
 			s_RendererAPI->BindDefaultRenderTarget();

@@ -31,6 +31,8 @@ namespace RXNEngine {
         m_FinalPass = RenderTarget::Create(finalSpec);
 
         m_PostProcessShader = Shader::Create("assets/shaders/postprocess/screen.glsl");
+        m_BloomDownsampleShader = Shader::Create("assets/shaders/postprocess/bloom_downsample.glsl");
+        m_BloomUpsampleShader = Shader::Create("assets/shaders/postprocess/bloom_upsample.glsl");
 
         float quadVertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,  1.0f, -1.0f, 1.0f, 0.0f,
@@ -54,6 +56,28 @@ namespace RXNEngine {
 
             m_GeoPass->Resize(width, height);
             m_FinalPass->Resize(width, height);
+
+            m_BloomMips.clear();
+
+            glm::vec2 mipSize = { (float)width, (float)height };
+            glm::ivec2 mipIntSize = { width, height };
+
+            const uint32_t bloomMipCount = 6;
+            for (uint32_t i = 0; i < bloomMipCount; i++)
+            {
+                mipSize *= 0.5f;
+                mipIntSize /= 2;
+
+                if (mipIntSize.x == 0 || mipIntSize.y == 0)
+                    break;
+
+                RenderTargetSpecification spec;
+                spec.Attachments = { RenderTargetTextureFormat::RGBA16F };
+                spec.Width = mipIntSize.x;
+                spec.Height = mipIntSize.y;
+
+                m_BloomMips.push_back({ mipSize, RenderTarget::Create(spec) });
+            }
         }
     }
 
@@ -67,6 +91,7 @@ namespace RXNEngine {
 
         m_GeoPass->Unbind();
 
+        RenderBloom();
         RenderPostProcess();
     }
 
@@ -90,6 +115,7 @@ namespace RXNEngine {
 
         m_GeoPass->Unbind();
 
+        RenderBloom();
         RenderPostProcess();
     }
 
@@ -98,15 +124,20 @@ namespace RXNEngine {
         m_FinalPass->Bind();
 
         RenderCommand::SetDepthTest(false);
-
         RenderCommand::Clear();
 
         m_PostProcessShader->Bind();
         m_PostProcessShader->SetInt("u_ScreenTexture", 0);
+        m_PostProcessShader->SetInt("u_BloomTexture", 1);
+
         m_PostProcessShader->SetFloat("u_Exposure", m_Settings.Exposure);
         m_PostProcessShader->SetFloat("u_Gamma", m_Settings.Gamma);
+        m_PostProcessShader->SetFloat("u_BloomIntensity", m_Settings.BloomIntensity);
 
         RenderCommand::BindTextureID(0, m_GeoPass->GetColorAttachmentRendererID());
+
+        if (!m_BloomMips.empty())
+            RenderCommand::BindTextureID(1, m_BloomMips[0].Target->GetColorAttachmentRendererID());
 
         m_ScreenQuadVAO->Bind();
         RenderCommand::DrawIndexed(m_ScreenQuadVAO);
@@ -114,5 +145,70 @@ namespace RXNEngine {
         RenderCommand::SetDepthTest(true);
 
         m_FinalPass->Unbind();
+    }
+
+    void SceneRenderer::RenderBloom()
+    {
+        if (m_BloomMips.empty()) return;
+
+        RenderCommand::SetDepthTest(false);
+        m_ScreenQuadVAO->Bind();
+
+        m_BloomDownsampleShader->Bind();
+        m_BloomDownsampleShader->SetInt("u_Texture", 0);
+
+        float knee = m_Settings.BloomThreshold * m_Settings.BloomKnee;
+        glm::vec4 filter = {
+            m_Settings.BloomThreshold,
+            m_Settings.BloomThreshold - knee,
+            2.0f * knee,
+            0.25f / (knee + 0.00001f)
+        };
+        m_BloomDownsampleShader->SetFloat3("u_Threshold", filter);
+
+        uint32_t currentTexture = m_GeoPass->GetColorAttachmentRendererID();
+
+        for (uint32_t i = 0; i < m_BloomMips.size(); i++)
+        {
+            auto& mip = m_BloomMips[i];
+
+            mip.Target->Bind();
+            RenderCommand::SetViewport(0, 0, mip.Size.x, mip.Size.y);
+
+            m_BloomDownsampleShader->SetInt("u_MipLevel", i);
+            m_BloomDownsampleShader->SetFloat2("u_TexelSize", glm::vec2(1.0f / mip.Size.x, 1.0f / mip.Size.y));
+            RenderCommand::BindTextureID(0, currentTexture);
+
+            RenderCommand::DrawIndexed(m_ScreenQuadVAO);
+
+            currentTexture = mip.Target->GetColorAttachmentRendererID();
+            mip.Target->Unbind();
+        }
+
+        m_BloomUpsampleShader->Bind();
+        m_BloomUpsampleShader->SetInt("u_Texture", 0);
+        m_BloomUpsampleShader->SetFloat("u_FilterRadius", m_Settings.BloomFilterRadius);
+
+        RenderCommand::SetBlend(true);
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::One, RendererAPI::BlendFactor::One);
+        RenderCommand::SetBlendEquation(RendererAPI::BlendEquation::Add);
+
+        for (int i = m_BloomMips.size() - 1; i > 0; i--)
+        {
+            auto& currentMip = m_BloomMips[i];
+            auto& nextMip = m_BloomMips[i - 1];
+
+            nextMip.Target->Bind();
+            RenderCommand::SetViewport(0, 0, nextMip.Size.x, nextMip.Size.y);
+
+            RenderCommand::BindTextureID(0, currentMip.Target->GetColorAttachmentRendererID());
+
+            RenderCommand::DrawIndexed(m_ScreenQuadVAO);
+
+            nextMip.Target->Unbind();
+        }
+
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
+        RenderCommand::SetDepthTest(true);
     }
 }

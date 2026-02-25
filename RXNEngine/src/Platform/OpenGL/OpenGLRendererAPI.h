@@ -19,6 +19,10 @@ namespace RXNEngine {
 		virtual void SetDepthFunc(DepthFunc func);
 		virtual void SetCullFace(CullFace face);
 
+		virtual void SetBlend(bool enabled) override;
+		virtual void SetBlendFunc(BlendFactor source, BlendFactor destination) override;
+		virtual void SetBlendEquation(BlendEquation equation) override;
+
 		virtual void BindTextureID(uint32_t slot, uint32_t textureID);
 
 		virtual void Draw(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) override;

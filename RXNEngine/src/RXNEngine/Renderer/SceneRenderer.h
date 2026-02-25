@@ -13,6 +13,12 @@ namespace RXNEngine {
         bool SwapChainTarget = false;
     };
 
+    struct BloomMip
+    {
+        glm::vec2 Size;
+        Ref<RenderTarget> Target;
+    };
+
     class SceneRenderer
     {
     public:
@@ -23,6 +29,11 @@ namespace RXNEngine {
             bool AutoExposure = false; //TODO
             bool ShowBoundingBoxes = false; //TODO
             bool ShowColliders = false;
+
+            float BloomThreshold = 1.0f;
+            float BloomKnee = 0.1f;
+            float BloomIntensity = 0.04f;
+            float BloomFilterRadius = 0.005f;
         };
     public:
         SceneRenderer(Ref<Scene> scene, const SceneRendererSpecification& spec = SceneRendererSpecification());
@@ -43,7 +54,7 @@ namespace RXNEngine {
 
      private:
         void RenderPostProcess();
-
+        void RenderBloom();
     private:
         Ref<Scene> m_Scene;
         SceneRendererSpecification m_Specification;
@@ -54,6 +65,10 @@ namespace RXNEngine {
 
         Ref<Shader> m_PostProcessShader;
         Ref<VertexArray> m_ScreenQuadVAO;
+
+        std::vector<BloomMip> m_BloomMips;
+        Ref<Shader> m_BloomDownsampleShader;
+        Ref<Shader> m_BloomUpsampleShader;
 
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
     };
