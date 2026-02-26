@@ -103,7 +103,7 @@ namespace RXNEngine {
             return;
 
         Camera& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-        glm::mat4 transform = cameraEntity.GetComponent<TransformComponent>().GetTransform();
+        glm::mat4 transform = m_Scene->GetWorldTransform(cameraEntity);
 
         m_GeoPass->Bind();
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
