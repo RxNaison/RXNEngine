@@ -115,7 +115,7 @@ project "RXNEngine"
           PhysXBinDir .. "/debug/PhysXCharacterKinematic_static_64.lib"
       }
     filter "configurations:Release"
-      defines "RXN_RELEASE"
+      defines { "RXN_RELEASE", "NDEBUG" }
       runtime "Release"
       optimize "on"
       links 
@@ -131,7 +131,7 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib"
       }
     filter "configurations:Dist"
-      defines "RXN_DIST"
+      defines { "RXN_DIST", "NDEBUG" }
       runtime "Release"
       optimize "on"
       links 
