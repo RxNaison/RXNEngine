@@ -110,7 +110,6 @@ namespace RXNEngine {
         RenderCommand::SetDepthTest(true);
         RenderCommand::Clear();
 
-
         m_Scene->OnRender(camera, transform, m_GeoPass, m_Settings.ShowColliders);
 
         m_GeoPass->Unbind();

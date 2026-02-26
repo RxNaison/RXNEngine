@@ -178,4 +178,21 @@ namespace RXNEngine {
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
 	};
+
+	template<typename... Component>
+	struct ComponentGroup {};
+
+	using AllComponents = ComponentGroup<
+		TransformComponent,
+		RelationshipComponent,
+		MeshComponent,
+		CameraComponent,
+		DirectionalLightComponent,
+		PointLightComponent,
+		NativeScriptComponent,
+		RigidbodyComponent,
+		BoxColliderComponent,
+		SphereColliderComponent,
+		CapsuleColliderComponent
+	>;
 }

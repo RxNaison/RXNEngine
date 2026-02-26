@@ -21,7 +21,8 @@ namespace RXNEditor {
 	{
 		m_EditorCamera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
 
-        m_ActiveScene = CreateRef<Scene>();
+        m_EditorScene = CreateRef<Scene>();
+        m_ActiveScene = m_EditorScene;
 
         m_SceneRenderer = CreateRef<SceneRenderer>(m_ActiveScene);
 
@@ -221,6 +222,9 @@ namespace RXNEditor {
             m_SceneRenderer->SetViewportSize(viewportSize.x, viewportSize.y);
             m_EditorCamera->SetViewportSize(viewportSize.x, viewportSize.y);
             m_ActiveScene->OnViewportResize(viewportSize.x, viewportSize.y);
+
+            m_ViewportWidth = viewportSize.x;
+            m_ViewportHeight = viewportSize.y;
         }
 
         uint32_t textureID = m_SceneRenderer->GetFinalColorAttachmentRendererID();
@@ -284,7 +288,6 @@ namespace RXNEditor {
                 else if(path.contains(".rxns"))
                 {
                     OpenScene(std::filesystem::path(path).string());
-                    m_SceneRenderer->SetScene(m_ActiveScene);
                 }
             }
             ImGui::EndDragDropTarget();
@@ -383,12 +386,12 @@ namespace RXNEditor {
                 {
                     if (m_SceneState == SceneState::Simulate)
                     {
-                        m_ActiveScene->OnRuntimeStop();
+                        OnSceneStop();
                         m_SceneState = SceneState::Edit;
                     }
                     else
                     {
-                        m_ActiveScene->OnRuntimeStart();
+                        OnSceneSimulate();
                         m_SceneState = SceneState::Simulate;
                     }
                 }
@@ -396,12 +399,12 @@ namespace RXNEditor {
                 {
                     if (m_SceneState == SceneState::Play)
                     {
-                        m_ActiveScene->OnRuntimeStop();
+                        OnSceneStop();
                         m_SceneState = SceneState::Edit;
                     }
                     else
                     {
-                        m_ActiveScene->OnRuntimeStart();
+                        OnScenePlay();
                         m_SceneState = SceneState::Play;
                     }
                 }
@@ -439,23 +442,88 @@ namespace RXNEditor {
 
     void EditorLayer::OpenScene(const std::string& path)
     {
+        if (m_SceneState != SceneState::Edit)
+            OnSceneStop();
+
         if (!path.empty())
         {
-            m_ActiveScene = CreateRef<Scene>();
-            SceneSerializer m_SceneSerializer(m_ActiveScene);
+            m_EditorScene = CreateRef<Scene>();
+            SceneSerializer m_SceneSerializer(m_EditorScene);
             m_SceneSerializer.Deserialize(path);
-            m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
             m_ActiveScenePath = path;
+
+            m_ActiveScene = m_EditorScene;
+            m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+            m_SceneRenderer->SetScene(m_ActiveScene);
+            m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
         }
     }
     void EditorLayer::NewScene()
     {
-        m_ActiveScene = CreateRef<Scene>();
+        if (m_SceneState != SceneState::Edit)
+            OnSceneStop();
+
+        m_EditorScene = CreateRef<Scene>();
+        m_ActiveScene = m_EditorScene;
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
 
         m_ActiveScenePath = {};
     }
 
+    void EditorLayer::OnScenePlay()
+    {
+        m_SceneState = SceneState::Play;
+
+        Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+        UUID selectedUUID = selected ? selected.GetUUID() : UUID::Null;
+
+        m_ActiveScene = Scene::Copy(m_EditorScene);
+        m_ActiveScene->OnRuntimeStart();
+
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneRenderer->SetScene(m_ActiveScene);
+
+        if (selectedUUID != 0)
+            m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));
+    }
+
+    void EditorLayer::OnSceneStop()
+    {
+        if (m_SceneState == SceneState::Play)
+            m_ActiveScene->OnRuntimeStop();
+        else if (m_SceneState == SceneState::Simulate)
+            m_ActiveScene->OnSimulationStop();
+
+        m_SceneState = SceneState::Edit;
+
+        Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+        UUID selectedUUID = selected ? selected.GetUUID() : UUID::Null;
+
+        m_ActiveScene = m_EditorScene;
+
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneRenderer->SetScene(m_ActiveScene);
+
+        if (selectedUUID != 0)
+            m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));
+    }
+
+    void EditorLayer::OnSceneSimulate()
+    {
+        m_SceneState = SceneState::Simulate;
+
+        Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+        UUID selectedUUID = selected ? selected.GetUUID() : UUID::Null;
+
+        m_ActiveScene = Scene::Copy(m_EditorScene);
+
+        m_ActiveScene->OnSimulationStart();
+
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneRenderer->SetScene(m_ActiveScene);
+
+        if (selectedUUID != 0)
+            m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));
+    }
 }

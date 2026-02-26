@@ -23,8 +23,59 @@ namespace RXNEngine {
         }
     }
 
+    template<typename T>
+    static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
+    {
+        auto view = src.view<T>();
+        for (auto e : view)
+        {
+            UUID uuid = src.get<IDComponent>(e).ID;
+            if (enttMap.find(uuid) == enttMap.end())
+                continue;
+
+            entt::entity dstEntID = enttMap.at(uuid);
+            auto& component = src.get<T>(e);
+            dst.emplace_or_replace<T>(dstEntID, component);
+        }
+    }
+
+    template<typename... Component>
+    static void CopyAllComponents(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap, ComponentGroup<Component...>)
+    {
+        (CopyComponent<Component>(dst, src, enttMap), ...);
+    }
+
+    Ref<Scene> Scene::Copy(Ref<Scene> other)
+    {
+        Ref<Scene> newScene = CreateRef<Scene>();
+
+        newScene->m_ViewportWidth = other->m_ViewportWidth;
+        newScene->m_ViewportHeight = other->m_ViewportHeight;
+        newScene->m_Skybox = other->m_Skybox;
+        newScene->m_SkyboxIntensity = other->m_SkyboxIntensity;
+        newScene->m_PrimaryCameraID = other->m_PrimaryCameraID;
+
+        auto& srcSceneRegistry = other->m_Registry;
+        auto& dstSceneRegistry = newScene->m_Registry;
+        std::unordered_map<UUID, entt::entity> enttMap;
+
+        auto idView = srcSceneRegistry.view<IDComponent>();
+        for (auto e : idView)
+        {
+            UUID uuid = srcSceneRegistry.get<IDComponent>(e).ID;
+            const auto& name = srcSceneRegistry.get<TagComponent>(e).Tag;
+            Entity newEntity = newScene->CreateEntityWithUUID(uuid, name);
+            enttMap[uuid] = (entt::entity)newEntity;
+        }
+
+        CopyAllComponents(dstSceneRegistry, srcSceneRegistry, enttMap, AllComponents{});
+
+        return newScene;
+    }
+
     Scene::Scene()
     {
+        m_Registry.on_construct<CameraComponent>().connect<&Scene::OnCameraComponentAdded>(this);
     }
 
     Scene::~Scene()
@@ -427,6 +478,9 @@ namespace RXNEngine {
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
     {
+        m_ViewportWidth = width;
+        m_ViewportHeight = height;
+
         auto view = m_Registry.view<CameraComponent>();
         for (auto entity : view)
         {
@@ -467,7 +521,29 @@ namespace RXNEngine {
         }
     }
 
+    void Scene::OnCameraComponentAdded(entt::registry& registry, entt::entity entity)
+    {
+        if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
+        {
+            auto& cameraComponent = registry.get<CameraComponent>(entity);
+            if (!cameraComponent.FixedAspectRatio)
+            {
+                cameraComponent.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
+            }
+        }
+    }
+
     void Scene::OnRuntimeStart()
+    {
+        OnSimulationStart();
+    }
+
+    void Scene::OnRuntimeStop()
+    {
+        OnSimulationStop();
+    }
+
+    void Scene::OnSimulationStart()
     {
         PhysicsSystem::CreateScene();
         physx::PxPhysics* physics = PhysicsSystem::GetPhysics();
@@ -559,9 +635,10 @@ namespace RXNEngine {
             physicsScene->addActor(*actor);
             rb.RuntimeActor = actor;
         }
+
     }
 
-    void Scene::OnRuntimeStop()
+    void Scene::OnSimulationStop()
     {
         PhysicsSystem::DestroyScene();
     }

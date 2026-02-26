@@ -28,6 +28,9 @@ namespace RXNEditor {
 		void NewScene();
 		void OpenScene(const std::string& path);
 		void SaveSceneAs(const std::string& path);
+		void OnScenePlay();
+		void OnSceneSimulate(); 
+		void OnSceneStop();
 
 		Ray CastRayFromMouse(float mx, float my);
 	private:
@@ -41,6 +44,7 @@ namespace RXNEditor {
 		Ref<EditorCamera> m_EditorCamera;
 
 		Ref<Scene> m_ActiveScene;
+		Ref<Scene> m_EditorScene;
 		std::string m_ActiveScenePath;
 
 		uint32_t m_FPS = 0;
@@ -56,5 +60,8 @@ namespace RXNEditor {
 		bool m_ViewportHovered = false;
 
 		SceneState m_SceneState = SceneState::Edit;
+
+		uint32_t m_ViewportWidth = 0;
+		uint32_t m_ViewportHeight = 0;
 	};
 }

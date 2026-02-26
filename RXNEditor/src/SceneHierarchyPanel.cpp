@@ -76,8 +76,18 @@ namespace RXNEditor {
                 });
 
             ImVec2 availRegion = ImGui::GetContentRegionAvail();
-
             ImGui::InvisibleButton("##WindowDropZone", ImVec2(availRegion.x, glm::max(availRegion.y, 20.0f)));
+
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                m_SelectedEntity = {};
+
+            if (ImGui::BeginPopupContextItem("EmptySpacePopup", ImGuiPopupFlags_MouseButtonRight))
+            {
+                if (ImGui::MenuItem("Create New Entity"))
+                    m_Context->CreateEntity("New Entity");
+
+                ImGui::EndPopup();
+            }
 
             if (ImGui::BeginDragDropTarget())
             {
