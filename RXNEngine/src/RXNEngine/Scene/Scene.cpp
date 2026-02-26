@@ -49,8 +49,7 @@ namespace RXNEngine {
     {
         Ref<Scene> newScene = CreateRef<Scene>();
 
-        newScene->m_ViewportWidth = other->m_ViewportWidth;
-        newScene->m_ViewportHeight = other->m_ViewportHeight;
+        newScene->OnViewportResize(other->m_ViewportWidth, other->m_ViewportHeight);
         newScene->m_Skybox = other->m_Skybox;
         newScene->m_SkyboxIntensity = other->m_SkyboxIntensity;
         newScene->m_PrimaryCameraID = other->m_PrimaryCameraID;
