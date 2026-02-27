@@ -88,6 +88,8 @@ namespace RXNEngine {
 
     void PhysicsSystem::Update(float dt)
     {
+        OPTICK_EVENT();
+
         if (!s_Scene) return;
 
         s_Scene->simulate(dt);

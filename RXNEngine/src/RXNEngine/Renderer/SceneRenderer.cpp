@@ -83,6 +83,8 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderEditor(EditorCamera& camera)
     {
+        OPTICK_EVENT();
+
         m_GeoPass->Bind();
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
         RenderCommand::Clear();
@@ -97,6 +99,8 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderRuntime()
     {
+        OPTICK_EVENT();
+
         Entity cameraEntity = m_Scene->GetPrimaryCameraEntity();
 
         if (!cameraEntity)
@@ -120,6 +124,8 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderPostProcess()
     {
+        OPTICK_EVENT();
+
         m_FinalPass->Bind();
 
         RenderCommand::SetDepthTest(false);
@@ -148,6 +154,8 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderBloom()
     {
+        OPTICK_EVENT();
+
         if (m_BloomMips.empty()) return;
 
         RenderCommand::SetDepthTest(false);

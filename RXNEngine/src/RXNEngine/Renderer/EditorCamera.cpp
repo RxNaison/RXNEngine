@@ -25,6 +25,8 @@ namespace RXNEngine {
 
 	void EditorCamera::UpdateView()
 	{
+		OPTICK_EVENT();
+
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
@@ -59,6 +61,8 @@ namespace RXNEngine {
 
 	void EditorCamera::OnUpdate(float ts)
 	{
+		OPTICK_EVENT();
+
 		const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
 		glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 		m_InitialMousePosition = mouse;

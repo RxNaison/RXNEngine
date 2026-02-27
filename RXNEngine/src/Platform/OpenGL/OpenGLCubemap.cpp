@@ -14,6 +14,8 @@ namespace RXNEngine {
 
 	static void RenderCube()
 	{
+		OPTICK_EVENT();
+
 		if (s_CubeVAO == nullptr)
 		{
 			float vertices[] = {
@@ -72,6 +74,8 @@ namespace RXNEngine {
 
 	static void RenderQuad()
 	{
+		OPTICK_EVENT();
+
 		if (s_QuadVAO == nullptr)
 		{
 			float quadVertices[] = {
@@ -214,6 +218,8 @@ namespace RXNEngine {
 
 	void OpenGLCubemap::CreateIrradianceMap()
 	{
+		OPTICK_EVENT();
+
 		int res = 32;
 		uint32_t captureFBO, captureRBO;
 		glGenFramebuffers(1, &captureFBO);
@@ -267,6 +273,8 @@ namespace RXNEngine {
 
 	void OpenGLCubemap::CreatePrefilterMap()
 	{
+		OPTICK_EVENT();
+
 		int res = 128;
 		uint32_t captureFBO, captureRBO;
 		glGenFramebuffers(1, &captureFBO);
@@ -336,6 +344,8 @@ namespace RXNEngine {
 
 	void OpenGLCubemap::CreateBRDFLUT()
 	{
+		OPTICK_EVENT();
+
 		glGenTextures(1, &m_BRDFLUTMapID);
 		glBindTexture(GL_TEXTURE_2D, m_BRDFLUTMapID);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);

@@ -22,3 +22,6 @@
 [submodule "RXNEngine/vendor/PhysX"]
 	path = RXNEngine/vendor/PhysX
 	url = https://github.com/NVIDIA-Omniverse/PhysX.git
+[submodule "RXNEngine/vendor/optick"]
+	path = RXNEngine/vendor/optick
+	url = https://github.com/bombomby/optick.git

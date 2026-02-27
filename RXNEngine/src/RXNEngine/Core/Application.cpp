@@ -61,6 +61,8 @@ namespace RXNEngine {
 	{
 		while (m_Running)
 		{
+			OPTICK_FRAME("MainThread");
+
 			Time::Get().OnFrameStart();
 
 			if (!m_Minimized)

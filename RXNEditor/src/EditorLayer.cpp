@@ -36,6 +36,10 @@ namespace RXNEditor {
 
 	void EditorLayer::OnUpdate(float deltaTime)
 	{
+        OPTICK_EVENT();
+
+        Renderer::ResetStats();
+
         switch (m_SceneState)
         {
             case SceneState::Edit:
@@ -68,6 +72,8 @@ namespace RXNEditor {
 
 	void EditorLayer::OnEvent(Event& event)
 	{
+        OPTICK_EVENT();
+
         m_EditorCamera->OnEvent(event);
 
         EventDispatcher dispatcher(event);
@@ -101,6 +107,8 @@ namespace RXNEditor {
 
 	void EditorLayer::OnImGuiRenderer()
 	{
+        OPTICK_EVENT();
+
         static bool opt_fullscreen = true;
         static bool opt_padding = false;
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
@@ -296,9 +304,18 @@ namespace RXNEditor {
         ImGui::End();
         ImGui::PopStyleVar();
 
-        ImGui::Begin("Stats");
-        
+        ImGui::Begin("Renderer Statistics");
+
+        auto stats = Renderer::GetStats();
+
+        ImGui::Text("Draw Calls: %d", stats.DrawCalls);
+        ImGui::Text("Instances: %d", stats.Instances);
+        ImGui::Text("Total Indices: %d", stats.TotalIndices);
+
+        ImGui::Text("Total Triangles: %d", stats.TotalIndices / 3);
+
         ImGui::Text(std::to_string(m_FPS).c_str());
+
         ImGui::End();
 
         ImGui::End();

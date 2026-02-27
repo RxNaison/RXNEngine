@@ -128,6 +128,17 @@ namespace RXNEngine {
 		return out;
 	}
 
+	static std::string GetRelativePath(const std::string& path)
+	{
+		std::filesystem::path filePath(path);
+		std::filesystem::path currentPath = std::filesystem::current_path();
+
+		if (filePath.is_absolute())
+			return std::filesystem::relative(filePath, currentPath).generic_string();
+
+		return filePath.generic_string();
+	}
+
 	SceneSerializer::SceneSerializer(const Ref<Scene>& scene)
 		: m_Scene(scene)
 	{
@@ -213,7 +224,7 @@ namespace RXNEngine {
 
 			auto& mc = entity.GetComponent<MeshComponent>();
 			if (mc.ModelResource)
-				out << YAML::Key << "AssetPath" << YAML::Value << mc.ModelResource->GetPath();
+				out << YAML::Key << "AssetPath" << YAML::Value << GetRelativePath(mc.ModelResource->GetPath());
 
 			out << YAML::EndMap;
 		}
@@ -322,7 +333,7 @@ namespace RXNEngine {
 			out << YAML::Key << "Skybox";
 			out << YAML::BeginMap;
 						
-			out << YAML::Key << "TexturePath" << YAML::Value << m_Scene->m_Skybox->GetPath();
+			out << YAML::Key << "TexturePath" << YAML::Value << GetRelativePath(m_Scene->m_Skybox->GetPath());
 			
 			out << YAML::Key << "Intensity" << YAML::Value << m_Scene->m_SkyboxIntensity;
 			

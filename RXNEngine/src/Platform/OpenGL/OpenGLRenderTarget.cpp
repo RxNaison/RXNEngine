@@ -113,6 +113,8 @@ namespace RXNEngine {
 
 	void OpenGLRenderTarget::UpdateState()
 	{
+		OPTICK_EVENT();
+
 		if (m_RendererID)
 		{
 			glDeleteFramebuffers(1, &m_RendererID);

@@ -19,6 +19,7 @@ IncludeDir["yaml_cpp"] = "RXNEngine/vendor/yaml-cpp/include"
 IncludeDir["ImGuizmo"] = "RXNEngine/vendor/ImGuizmo"
 IncludeDir["PhysX"] = "RXNEngine/vendor/PhysX/physx/include"
 IncludeDir["PxShared"] = "RXNEngine/vendor/PhysX/pxshared/include"
+IncludeDir["Optick"] = "RXNEngine/vendor/optick/src"
 
 PhysXBinDir = "RXNEngine/vendor/PhysX/physx/bin/win.x86_64.vc143.md"
 
@@ -53,12 +54,14 @@ project "RXNEngine"
         "%{prj.name}/vendor/stb_image/**.cpp",
         "%{prj.name}/vendor/entt/include/**.hpp",
         "%{prj.name}/vendor/ImGuizmo/**.h",
-        "%{prj.name}/vendor/ImGuizmo/*.cpp"
+        "%{prj.name}/vendor/ImGuizmo/*.cpp",
+        "%{prj.name}/vendor/optick/src/**.h",
+        "%{prj.name}/vendor/optick/src/**.cpp"
     }
    
     defines
     {
-	"_CRT_SECURE_NO_WARNINGS",
+	    "_CRT_SECURE_NO_WARNINGS",
         "GLFW_INCLUDE_NONE",
         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
         "YAML_CPP_STATIC_DEFINE"
@@ -78,7 +81,8 @@ project "RXNEngine"
         "%{IncludeDir.yaml_cpp}",
         "%{IncludeDir.ImGuizmo}",
         "%{IncludeDir.PhysX}",
-        "%{IncludeDir.PxShared}"
+        "%{IncludeDir.PxShared}",
+        "%{IncludeDir.Optick}"
     }
 
 
@@ -86,11 +90,17 @@ project "RXNEngine"
 
     removefiles
     {
-        "RXNEngine/vendor/ImGuizmo/example/**"
+        "%{prj.name}/vendor/ImGuizmo/example/**",
+        "RXNEngine/vendor/optick/src/optick_gpu.vulkan.cpp",
+        "RXNEngine/vendor/optick/src/optick_gpu.d3d12.cpp"
     }
 
     filter "files:RXNEngine/vendor/ImGuizmo/*.cpp"
     flags { "NoPCH" }
+    filter {}
+
+    filter "files:RXNEngine/vendor/optick/src/**.cpp"
+        flags { "NoPCH" }
     filter {}
 
     filter "system:windows"
@@ -101,7 +111,7 @@ project "RXNEngine"
       defines "RXN_DEBUG"
       runtime "Debug"
       symbols "on"
-      defines { "RXN_ENABLE_ASSERTS" }
+      defines { "RXN_ENABLE_ASSERTS", "USE_OPTICK=1" }
       links 
       { 
           "RXNEngine/vendor/assimp/build/lib/Debug/assimp-vc143-mtd.lib",
@@ -115,7 +125,7 @@ project "RXNEngine"
           PhysXBinDir .. "/debug/PhysXCharacterKinematic_static_64.lib"
       }
     filter "configurations:Release"
-      defines { "RXN_RELEASE", "NDEBUG" }
+      defines { "RXN_RELEASE", "NDEBUG", "USE_OPTICK=1" }
       runtime "Release"
       optimize "on"
       links 
@@ -131,7 +141,7 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib"
       }
     filter "configurations:Dist"
-      defines { "RXN_DIST", "NDEBUG" }
+      defines { "RXN_DIST", "NDEBUG", "USE_OPTICK=0" }
       runtime "Release"
       optimize "on"
       links 
@@ -182,7 +192,8 @@ project "RXNEditor"
         "%{IncludeDir.yaml_cpp}",
         "%{IncludeDir.ImGuizmo}",
         "%{IncludeDir.PhysX}",
-        "%{IncludeDir.PxShared}"
+        "%{IncludeDir.PxShared}",
+        "%{IncludeDir.Optick}"
     }
     links "RXNEngine"
     
@@ -190,7 +201,7 @@ project "RXNEditor"
        systemversion "latest"
     
     filter "configurations:Debug"
-       defines "RXN_DEBUG"
+       defines { "RXN_DEBUG", "USE_OPTICK=1" }
        runtime "Debug"
        symbols "on"
        postbuildcommands
@@ -198,8 +209,17 @@ project "RXNEditor"
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/debug/*.dll\" \"%{cfg.targetdir}\""
        }
 
-    filter "configurations:Release or Dist"
-       defines "RXN_RELEASE"
+    filter "configurations:Release"
+       defines { "RXN_RELEASE", "USE_OPTICK=0" }
+       runtime "Release"
+       optimize "on"
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\""
+       }
+
+    filter "configurations:Dist"
+       defines { "RXN_DIST", "USE_OPTICK=1" }
        runtime "Release"
        optimize "on"
        postbuildcommands

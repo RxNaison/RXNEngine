@@ -47,6 +47,8 @@ namespace RXNEngine {
 
     Ref<Scene> Scene::Copy(Ref<Scene> other)
     {
+        OPTICK_EVENT();
+
         Ref<Scene> newScene = CreateRef<Scene>();
 
         newScene->OnViewportResize(other->m_ViewportWidth, other->m_ViewportHeight);
@@ -100,6 +102,8 @@ namespace RXNEngine {
 
     void Scene::DestroyEntity(Entity entity)
     {
+        OPTICK_EVENT();
+
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
         std::vector<UUID> childrenToDestroy = rc.Children;
@@ -176,6 +180,8 @@ namespace RXNEngine {
 
     glm::mat4 Scene::GetWorldTransform(Entity entity)
     {
+        OPTICK_EVENT();
+
         glm::mat4 transform = entity.GetComponent<TransformComponent>().GetTransform();
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
@@ -190,6 +196,8 @@ namespace RXNEngine {
 
     Entity Scene::GetEntityByRay(const Ray& ray)
     {
+        OPTICK_EVENT();
+
         Entity closestEntity = {};
         float closestDistance = FLT_MAX;
 
@@ -229,6 +237,8 @@ namespace RXNEngine {
 
     void Scene::OnUpdateSimulation(float deltaTime)
     {
+        OPTICK_EVENT();
+
         PhysicsSystem::Update(deltaTime);
         auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
         for (auto e : view)
@@ -273,6 +283,8 @@ namespace RXNEngine {
 
     void Scene::OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
+        OPTICK_EVENT();
+
         LightEnvironment lightEnv;
         {
             auto view = m_Registry.view<DirectionalLightComponent, TransformComponent>();
@@ -340,6 +352,8 @@ namespace RXNEngine {
 
     void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
+        OPTICK_EVENT();
+
         LightEnvironment lightEnv;
         {
             auto view = m_Registry.view<DirectionalLightComponent, TransformComponent>();
@@ -457,6 +471,8 @@ namespace RXNEngine {
 
     void Scene::OnUpdateRuntime(float deltaTime)
     {
+        OPTICK_EVENT();
+
         OnUpdateSimulation(deltaTime);
 
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)

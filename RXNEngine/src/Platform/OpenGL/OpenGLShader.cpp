@@ -89,6 +89,8 @@ namespace RXNEngine {
 
 	void OpenGLShader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
 	{
+		OPTICK_EVENT();
+
 		GLuint program = glCreateProgram();
 
 		std::vector<GLuint> glShaderIDs;

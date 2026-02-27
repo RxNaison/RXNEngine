@@ -19,6 +19,17 @@ namespace RXNEngine {
         Ref<Material> Material;
         glm::mat4 Transform;
         float DistanceToCamera;
+
+        uint64_t SortKey;
+    };
+
+    struct RendererStatistics
+    {
+        uint32_t DrawCalls = 0;
+        uint32_t Instances = 0;
+        uint32_t TotalIndices = 0;
+
+        void Reset() { DrawCalls = 0; Instances = 0; TotalIndices = 0; }
     };
 
     class Renderer
@@ -50,12 +61,15 @@ namespace RXNEngine {
         static void DrawWireSphere(const glm::mat4& transform, const glm::vec4& color);
         static void DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color);
 
+        static RendererStatistics GetStats();
+        static void ResetStats();
+
         static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
     private:
         static void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
             const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget);
         static void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
-        static void FlushBatch(const Ref<Mesh>& mesh, const Ref<Material>& material, const std::vector<glm::mat4>& transforms);
+        static void FlushBatch(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4* transforms, uint32_t count);
         static void Flush();
         static void FlushShadows();
     };
