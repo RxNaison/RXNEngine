@@ -196,43 +196,43 @@ namespace RXNEngine {
 
     Entity Scene::GetEntityByRay(const Ray& ray)
     {
-        OPTICK_EVENT();
+        //OPTICK_EVENT();
 
-        Entity closestEntity = {};
-        float closestDistance = FLT_MAX;
+        //Entity closestEntity = {};
+        //float closestDistance = FLT_MAX;
 
-        auto view = m_Registry.view<MeshComponent>();
-        for (auto entity : view)
-        {
-            auto mc = view.get<MeshComponent>(entity);
-            if (!mc.ModelResource) continue;
+        //auto view = m_Registry.view<StaticMeshComponent>();
+        //for (auto entity : view)
+        //{
+        //    auto mc = view.get<StaticMeshComponent>(entity);
+        //    if (!mc.ModelResource) continue;
 
-            glm::mat4 entityTransform = GetWorldTransform({ entity, this });
+        //    glm::mat4 entityTransform = GetWorldTransform({ entity, this });
 
-            for (const auto& submesh : mc.ModelResource->GetSubmeshes())
-            {
-                glm::mat4 submeshGlobalTransform = entityTransform * submesh.LocalTransform;
+        //    for (const auto& submesh : mc.ModelResource->GetSubmeshes())
+        //    {
+        //        glm::mat4 submeshGlobalTransform = entityTransform * submesh.LocalTransform;
 
-                glm::mat4 inverseTransform = glm::inverse(submeshGlobalTransform);
+        //        glm::mat4 inverseTransform = glm::inverse(submeshGlobalTransform);
 
-                glm::vec3 localRayOrigin = glm::vec3(inverseTransform * glm::vec4(ray.Origin, 1.0f));
-                glm::vec3 localRayDirection = glm::vec3(inverseTransform * glm::vec4(ray.Direction, 0.0f));
+        //        glm::vec3 localRayOrigin = glm::vec3(inverseTransform * glm::vec4(ray.Origin, 1.0f));
+        //        glm::vec3 localRayDirection = glm::vec3(inverseTransform * glm::vec4(ray.Direction, 0.0f));
 
-                Ray localRay = { localRayOrigin, localRayDirection };
+        //        Ray localRay = { localRayOrigin, localRayDirection };
 
-                float t = 0.0f;
-                if (Math::IntersectRayAABB(localRay, submesh.BoundingBox.Min, submesh.BoundingBox.Max, t))
-                {
-                    if (t < closestDistance && t > 0.0f)
-                    {
-                        closestDistance = t;
-                        closestEntity = { entity, this };
-                    }
-                }
-            }
-        }
+        //        float t = 0.0f;
+        //        if (Math::IntersectRayAABB(localRay, submesh.BoundingBox.Min, submesh.BoundingBox.Max, t))
+        //        {
+        //            if (t < closestDistance && t > 0.0f)
+        //            {
+        //                closestDistance = t;
+        //                closestEntity = { entity, this };
+        //            }
+        //        }
+        //    }
+        //}
 
-        return closestEntity;
+        return {};
     }
 
     void Scene::OnUpdateSimulation(float deltaTime)
@@ -318,12 +318,21 @@ namespace RXNEngine {
 
         Renderer::BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
 
-        auto group = m_Registry.group<MeshComponent>();
-        for (auto entity : group)
+        auto view = m_Registry.view<StaticMeshComponent>();
+        for (auto entity : view)
         {
-            auto mesh = group.get<MeshComponent>(entity);
-            if (mesh.ModelResource)
-                Renderer::SubmitMesh(*mesh.ModelResource, GetWorldTransform({ entity, this }));
+            auto mc = view.get<StaticMeshComponent>(entity);
+
+            if (mc.Mesh)
+            {
+                uint32_t materialIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
+
+                Ref<Material> material = mc.MaterialTableOverride ?
+                    mc.MaterialTableOverride :
+                    mc.Mesh->GetMaterials()[materialIndex];
+
+                Renderer::Submit(mc.Mesh, mc.SubmeshIndex, material, GetWorldTransform({ entity, this }));
+            }
         }
 
         if (showColliders)
@@ -387,12 +396,21 @@ namespace RXNEngine {
 
         Renderer::BeginScene(camera, lightEnv, m_Skybox, renderTarget);
 
-        auto group = m_Registry.group<MeshComponent>();
-        for (auto entity : group)
+        auto view = m_Registry.view<StaticMeshComponent>();
+        for (auto entity : view)
         {
-            auto mesh = group.get<MeshComponent>(entity);
-            if (mesh.ModelResource)
-                Renderer::SubmitMesh(*mesh.ModelResource, GetWorldTransform({ entity, this }));
+            auto mc = view.get<StaticMeshComponent>(entity);
+
+            if (mc.Mesh)
+            {
+                uint32_t materialIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
+
+                Ref<Material> material = mc.MaterialTableOverride ?
+                    mc.MaterialTableOverride :
+                    mc.Mesh->GetMaterials()[materialIndex];
+
+                Renderer::Submit(mc.Mesh, mc.SubmeshIndex, material, GetWorldTransform({ entity, this }));
+            }
         }
 
         if (m_Skybox)

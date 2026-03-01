@@ -5,6 +5,8 @@
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "RXNEngine/Renderer/ModelImporter.h"
+
 namespace RXNEditor {
 
     static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
@@ -76,7 +78,21 @@ namespace RXNEditor {
                 });
 
             ImVec2 availRegion = ImGui::GetContentRegionAvail();
+			availRegion.x = glm::max(1.0f, availRegion.x);
+			availRegion.y = glm::max(1.0f, availRegion.y);
             ImGui::InvisibleButton("##WindowDropZone", ImVec2(availRegion.x, glm::max(availRegion.y, 20.0f)));
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                {
+                    std::string path = (const char*)payload->Data;
+                    if (!path.empty() && (path.ends_with(".gltf") || path.ends_with(".glb") || path.ends_with(".obj") || path.ends_with(".fbx")))
+                    {
+                        ModelImporter::InstantiateToScene(m_Context, path);
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
 
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
                 m_SelectedEntity = {};
@@ -225,11 +241,11 @@ namespace RXNEditor {
                     ImGui::CloseCurrentPopup();
                 }
             }
-            if (!m_SelectedEntity.HasComponent<MeshComponent>())
+            if (!m_SelectedEntity.HasComponent<StaticMeshComponent>())
             {
                 if (ImGui::MenuItem("Mesh"))
                 {
-                    m_SelectedEntity.AddComponent<MeshComponent>();
+                    m_SelectedEntity.AddComponent<StaticMeshComponent>();
                     ImGui::CloseCurrentPopup();
                 }
             }
@@ -369,55 +385,119 @@ namespace RXNEditor {
             });
 
 
-        // --- 4. Mesh Component (Material Editing) ---
-        DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
+        // --- 4. Mesh Component ---
+        DrawComponent<StaticMeshComponent>("Mesh", entity, [](auto& component)
             {
                 ImGui::Columns(2);
                 ImGui::SetColumnWidth(0, 100.0f);
-                ImGui::Text("Mesh");
+                ImGui::Text("Mesh Asset");
                 ImGui::NextColumn();
 
-                if (ImGui::Button("Drop Model Here", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-                {
-                    std::string path = FileDialogs::OpenFile("*.obj *.glb *.glft");
+                std::string label = component.Mesh ? component.AssetPath.substr(component.AssetPath.find_last_of("/\\") + 1) : "Drop Model Here";
 
-                    if(!path.empty())
-                        component.ModelResource = CreateRef<Model>(path, Shader::Create("assets/shaders/pbr.glsl"));
+                if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+                {
+                    std::string path = FileDialogs::OpenFile("*.obj *fbx *.glb *.gltf");
+                    if (!path.empty())
+                    {
+                        component.AssetPath = path;
+                        component.Mesh = AssetManager::GetMesh(path);
+                        component.SubmeshIndex = 0;
+                        component.MaterialTableOverride = nullptr;
+                    }
                 }
+
                 if (ImGui::BeginDragDropTarget())
                 {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
                         std::string path = (const char*)payload->Data;
                         if (!path.empty())
-                            component.ModelResource = CreateRef<Model>(path, Shader::Create("assets/shaders/pbr.glsl"));
+                        {
+                            component.AssetPath = path;
+                            component.Mesh = AssetManager::GetMesh(path);
+                            component.SubmeshIndex = 0;
+                            component.MaterialTableOverride = nullptr;
+                        }
                     }
                     ImGui::EndDragDropTarget();
                 }
 
                 ImGui::Columns(1);
 
-                if (component.MaterialInstance)
+                if (component.Mesh)
                 {
+                    ImGui::Separator();
+
+                    uint32_t submeshCount = (uint32_t)component.Mesh->GetSubmeshes().size();
+                    if (submeshCount > 1)
+                    {
+                        int submeshIndex = (int)component.SubmeshIndex;
+                        if (ImGui::SliderInt("Submesh Index", &submeshIndex, 0, submeshCount - 1))
+                        {
+                            component.SubmeshIndex = (uint32_t)submeshIndex;
+                            component.MaterialTableOverride = nullptr;
+                        }
+
+                        ImGui::Text("Node Name: %s", component.Mesh->GetSubmeshes()[component.SubmeshIndex].NodeName.c_str());
+                    }
+
                     ImGui::Separator();
                     ImGui::Text("Material Properties");
 
-                    auto params = component.MaterialInstance->GetParameters();
+                    bool hasOverride = component.MaterialTableOverride != nullptr;
+                    if (ImGui::Checkbox("Override Default Material", &hasOverride))
+                    {
+                        if (hasOverride)
+                        {
+                            uint32_t matIndex = component.Mesh->GetSubmeshes()[component.SubmeshIndex].MaterialIndex;
+                            Ref<Material> defaultMat = component.Mesh->GetMaterials()[matIndex]; // FIXED
+
+                            component.MaterialTableOverride = Material::CreateDefault(defaultMat->GetShader());
+
+                            auto params = defaultMat->GetParameters();
+                            component.MaterialTableOverride->SetAlbedoColor(params.AlbedoColor);
+                            component.MaterialTableOverride->SetRoughness(params.Roughness);
+                            component.MaterialTableOverride->SetMetalness(params.Metalness);
+                            component.MaterialTableOverride->SetAO(params.AO);
+                            component.MaterialTableOverride->SetEmissiveColor(params.EmissiveColor);
+
+                            component.MaterialTableOverride->SetAlbedoMap(defaultMat->GetAlbedoMap());
+                            component.MaterialTableOverride->SetNormalMap(defaultMat->GetNormalMap());
+                            component.MaterialTableOverride->SetMetalnessRoughnessMap(defaultMat->GetMetalnessRoughnessMap());
+                            component.MaterialTableOverride->SetAOMap(defaultMat->GetAOMap());
+                        }
+                        else
+                        {
+                            component.MaterialTableOverride = nullptr;
+                        }
+                    }
+
+                    uint32_t activeMatIndex = component.Mesh->GetSubmeshes()[component.SubmeshIndex].MaterialIndex;
+                    Ref<Material> activeMaterial = component.MaterialTableOverride ?
+                        component.MaterialTableOverride :
+                        component.Mesh->GetMaterials()[activeMatIndex];
+
+                    if (!hasOverride) ImGui::BeginDisabled();
+
+                    auto params = activeMaterial->GetParameters();
 
                     if (ImGui::ColorEdit4("Albedo", glm::value_ptr(params.AlbedoColor)))
-                        component.MaterialInstance->SetAlbedoColor(params.AlbedoColor);
+                        activeMaterial->SetAlbedoColor(params.AlbedoColor);
 
                     if (ImGui::SliderFloat("Roughness", &params.Roughness, 0.0f, 1.0f))
-                        component.MaterialInstance->SetRoughness(params.Roughness);
+                        activeMaterial->SetRoughness(params.Roughness);
 
                     if (ImGui::SliderFloat("Metalness", &params.Metalness, 0.0f, 1.0f))
-                        component.MaterialInstance->SetMetalness(params.Metalness);
+                        activeMaterial->SetMetalness(params.Metalness);
 
                     if (ImGui::DragFloat("AO Strength", &params.AO, 0.01f, 0.0f, 1.0f))
-                        component.MaterialInstance->SetAO(params.AO);
+                        activeMaterial->SetAO(params.AO);
 
                     if (ImGui::ColorEdit3("Emissive", glm::value_ptr(params.EmissiveColor)))
-                        component.MaterialInstance->SetEmissiveColor(params.EmissiveColor);
+                        activeMaterial->SetEmissiveColor(params.EmissiveColor);
+
+                    if (!hasOverride) ImGui::EndDisabled();
                 }
             });
 

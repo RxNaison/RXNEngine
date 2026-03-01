@@ -26,7 +26,7 @@
 #include "RXNEngine/Renderer/Light.h"
 #include "RXNEngine/Renderer/Texture.h"
 
-#include "RXNEngine/Renderer/Model.h"
+#include "RXNEngine/Core/AssetManager.h"
 
 #include "RXNEngine/Scene/Components.h"
 #include "RXNEngine/Scene/Scene.h"

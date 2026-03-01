@@ -1,15 +1,15 @@
 #pragma once
 
-#include "RXNEngine/Renderer/Model.h"
-#include <fstream>
+#include "StaticMesh.h"
+#include <string>
 
 namespace RXNEngine {
 
-    class ModelSerializer
-    {
-    public:
-        static void Serialize(const std::string& filepath, const Model& model);
+	class ModelSerializer
+	{
+	public:
+		static void Serialize(const std::string& filepath, const Ref<StaticMesh>& mesh);
+		static Ref<StaticMesh> Deserialize(const std::string& filepath);
+	};
 
-        static bool Deserialize(const std::string& filepath, Model& outModel);
-    };
 }

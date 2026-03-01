@@ -48,9 +48,9 @@ namespace RXNEngine {
 			s_RendererAPI->SetLineWidth(width);
 		}
 
-		inline static void DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& instanceData, uint32_t instanceCount)
+		inline static void DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& instanceData, uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex)
 		{
-			s_RendererAPI->DrawIndexedInstanced(vertexArray, instanceData, instanceCount);
+			s_RendererAPI->DrawIndexedInstanced(vertexArray, instanceData, instanceCount, indexCount, baseIndex);
 		}
 
 		inline static void BindTextureID(uint32_t slot, uint32_t textureID)

@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Components.h"
 #include "RXNEngine/Core/UUID.h"
+#include "RXNEngine/Core/AssetManager.h"
 
 #include <fstream>
 
@@ -217,14 +218,15 @@ namespace RXNEngine {
 			out << YAML::EndMap; // CameraComponent
 		}
 
-		if (entity.HasComponent<MeshComponent>())
+		if (entity.HasComponent<StaticMeshComponent>())
 		{
-			out << YAML::Key << "MeshComponent";
+			out << YAML::Key << "StaticMeshComponent";
 			out << YAML::BeginMap;
 
-			auto& mc = entity.GetComponent<MeshComponent>();
-			if (mc.ModelResource)
-				out << YAML::Key << "AssetPath" << YAML::Value << GetRelativePath(mc.ModelResource->GetPath());
+			auto& mc = entity.GetComponent<StaticMeshComponent>();
+
+			out << YAML::Key << "AssetPath" << YAML::Value << GetRelativePath(mc.AssetPath);
+			out << YAML::Key << "SubmeshIndex" << YAML::Value << mc.SubmeshIndex;
 
 			out << YAML::EndMap;
 		}
@@ -457,20 +459,20 @@ namespace RXNEngine {
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}
 
-				auto meshComponent = entity["MeshComponent"];
-				if (meshComponent)
+				auto staticMeshComponent = entity["StaticMeshComponent"];
+				if (staticMeshComponent)
 				{
-					auto& mc = deserializedEntity.AddComponent<MeshComponent>();
+					auto& mc = deserializedEntity.AddComponent<StaticMeshComponent>();
 
-					if (meshComponent["AssetPath"])
-					{
-						std::string path = meshComponent["AssetPath"].as<std::string>();
+					std::string assetPath = staticMeshComponent["AssetPath"].as<std::string>();
+					mc.AssetPath = assetPath;
 
-						// TODO: use ShaderLibrary
-						Ref<Shader> defaultShader = Shader::Create("assets/shaders/PBR.glsl");
+					mc.Mesh = AssetManager::GetMesh(assetPath);
 
-						mc.ModelResource = CreateRef<Model>(path, defaultShader);
-					}
+					if (staticMeshComponent["SubmeshIndex"])
+						mc.SubmeshIndex = staticMeshComponent["SubmeshIndex"].as<uint32_t>();
+					else
+						mc.SubmeshIndex = 0;
 				}
 
 				auto directionalLightComponent = entity["DirectionalLightComponent"];

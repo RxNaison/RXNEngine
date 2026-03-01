@@ -157,40 +157,42 @@ namespace RXNEngine {
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
 	}
 
-    void OpenGLRendererAPI::DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& instanceData, uint32_t instanceCount)
-    {
-        vertexArray->Bind();
-        instanceData->Bind();
+	void OpenGLRendererAPI::DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& instanceData, uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex)
+	{
+		vertexArray->Bind();
+		instanceData->Bind();
 
-        const auto& layout = instanceData->GetLayout();
+		const auto& layout = instanceData->GetLayout();
 
         // calculate this offset automatically
-        uint32_t attribIndex = 4;
+		uint32_t attribIndex = 4;
 
-        for (const auto& element : layout)
-        {
-            switch (element.Type)
-            {
-				case ShaderDataType::Float4:
-				case ShaderDataType::Float3:
-				case ShaderDataType::Float2:
-				case ShaderDataType::Float:
-				{
-					glEnableVertexAttribArray(attribIndex);
-					glVertexAttribPointer(attribIndex, element.GetComponentCount(), GL_FLOAT,
-						element.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)element.Offset);
+		for (const auto& element : layout)
+		{
+			switch (element.Type)
+			{
+			case ShaderDataType::Float4:
+			case ShaderDataType::Float3:
+			case ShaderDataType::Float2:
+			case ShaderDataType::Float:
+			{
+				glEnableVertexAttribArray(attribIndex);
+				glVertexAttribPointer(attribIndex, element.GetComponentCount(), GL_FLOAT,
+					element.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)element.Offset);
 
-					glVertexAttribDivisor(attribIndex, 1);
-					attribIndex++;
-					break;
-				}
-            // TODO: Mat4/Mat3
-            }
-        }
+				glVertexAttribDivisor(attribIndex, 1);
+				attribIndex++;
+				break;
+			}
+			// TODO: Mat4/Mat3
+			}
+		}
 
-        uint32_t count = vertexArray->GetIndexBuffer()->GetCount();
-        glDrawElementsInstanced(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr, instanceCount);
-    }
+		uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
+		const void* offset = (const void*)(sizeof(uint32_t) * baseIndex);
+
+		glDrawElementsInstanced(GL_TRIANGLES, count, GL_UNSIGNED_INT, offset, instanceCount);
+	}
 
 	void OpenGLRendererAPI::DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
 	{

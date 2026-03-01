@@ -19,7 +19,7 @@ namespace RXNEditor {
 
 	void EditorLayer::OnAttach()
 	{
-		m_EditorCamera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 1000.0f);
+		m_EditorCamera = CreateRef<EditorCamera>(45.0f, 1280.0f / 720.0f, 0.1f, 10000.0f);
 
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;

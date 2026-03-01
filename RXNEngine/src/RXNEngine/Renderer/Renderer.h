@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "Mesh.h"
+#include "StaticMesh.h"
 #include "Material.h"
 #include "Light.h"
 #include "RenderTarget.h"
@@ -15,7 +16,8 @@ namespace RXNEngine {
 
     struct RenderCommandPacket
     {
-        Ref<Mesh> Mesh;
+        Ref<StaticMesh> Mesh;
+        uint32_t SubmeshIndex;
         Ref<Material> Material;
         glm::mat4 Transform;
         float DistanceToCamera;
@@ -48,13 +50,11 @@ namespace RXNEngine {
 
         static void EndScene();
 
-        static void Submit(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4& transform = glm::mat4(1.0f));
+        static void Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform);
 
         static void DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera);
         static void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& cameraTransform);
         static void DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& cameraViewMatrix, const glm::mat4& cameraProjectionMatrix);
-
-        static void SubmitMesh(const Model& model, const glm::mat4& transform, const Ref<Material>& material = nullptr);
 
         static void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color);
         static void DrawWireBox(const glm::mat4& transform, const glm::vec4& color);
@@ -69,7 +69,7 @@ namespace RXNEngine {
         static void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
             const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget);
         static void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
-        static void FlushBatch(const Ref<Mesh>& mesh, const Ref<Material>& material, const glm::mat4* transforms, uint32_t count);
+        static void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4* transforms, uint32_t count);
         static void Flush();
         static void FlushShadows();
     };

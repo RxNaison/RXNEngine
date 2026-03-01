@@ -3,6 +3,7 @@
 #include "RXNEngine/Core/UUID.h"
 #include "RXNEngine/Renderer/Camera.h"
 #include "RXNEngine/Renderer/Model.h"
+#include "RXNEngine/Renderer/StaticMesh.h"
 #include "RXNEngine/Renderer/Light.h"
 #include "SceneCamera.h"
 
@@ -66,13 +67,16 @@ namespace RXNEngine {
 		RelationshipComponent(const RelationshipComponent&) = default;
 	};
 
-	struct MeshComponent
+	struct StaticMeshComponent
 	{
-		Ref<Model> ModelResource;
-		Ref<Material> MaterialInstance;
+		std::string AssetPath;
+		Ref<StaticMesh> Mesh;
+		uint32_t SubmeshIndex = 0;
 
-		MeshComponent() = default;
-		MeshComponent(const MeshComponent&) = default;
+		Ref<Material> MaterialTableOverride = nullptr;
+
+		StaticMeshComponent() = default;
+		StaticMeshComponent(const StaticMeshComponent&) = default;
 	};
 
 	struct DirectionalLightComponent
@@ -185,7 +189,7 @@ namespace RXNEngine {
 	using AllComponents = ComponentGroup<
 		TransformComponent,
 		RelationshipComponent,
-		MeshComponent,
+		StaticMeshComponent,
 		CameraComponent,
 		DirectionalLightComponent,
 		PointLightComponent,
