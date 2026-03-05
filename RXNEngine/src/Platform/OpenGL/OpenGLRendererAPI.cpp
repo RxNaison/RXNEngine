@@ -127,11 +127,11 @@ namespace RXNEngine {
 			{
 				switch (eq)
 				{
-				case BlendEquation::Add:             return GL_FUNC_ADD;
-				case BlendEquation::Subtract:        return GL_FUNC_SUBTRACT;
-				case BlendEquation::ReverseSubtract: return GL_FUNC_REVERSE_SUBTRACT;
-				case BlendEquation::Min:             return GL_MIN;
-				case BlendEquation::Max:             return GL_MAX;
+					case BlendEquation::Add:             return GL_FUNC_ADD;
+					case BlendEquation::Subtract:        return GL_FUNC_SUBTRACT;
+					case BlendEquation::ReverseSubtract: return GL_FUNC_REVERSE_SUBTRACT;
+					case BlendEquation::Min:             return GL_MIN;
+					case BlendEquation::Max:             return GL_MAX;
 				}
 				return GL_FUNC_ADD;
 			};
@@ -164,27 +164,39 @@ namespace RXNEngine {
 
 		const auto& layout = instanceData->GetLayout();
 
-        // calculate this offset automatically
 		uint32_t attribIndex = 4;
 
 		for (const auto& element : layout)
 		{
 			switch (element.Type)
 			{
-			case ShaderDataType::Float4:
-			case ShaderDataType::Float3:
-			case ShaderDataType::Float2:
-			case ShaderDataType::Float:
-			{
-				glEnableVertexAttribArray(attribIndex);
-				glVertexAttribPointer(attribIndex, element.GetComponentCount(), GL_FLOAT,
-					element.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)element.Offset);
+				case ShaderDataType::Float4:
+				case ShaderDataType::Float3:
+				case ShaderDataType::Float2:
+				case ShaderDataType::Float:
+				{
+					glEnableVertexAttribArray(attribIndex);
+					glVertexAttribPointer(attribIndex, element.GetComponentCount(), GL_FLOAT,
+						element.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)element.Offset);
 
-				glVertexAttribDivisor(attribIndex, 1);
-				attribIndex++;
-				break;
-			}
-			// TODO: Mat4/Mat3
+					glVertexAttribDivisor(attribIndex, 1);
+					attribIndex++;
+					break;
+				}
+				case ShaderDataType::Int:
+				case ShaderDataType::Int2:
+				case ShaderDataType::Int3:
+				case ShaderDataType::Int4:
+				case ShaderDataType::Bool:
+				{
+					glEnableVertexAttribArray(attribIndex);
+					glVertexAttribIPointer(attribIndex, element.GetComponentCount(), GL_INT,
+						layout.GetStride(), (const void*)element.Offset);
+
+					glVertexAttribDivisor(attribIndex, 1);
+					attribIndex++;
+					break;
+				}
 			}
 		}
 

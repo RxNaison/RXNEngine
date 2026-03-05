@@ -137,6 +137,27 @@ namespace RXNEditor {
         ImGui::End();
     }
 
+    Entity SceneHierarchyPanel::ResolvePickedEntity(Entity entity)
+    {
+        if (!entity) return {};
+
+        auto& rc = entity.GetComponent<RelationshipComponent>();
+
+        if (rc.ParentHandle != 0)
+        {
+            Entity parent = m_Context->GetEntityByUUID(rc.ParentHandle);
+            if (parent)
+            {
+                if (m_ExpandedNodes.find((uint64_t)parent.GetUUID()) == m_ExpandedNodes.end())
+                {
+                    return ResolvePickedEntity(parent);
+                }
+            }
+        }
+
+        return entity;
+    }
+
     void SceneHierarchyPanel::DrawEntityNode(Entity entity)
     {
         auto& tag = entity.GetComponent<TagComponent>().Tag;
@@ -149,6 +170,11 @@ namespace RXNEditor {
             flags |= ImGuiTreeNodeFlags_Leaf;
 
         bool opened = ImGui::TreeNodeEx((void*)(uint64_t)entity.GetUUID(), flags, tag.c_str());
+
+        if (opened)
+            m_ExpandedNodes.insert((uint64_t)entity.GetUUID());
+        else
+            m_ExpandedNodes.erase((uint64_t)entity.GetUUID());
 
         if (ImGui::BeginDragDropSource())
         {

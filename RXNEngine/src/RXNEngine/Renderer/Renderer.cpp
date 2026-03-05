@@ -173,12 +173,13 @@ namespace RXNEngine {
     {
         RenderCommand::Init();
         s_Data.OpaqueQueue.reserve(1000);
-        s_Data.InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(glm::mat4));
+        s_Data.InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
         s_Data.InstanceVertexBuffer->SetLayout({
             { ShaderDataType::Float4, "a_ModelMatrixCol0", false, true },
             { ShaderDataType::Float4, "a_ModelMatrixCol1", false, true },
             { ShaderDataType::Float4, "a_ModelMatrixCol2", false, true },
-            { ShaderDataType::Float4, "a_ModelMatrixCol3", false, true }
+            { ShaderDataType::Float4, "a_ModelMatrixCol3", false, true },
+            { ShaderDataType::Int,    "a_EntityID",        false, true }
             });
         s_Data.LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataGPU), 1);
 
@@ -357,7 +358,7 @@ namespace RXNEngine {
         s_Data.LineVertices.clear();
     }
 
-    void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform)
+    void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID)
     {
         OPTICK_EVENT();
 
@@ -375,6 +376,7 @@ namespace RXNEngine {
         packet.SubmeshIndex = submeshIndex;
         packet.Material = material;
         packet.Transform = transform;
+        packet.EntityID = entityID;
 
         float dist = glm::distance(s_Data.CameraPosition, (worldAABB.Min + worldAABB.Max) * 0.5f);
         packet.DistanceToCamera = dist * dist;
@@ -610,10 +612,12 @@ namespace RXNEngine {
 
         auto batchStart = queue.begin();
 
-        static glm::mat4 currentBatchTransforms[MaxInstances];
+        static InstanceData currentBatchData[MaxInstances];
         uint32_t transformCount = 0;
 
-        currentBatchTransforms[transformCount++] = batchStart->Transform;
+        currentBatchData[transformCount].Transform = batchStart->Transform;
+        currentBatchData[transformCount].EntityID = batchStart->EntityID;
+        transformCount++;
 
         for (auto it = queue.begin() + 1; it != queue.end(); ++it)
         {
@@ -622,28 +626,32 @@ namespace RXNEngine {
 
             if (isSameMesh && isSameMaterial && transformCount < MaxInstances)
             {
-                currentBatchTransforms[transformCount++] = it->Transform;
+                currentBatchData[transformCount].Transform = it->Transform;
+                currentBatchData[transformCount].EntityID = it->EntityID;
+                transformCount++;
             }
             else
             {
-                FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchTransforms, transformCount);
+                FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount);
 
                 batchStart = it;
                 transformCount = 0;
-                currentBatchTransforms[transformCount++] = it->Transform;
+                currentBatchData[transformCount].Transform = it->Transform;
+                currentBatchData[transformCount].EntityID = it->EntityID;
+                transformCount++;
             }
         }
 
         if (transformCount > 0)
-            FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchTransforms, transformCount);
+            FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount);
     }
 
-    void Renderer::FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4* transforms, uint32_t count)
+    void Renderer::FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count)
     {
         OPTICK_EVENT();
         if (count == 0) return;
 
-        s_Data.InstanceVertexBuffer->SetData(transforms, count * sizeof(glm::mat4));
+        s_Data.InstanceVertexBuffer->SetData(instanceData, count * sizeof(InstanceData));
         material->Bind();
 
         Ref<Shader> shader = material->GetShader();
@@ -687,10 +695,12 @@ namespace RXNEngine {
         if (!s_Data.OpaqueQueue.empty())
         {
             auto batchStart = s_Data.OpaqueQueue.begin();
-            static glm::mat4 batchTransforms[MaxInstances];
+            static InstanceData batchData[MaxInstances];
             uint32_t transformCount = 0;
 
-            batchTransforms[transformCount++] = batchStart->Transform;
+            batchData[transformCount].Transform = batchStart->Transform;
+            batchData[transformCount].EntityID = batchStart->EntityID;
+            transformCount++;
 
             for (auto it = s_Data.OpaqueQueue.begin() + 1; it != s_Data.OpaqueQueue.end(); ++it)
             {
@@ -698,11 +708,13 @@ namespace RXNEngine {
 
                 if (isSameMesh && transformCount < MaxInstances)
                 {
-                    batchTransforms[transformCount++] = it->Transform;
+                    batchData[transformCount].Transform = it->Transform;
+                    batchData[transformCount].EntityID = it->EntityID;
+                    transformCount++;
                 }
                 else
                 {
-                    s_Data.InstanceVertexBuffer->SetData(batchTransforms, transformCount * sizeof(glm::mat4));
+                    s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
                     batchStart->Mesh->GetVertexArray()->Bind();
 
                     const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
@@ -715,13 +727,15 @@ namespace RXNEngine {
 
                     batchStart = it;
                     transformCount = 0;
-                    batchTransforms[transformCount++] = it->Transform;
+                    batchData[transformCount].Transform = it->Transform;
+                    batchData[transformCount].EntityID = it->EntityID;
+                    transformCount++;
                 }
             }
 
             if (transformCount > 0)
             {
-                s_Data.InstanceVertexBuffer->SetData(batchTransforms, transformCount * sizeof(glm::mat4));
+                s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
                 batchStart->Mesh->GetVertexArray()->Bind();
 
                 const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
@@ -735,5 +749,59 @@ namespace RXNEngine {
         }
 
         RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
+    }
+
+    void Renderer::ExecutePickingPass(const Ref<Shader>& pickingShader)
+    {
+        OPTICK_EVENT();
+
+        if (s_Data.OpaqueQueue.empty()) return;
+
+        auto batchStart = s_Data.OpaqueQueue.begin();
+        static InstanceData batchData[MaxInstances];
+        uint32_t transformCount = 0;
+
+        batchData[transformCount].Transform = batchStart->Transform;
+        batchData[transformCount].EntityID = batchStart->EntityID;
+        transformCount++;
+
+        for (auto it = s_Data.OpaqueQueue.begin() + 1; it != s_Data.OpaqueQueue.end(); ++it)
+        {
+            bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
+
+            if (isSameMesh && transformCount < MaxInstances)
+            {
+                batchData[transformCount].Transform = it->Transform;
+                batchData[transformCount].EntityID = it->EntityID;
+                transformCount++;
+            }
+            else
+            {
+                s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+
+                batchStart->Mesh->GetVertexArray()->Bind();
+                s_Data.InstanceVertexBuffer->Bind();
+
+                const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+
+                batchStart = it;
+                transformCount = 0;
+                batchData[transformCount].Transform = it->Transform;
+                batchData[transformCount].EntityID = it->EntityID;
+                transformCount++;
+            }
+        }
+
+        if (transformCount > 0)
+        {
+            s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+
+            batchStart->Mesh->GetVertexArray()->Bind();
+            s_Data.InstanceVertexBuffer->Bind();
+
+            const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+            RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+        }
     }
 }

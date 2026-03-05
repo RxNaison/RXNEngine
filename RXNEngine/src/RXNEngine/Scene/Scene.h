@@ -26,8 +26,6 @@ namespace RXNEngine {
 		bool IsDescendantOf(Entity entity, Entity potentialAscendant);
 		glm::mat4 GetWorldTransform(Entity entity);
 
-		Entity GetEntityByRay(const Ray& ray);
-
 		void OnUpdateSimulation(float deltaTime);
 		void OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders);
 		void OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders);

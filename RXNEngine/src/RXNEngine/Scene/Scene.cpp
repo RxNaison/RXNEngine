@@ -194,47 +194,6 @@ namespace RXNEngine {
         return transform;
     }
 
-    Entity Scene::GetEntityByRay(const Ray& ray)
-    {
-        //OPTICK_EVENT();
-
-        //Entity closestEntity = {};
-        //float closestDistance = FLT_MAX;
-
-        //auto view = m_Registry.view<StaticMeshComponent>();
-        //for (auto entity : view)
-        //{
-        //    auto mc = view.get<StaticMeshComponent>(entity);
-        //    if (!mc.ModelResource) continue;
-
-        //    glm::mat4 entityTransform = GetWorldTransform({ entity, this });
-
-        //    for (const auto& submesh : mc.ModelResource->GetSubmeshes())
-        //    {
-        //        glm::mat4 submeshGlobalTransform = entityTransform * submesh.LocalTransform;
-
-        //        glm::mat4 inverseTransform = glm::inverse(submeshGlobalTransform);
-
-        //        glm::vec3 localRayOrigin = glm::vec3(inverseTransform * glm::vec4(ray.Origin, 1.0f));
-        //        glm::vec3 localRayDirection = glm::vec3(inverseTransform * glm::vec4(ray.Direction, 0.0f));
-
-        //        Ray localRay = { localRayOrigin, localRayDirection };
-
-        //        float t = 0.0f;
-        //        if (Math::IntersectRayAABB(localRay, submesh.BoundingBox.Min, submesh.BoundingBox.Max, t))
-        //        {
-        //            if (t < closestDistance && t > 0.0f)
-        //            {
-        //                closestDistance = t;
-        //                closestEntity = { entity, this };
-        //            }
-        //        }
-        //    }
-        //}
-
-        return {};
-    }
-
     void Scene::OnUpdateSimulation(float deltaTime)
     {
         OPTICK_EVENT();
@@ -409,7 +368,7 @@ namespace RXNEngine {
                     mc.MaterialTableOverride :
                     mc.Mesh->GetMaterials()[materialIndex];
 
-                Renderer::Submit(mc.Mesh, mc.SubmeshIndex, material, GetWorldTransform({ entity, this }));
+                Renderer::Submit(mc.Mesh, mc.SubmeshIndex, material, GetWorldTransform({ entity, this }), (int)(uint32_t)entity);
             }
         }
 

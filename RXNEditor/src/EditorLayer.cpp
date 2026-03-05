@@ -1,5 +1,6 @@
 #include "rxnpch.h"
 #include "EditorLayer.h"
+#include "RXNEngine/Renderer/ModelImporter.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -93,11 +94,21 @@ namespace RXNEditor {
                         glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
                         if (mx >= 0 && my >= 0 && mx < viewportSize.x && my < viewportSize.y)
                         {
-                            Ray ray = CastRayFromMouse(mx, my);
-                            Entity pickedEntity = m_ActiveScene->GetEntityByRay(ray);
+                            my = viewportSize.y - my;
 
-                            m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
-                            return true;
+                            int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)mx, (int)my, *m_EditorCamera);
+
+                            if (pickedID > -1)
+                            {
+                                Entity pickedEntity = { (entt::entity)pickedID, m_ActiveScene.get() };
+                                pickedEntity = m_SceneHierarchyPanel.ResolvePickedEntity(pickedEntity);
+
+                                m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
+                            }
+                            else
+                            {
+                                m_SceneHierarchyPanel.SetSelectedEntity({});
+                            }
                         }
                     }
                 }
@@ -296,6 +307,10 @@ namespace RXNEditor {
                 else if(path.contains(".rxns"))
                 {
                     OpenScene(std::filesystem::path(path).string());
+                }
+                else if (!path.empty() && (path.ends_with(".gltf") || path.ends_with(".glb") || path.ends_with(".obj") || path.ends_with(".fbx")))
+                {
+                    ModelImporter::InstantiateToScene(m_ActiveScene, path);
                 }
             }
             ImGui::EndDragDropTarget();

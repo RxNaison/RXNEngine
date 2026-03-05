@@ -30,9 +30,17 @@ namespace RXNEngine {
         finalSpec.Height = 720;
         m_FinalPass = RenderTarget::Create(finalSpec);
 
+        RenderTargetSpecification pickSpec;
+        pickSpec.Attachments = { RenderTargetTextureFormat::RED_INTEGER, RenderTargetTextureFormat::Depth };
+        pickSpec.Width = 1280;
+        pickSpec.Height = 720;
+        m_PickingPass = RenderTarget::Create(pickSpec);
+
+
         m_PostProcessShader = Shader::Create("assets/shaders/postprocess/screen.glsl");
         m_BloomDownsampleShader = Shader::Create("assets/shaders/postprocess/bloom_downsample.glsl");
         m_BloomUpsampleShader = Shader::Create("assets/shaders/postprocess/bloom_upsample.glsl");
+        m_PickingShader = Shader::Create("assets/shaders/editor_picking.glsl");
 
         float quadVertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,  1.0f, -1.0f, 1.0f, 0.0f,
@@ -56,6 +64,7 @@ namespace RXNEngine {
 
             m_GeoPass->Resize(width, height);
             m_FinalPass->Resize(width, height);
+            m_PickingPass->Resize(width, height);
 
             m_BloomMips.clear();
 
@@ -120,6 +129,24 @@ namespace RXNEngine {
 
         RenderBloom();
         RenderPostProcess();
+    }
+
+    int SceneRenderer::GetEntityIDAtMouse(int x, int y, const EditorCamera& camera)
+    {
+        m_PickingPass->Bind();
+        RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+        RenderCommand::Clear();
+        m_PickingPass->ClearAttachment(0, -1);
+
+        m_PickingShader->Bind();
+        m_PickingShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
+
+        Renderer::ExecutePickingPass(m_PickingShader);
+
+        int pixelData = m_PickingPass->ReadPixel(0, x, y);
+        m_PickingPass->Unbind();
+
+        return pixelData;
     }
 
     void SceneRenderer::RenderPostProcess()

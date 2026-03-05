@@ -18,6 +18,8 @@ namespace RXNEditor {
         Entity GetSelectedEntity() const { return m_SelectedEntity; }
         void SetSelectedEntity(Entity entity) { m_SelectedEntity = entity; }
 
+        Entity ResolvePickedEntity(Entity entity);
+
     private:
         void DrawEntityNode(Entity entity);
         void DrawComponents(Entity entity);
@@ -27,5 +29,6 @@ namespace RXNEditor {
     private:
         Ref<Scene> m_Context;
         Entity m_SelectedEntity;
+        std::unordered_set<uint64_t> m_ExpandedNodes;
     };
 }

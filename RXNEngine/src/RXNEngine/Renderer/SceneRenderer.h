@@ -51,6 +51,7 @@ namespace RXNEngine {
         uint32_t GetFinalColorAttachmentRendererID() { return m_FinalPass->GetColorAttachmentRendererID(); }
 
         Settings& GetSettings() { return m_Settings; }
+        int GetEntityIDAtMouse(int x, int y, const EditorCamera& camera);
 
      private:
         void RenderPostProcess();
@@ -62,6 +63,9 @@ namespace RXNEngine {
 
         Ref<RenderTarget> m_GeoPass;
         Ref<RenderTarget> m_FinalPass;
+
+        Ref<RenderTarget> m_PickingPass;
+        Ref<Shader> m_PickingShader;
 
         Ref<Shader> m_PostProcessShader;
         Ref<VertexArray> m_ScreenQuadVAO;
