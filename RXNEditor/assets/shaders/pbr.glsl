@@ -5,7 +5,6 @@ layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
 layout(location = 2) in vec2 a_TexCoord;
 
-// INSTANCING
 layout(location = 4) in vec4 a_ModelRow0;
 layout(location = 5) in vec4 a_ModelRow1;
 layout(location = 6) in vec4 a_ModelRow2;
@@ -36,11 +35,12 @@ void main()
 #type fragment
 #version 450 core
 
-out vec4 FragColor;
+layout(location = 0) out vec4 o_Color;
 
 in vec2 v_TexCoord;
 in vec3 v_WorldPos;
 in vec3 v_Normal;
+flat in int v_EntityID;
 
 // --- MATERIAL UNIFORMS (Must match C++ Material::Bind) ---
 uniform sampler2D u_AlbedoMap;
@@ -91,9 +91,7 @@ layout(std140, binding = 1) uniform LightData {
 
 const float PI = 3.14159265359;
 
-// ----------------------------------------------------------------------------
-// PBR MATH (Standard Cook-Torrance)
-// ----------------------------------------------------------------------------
+// PBR MATH 
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -155,9 +153,7 @@ vec3 GetNormalFromMap()
     return normalize(TBN * tangentNormal);
 }
 
-// ----------------------------------------------------------------------------
 // SHADOWS
-// ----------------------------------------------------------------------------
 float ShadowCalculation(vec3 fragPosWorld)
 {
     vec4 fragPosViewSpace = u_View * vec4(fragPosWorld, 1.0);
@@ -200,12 +196,10 @@ float ShadowCalculation(vec3 fragPosWorld)
 // ----------------------------------------------------------------------------
 void main()
 {
-    // 1. GATHER MATERIAL DATA
-    // -----------------------
+    // GATHER MATERIAL DATA
     vec4 albedoSample = texture(u_AlbedoMap, v_TexCoord);
     vec3 albedo = pow(albedoSample.rgb, vec3(2.2)) * u_AlbedoColor.rgb; 
     
-    // Note: We use the alpha from the Texture (useful for fences/leaves)
     float alpha = albedoSample.a * u_AlbedoColor.a; 
 
     // Combine Texture * Uniform for Modulated Control
@@ -213,11 +207,9 @@ void main()
     float roughness = texture(u_RoughnessMap, v_TexCoord).g * u_Roughness;
     float ao        = texture(u_AOMap, v_TexCoord).r * u_AO; // GLTF uses Red channel for AO usually
 
-    // New Emissive Calculation
     vec3 emissive   = texture(u_EmissiveMap, v_TexCoord).rgb * u_EmissiveColor;
 
-    // 2. PREPARE VECTORS
-    // ------------------
+    // PREPARE VECTORS
     vec3 N = normalize(v_Normal);
     if (u_UseNormalMap > 0) N = GetNormalFromMap();
     
@@ -228,8 +220,7 @@ void main()
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
 
-    // 3. LIGHTING LOOP
-    // ----------------
+    // LIGHTING LOOP
     vec3 Lo = vec3(0.0);
     float shadow = ShadowCalculation(v_WorldPos);
 
@@ -287,8 +278,7 @@ void main()
         }
     }   
 
-    // 4. IBL (AMBIENT)
-    // ----------------
+    // IBL (AMBIENT)
     vec3 F_IBL = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
     vec3 kS_IBL = F_IBL;
     vec3 kD_IBL = 1.0 - kS_IBL;
@@ -304,9 +294,8 @@ void main()
 
     vec3 ambient = (kD_IBL * diffuseIBL + specularIBL) * ao;
     
-    // 5. COMBINE
-    // ----------
+    // COMBINE
     vec3 color = ambient + Lo + emissive;
 
-    FragColor = vec4(color, alpha);
+    o_Color = vec4(color, alpha);
 }

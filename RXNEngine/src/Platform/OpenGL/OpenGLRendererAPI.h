@@ -23,6 +23,14 @@ namespace RXNEngine {
 		virtual void SetBlendFunc(BlendFactor source, BlendFactor destination) override;
 		virtual void SetBlendEquation(BlendEquation equation) override;
 
+		virtual void SetStencilTest(bool enabled) override;
+		virtual void SetStencilMask(uint32_t mask) override;
+		virtual void SetStencilFunc(StencilFunc func, int ref, uint32_t mask) override;
+		virtual void SetStencilOp(StencilOp fail, StencilOp zfail, StencilOp zpass) override;
+
+		virtual void SetDepthMask(bool writeEnabled) override;
+		virtual void SetColorMask(bool r, bool g, bool b, bool a) override;
+
 		virtual void BindTextureID(uint32_t slot, uint32_t textureID);
 
 		virtual void Draw(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) override;

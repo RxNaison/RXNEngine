@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RXNEngine/Scene/Scene.h"
+#include "RXNEngine/Scene/Entity.h"
 #include "RenderTarget.h"
 #include "EditorCamera.h"
 #include "VertexArray.h"
@@ -44,7 +45,7 @@ namespace RXNEngine {
 
         void SetScene(Ref<Scene>& scene) { m_Scene = scene; }
 
-        void RenderEditor(EditorCamera& camera);
+        void RenderEditor(EditorCamera& camera, Entity selectedEntity = {});
         void RenderRuntime();
 
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }
@@ -73,6 +74,10 @@ namespace RXNEngine {
         std::vector<BloomMip> m_BloomMips;
         Ref<Shader> m_BloomDownsampleShader;
         Ref<Shader> m_BloomUpsampleShader;
+
+        Ref<Shader> m_GridShader;
+        Ref<Shader> m_OutlineShader;
+        Ref<VertexArray> m_GridQuadVAO;
 
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
     };

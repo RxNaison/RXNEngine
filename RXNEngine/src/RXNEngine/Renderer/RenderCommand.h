@@ -92,6 +92,37 @@ namespace RXNEngine {
 		{
 			s_RendererAPI->BindDefaultRenderTarget();
 		}
+
+		inline static void SetStencilTest(bool enabled)
+		{
+			s_RendererAPI->SetStencilTest(enabled);
+		}
+
+		inline static void SetStencilMask(uint32_t mask)
+		{
+			s_RendererAPI->SetStencilMask(mask);
+		}
+
+		inline static void SetStencilFunc(RendererAPI::StencilFunc func, int ref, uint32_t mask)
+		{
+			s_RendererAPI->SetStencilFunc(func, ref, mask);
+		}
+
+		inline static void SetStencilOp(RendererAPI::StencilOp fail, RendererAPI::StencilOp zfail, RendererAPI::StencilOp zpass)
+		{
+			s_RendererAPI->SetStencilOp(fail, zfail, zpass);
+		}
+
+		inline static void SetDepthMask(bool writeEnabled)
+		{
+			s_RendererAPI->SetDepthMask(writeEnabled);
+		}
+
+		inline static void SetColorMask(bool r, bool g, bool b, bool a)
+		{
+			s_RendererAPI->SetColorMask(r, g, b, a);
+		}
+
 	private:
 		static Scope<RendererAPI> s_RendererAPI;
 	};

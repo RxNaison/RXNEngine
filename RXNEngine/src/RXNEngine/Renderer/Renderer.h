@@ -66,6 +66,8 @@ namespace RXNEngine {
         static void DrawWireSphere(const glm::mat4& transform, const glm::vec4& color);
         static void DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color);
 
+        static void DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader);
+
         static void ExecutePickingPass(const Ref<Shader>& pickingShader);
 
         static RendererStatistics GetStats();

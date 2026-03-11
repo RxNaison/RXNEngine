@@ -41,6 +41,8 @@ namespace RXNEngine {
         m_BloomDownsampleShader = Shader::Create("assets/shaders/postprocess/bloom_downsample.glsl");
         m_BloomUpsampleShader = Shader::Create("assets/shaders/postprocess/bloom_upsample.glsl");
         m_PickingShader = Shader::Create("assets/shaders/editor_picking.glsl");
+        m_GridShader = Shader::Create("assets/shaders/grid.glsl");
+        m_OutlineShader = Shader::Create("assets/shaders/outline.glsl");
 
         float quadVertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,  1.0f, -1.0f, 1.0f, 0.0f,
@@ -53,6 +55,20 @@ namespace RXNEngine {
         vb->SetLayout({ { ShaderDataType::Float2, "a_Position" }, { ShaderDataType::Float2, "a_TexCoord" } });
         m_ScreenQuadVAO->AddVertexBuffer(vb);
         m_ScreenQuadVAO->SetIndexBuffer(IndexBuffer::Create(quadIndices, 6));
+
+
+        float gridVertices[] = {
+            -1.0f, 0.0f, -1.0f,
+             1.0f, 0.0f, -1.0f,
+             1.0f, 0.0f,  1.0f,
+            -1.0f, 0.0f,  1.0f
+        };
+        uint32_t gridIndices[] = { 0, 1, 2, 2, 3, 0 };
+        m_GridQuadVAO = VertexArray::Create();
+        Ref<VertexBuffer> gridVB = VertexBuffer::Create(gridVertices, sizeof(gridVertices));
+        gridVB->SetLayout({ { ShaderDataType::Float3, "a_Position" } });
+        m_GridQuadVAO->AddVertexBuffer(gridVB);
+        m_GridQuadVAO->SetIndexBuffer(IndexBuffer::Create(gridIndices, 6));
     }
 
     void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -90,7 +106,7 @@ namespace RXNEngine {
         }
     }
 
-    void SceneRenderer::RenderEditor(EditorCamera& camera)
+    void SceneRenderer::RenderEditor(EditorCamera& camera, Entity selectedEntity)
     {
         OPTICK_EVENT();
 
@@ -98,7 +114,62 @@ namespace RXNEngine {
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
         RenderCommand::Clear();
 
-        m_Scene->OnRenderEditor(0.0f, (EditorCamera&)camera, m_GeoPass, m_Settings.ShowColliders);
+        m_Scene->OnRenderEditor(0.0f, camera, m_GeoPass, m_Settings.ShowColliders);
+
+        m_GeoPass->Bind();
+
+        // --- 2. DRAW THE OUTLINE (Inverted Hull Technique) ---
+        if (selectedEntity)
+        {
+            m_OutlineShader->Bind();
+            m_OutlineShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
+            m_OutlineShader->SetFloat("u_OutlineThickness", 0.05f);
+
+            RenderCommand::SetCullFace(RendererAPI::CullFace::Front);
+            RenderCommand::SetDepthTest(true);
+
+            // Define a recursive lambda to draw the entity and all its children!
+            auto drawOutline = [&](Entity entity, auto& drawOutlineRef) -> void
+                {
+                    // If this specific entity has a mesh, draw its outline
+                    if (entity.HasComponent<StaticMeshComponent>())
+                    {
+                        auto& mc = entity.GetComponent<StaticMeshComponent>();
+                        if (mc.Mesh)
+                        {
+                            Renderer::DrawEntityOutline(mc.Mesh, mc.SubmeshIndex, m_Scene->GetWorldTransform(entity), m_OutlineShader);
+                        }
+                    }
+
+                    // Recursively call this function for every child entity
+                    if (entity.HasComponent<RelationshipComponent>())
+                    {
+                        for (UUID childID : entity.GetComponent<RelationshipComponent>().Children)
+                        {
+                            Entity child = m_Scene->GetEntityByUUID(childID);
+                            if (child)
+                                drawOutlineRef(child, drawOutlineRef);
+                        }
+                    }
+                };
+
+            // Kick off the recursion starting at whatever you clicked in the UI
+            drawOutline(selectedEntity, drawOutline);
+
+            // Restore default culling
+            RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
+        }
+
+        RenderCommand::SetCullFace(RendererAPI::CullFace::None);
+
+        m_GridShader->Bind();
+        m_GridShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
+        m_GridShader->SetFloat3("u_CameraPos", camera.GetPosition());
+
+        m_GridQuadVAO->Bind();
+        RenderCommand::DrawIndexed(m_GridQuadVAO);
+
+        RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
 
         m_GeoPass->Unbind();
 

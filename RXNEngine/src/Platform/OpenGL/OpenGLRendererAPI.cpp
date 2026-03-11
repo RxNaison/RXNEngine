@@ -34,6 +34,37 @@ namespace RXNEngine {
 		return GL_BACK;
 	}
 
+	static GLenum GLStencilFunc(RendererAPI::StencilFunc func)
+	{
+		switch (func)
+		{
+			case RendererAPI::StencilFunc::Always:       return GL_ALWAYS;
+			case RendererAPI::StencilFunc::NotEqual:     return GL_NOTEQUAL;
+			case RendererAPI::StencilFunc::Equal:        return GL_EQUAL;
+			case RendererAPI::StencilFunc::Less:         return GL_LESS;
+			case RendererAPI::StencilFunc::LessEqual:    return GL_LEQUAL;
+			case RendererAPI::StencilFunc::Greater:      return GL_GREATER;
+			case RendererAPI::StencilFunc::GreaterEqual: return GL_GEQUAL;
+		}
+		return GL_ALWAYS;
+	}
+
+	static GLenum GLStencilOp(RendererAPI::StencilOp op)
+	{
+		switch (op)
+		{
+			case RendererAPI::StencilOp::Keep:           return GL_KEEP;
+			case RendererAPI::StencilOp::Replace:        return GL_REPLACE;
+			case RendererAPI::StencilOp::Zero:           return GL_ZERO;
+			case RendererAPI::StencilOp::Increment:      return GL_INCR;
+			case RendererAPI::StencilOp::IncrementWrap:  return GL_INCR_WRAP;
+			case RendererAPI::StencilOp::Decrement:      return GL_DECR;
+			case RendererAPI::StencilOp::DecrementWrap:  return GL_DECR_WRAP;
+			case RendererAPI::StencilOp::Invert:         return GL_INVERT;
+		}
+		return GL_KEEP;
+	}
+
 	void OpenGLRendererAPI::Init()
 	{
 		glEnable(GL_DEPTH_TEST);
@@ -61,7 +92,7 @@ namespace RXNEngine {
 
 	void OpenGLRendererAPI::Clear()
 	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	}
 
 	void OpenGLRendererAPI::SetDepthTest(bool enabled)
@@ -137,6 +168,40 @@ namespace RXNEngine {
 			};
 
 		glBlendEquation(BlendEquationToGL(equation));
+	}
+
+	void OpenGLRendererAPI::SetStencilTest(bool enabled)
+	{
+		if (enabled) glEnable(GL_STENCIL_TEST);
+		else glDisable(GL_STENCIL_TEST);
+	}
+
+	void OpenGLRendererAPI::SetStencilMask(uint32_t mask)
+	{
+		glStencilMask(mask);
+	}
+
+	void OpenGLRendererAPI::SetStencilFunc(StencilFunc func, int ref, uint32_t mask)
+	{
+		glStencilFunc(GLStencilFunc(func), ref, mask);
+	}
+
+	void OpenGLRendererAPI::SetStencilOp(StencilOp fail, StencilOp zfail, StencilOp zpass)
+	{
+		glStencilOp(GLStencilOp(fail), GLStencilOp(zfail), GLStencilOp(zpass));
+	}
+
+	void OpenGLRendererAPI::SetDepthMask(bool writeEnabled)
+	{
+		glDepthMask(writeEnabled ? GL_TRUE : GL_FALSE);
+	}
+
+	void OpenGLRendererAPI::SetColorMask(bool r, bool g, bool b, bool a)
+	{
+		glColorMask(r ? GL_TRUE : GL_FALSE,
+			g ? GL_TRUE : GL_FALSE,
+			b ? GL_TRUE : GL_FALSE,
+			a ? GL_TRUE : GL_FALSE);
 	}
 
 	void OpenGLRendererAPI::BindTextureID(uint32_t slot, uint32_t textureID)

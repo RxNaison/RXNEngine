@@ -523,6 +523,22 @@ namespace RXNEngine {
         }
     }
 
+    void Renderer::DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader)
+    {
+        InstanceData data;
+        data.Transform = transform;
+        data.EntityID = -1;
+
+        s_Data.InstanceVertexBuffer->SetData(&data, sizeof(InstanceData));
+
+        outlineShader->Bind();
+        mesh->GetVertexArray()->Bind();
+        s_Data.InstanceVertexBuffer->Bind();
+
+        const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
+        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, 1, submesh.IndexCount, submesh.BaseIndex);
+    }
+
     void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera)
     {
         DrawSkybox(skybox, camera.GetViewMatrix(), camera.GetProjection());

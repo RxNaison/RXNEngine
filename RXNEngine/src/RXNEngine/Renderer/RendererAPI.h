@@ -56,6 +56,29 @@ namespace RXNEngine {
 			Min,
 			Max
 		};
+
+		enum class StencilFunc
+		{
+			Always = 0,
+			NotEqual,
+			Equal,
+			Less,
+			LessEqual,
+			Greater,
+			GreaterEqual
+		};
+
+		enum class StencilOp
+		{
+			Keep = 0,
+			Replace,
+			Zero,
+			Increment,
+			IncrementWrap,
+			Decrement,
+			DecrementWrap,
+			Invert
+		};
 	public:
 		virtual void Init() = 0;
 
@@ -72,6 +95,14 @@ namespace RXNEngine {
 		virtual void SetBlend(bool enabled) = 0;
 		virtual void SetBlendFunc(BlendFactor source, BlendFactor destination) = 0;
 		virtual void SetBlendEquation(BlendEquation equation) = 0;
+
+		virtual void SetStencilTest(bool enabled) = 0;
+		virtual void SetStencilMask(uint32_t mask) = 0;
+		virtual void SetStencilFunc(StencilFunc func, int ref, uint32_t mask) = 0;
+		virtual void SetStencilOp(StencilOp fail, StencilOp zfail, StencilOp zpass) = 0;
+
+		virtual void SetDepthMask(bool writeEnabled) = 0;
+		virtual void SetColorMask(bool r, bool g, bool b, bool a) = 0;
 
 		virtual void BindTextureID(uint32_t slot, uint32_t textureID) = 0;
 
