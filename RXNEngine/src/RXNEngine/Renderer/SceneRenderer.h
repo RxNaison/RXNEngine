@@ -76,8 +76,10 @@ namespace RXNEngine {
         Ref<Shader> m_BloomUpsampleShader;
 
         Ref<Shader> m_GridShader;
-        Ref<Shader> m_OutlineShader;
         Ref<VertexArray> m_GridQuadVAO;
+
+        Ref<RenderTarget> m_OutlineMaskPass;
+        Ref<Shader> m_OutlineMaskShader;
 
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
     };

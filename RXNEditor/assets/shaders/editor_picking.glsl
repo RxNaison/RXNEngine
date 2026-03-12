@@ -15,12 +15,7 @@ flat out int v_EntityID;
 
 void main()
 {
-    mat4 modelMatrix = mat4(
-        a_ModelMatrixCol0, 
-        a_ModelMatrixCol1, 
-        a_ModelMatrixCol2, 
-        a_ModelMatrixCol3
-    );
+    mat4 modelMatrix = mat4(a_ModelMatrixCol0, a_ModelMatrixCol1, a_ModelMatrixCol2, a_ModelMatrixCol3);
     
     gl_Position = u_ViewProjection * modelMatrix * vec4(a_Position, 1.0);
     

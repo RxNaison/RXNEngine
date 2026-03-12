@@ -36,13 +36,19 @@ namespace RXNEngine {
         pickSpec.Height = 720;
         m_PickingPass = RenderTarget::Create(pickSpec);
 
+        RenderTargetSpecification maskSpec;
+        maskSpec.Attachments = { RenderTargetTextureFormat::RGBA8 };
+        maskSpec.Width = 1280;
+        maskSpec.Height = 720;
+        m_OutlineMaskPass = RenderTarget::Create(maskSpec);
+
 
         m_PostProcessShader = Shader::Create("assets/shaders/postprocess/screen.glsl");
         m_BloomDownsampleShader = Shader::Create("assets/shaders/postprocess/bloom_downsample.glsl");
         m_BloomUpsampleShader = Shader::Create("assets/shaders/postprocess/bloom_upsample.glsl");
         m_PickingShader = Shader::Create("assets/shaders/editor_picking.glsl");
         m_GridShader = Shader::Create("assets/shaders/grid.glsl");
-        m_OutlineShader = Shader::Create("assets/shaders/outline.glsl");
+        m_OutlineMaskShader = Shader::Create("assets/shaders/outline_mask.glsl");
 
         float quadVertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,  1.0f, -1.0f, 1.0f, 0.0f,
@@ -81,6 +87,7 @@ namespace RXNEngine {
             m_GeoPass->Resize(width, height);
             m_FinalPass->Resize(width, height);
             m_PickingPass->Resize(width, height);
+            m_OutlineMaskPass->Resize(width, height);
 
             m_BloomMips.clear();
 
@@ -110,6 +117,41 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
+        m_OutlineMaskPass->Bind();
+        RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+        RenderCommand::Clear();
+
+        if (selectedEntity)
+        {
+            RenderCommand::SetDepthTest(false);
+
+            m_OutlineMaskShader->Bind();
+            m_OutlineMaskShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
+
+            auto drawOutline = [&](Entity entity, auto& drawOutlineRef) -> void
+                {
+                    if (entity.HasComponent<StaticMeshComponent>())
+                    {
+                        auto& mc = entity.GetComponent<StaticMeshComponent>();
+                        if (mc.Mesh)
+                            Renderer::DrawEntityOutline(mc.Mesh, mc.SubmeshIndex, m_Scene->GetWorldTransform(entity), m_OutlineMaskShader);
+                    }
+
+                    if (entity.HasComponent<RelationshipComponent>())
+                    {
+                        for (UUID childID : entity.GetComponent<RelationshipComponent>().Children)
+                        {
+                            Entity child = m_Scene->GetEntityByUUID(childID);
+                            if (child) drawOutlineRef(child, drawOutlineRef);
+                        }
+                    }
+                };
+
+            drawOutline(selectedEntity, drawOutline);
+            RenderCommand::SetDepthTest(true);
+        }
+        m_OutlineMaskPass->Unbind();
+
         m_GeoPass->Bind();
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
         RenderCommand::Clear();
@@ -118,59 +160,17 @@ namespace RXNEngine {
 
         m_GeoPass->Bind();
 
-        // --- 2. DRAW THE OUTLINE (Inverted Hull Technique) ---
-        if (selectedEntity)
-        {
-            m_OutlineShader->Bind();
-            m_OutlineShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
-            m_OutlineShader->SetFloat("u_OutlineThickness", 0.05f);
-
-            RenderCommand::SetCullFace(RendererAPI::CullFace::Front);
-            RenderCommand::SetDepthTest(true);
-
-            // Define a recursive lambda to draw the entity and all its children!
-            auto drawOutline = [&](Entity entity, auto& drawOutlineRef) -> void
-                {
-                    // If this specific entity has a mesh, draw its outline
-                    if (entity.HasComponent<StaticMeshComponent>())
-                    {
-                        auto& mc = entity.GetComponent<StaticMeshComponent>();
-                        if (mc.Mesh)
-                        {
-                            Renderer::DrawEntityOutline(mc.Mesh, mc.SubmeshIndex, m_Scene->GetWorldTransform(entity), m_OutlineShader);
-                        }
-                    }
-
-                    // Recursively call this function for every child entity
-                    if (entity.HasComponent<RelationshipComponent>())
-                    {
-                        for (UUID childID : entity.GetComponent<RelationshipComponent>().Children)
-                        {
-                            Entity child = m_Scene->GetEntityByUUID(childID);
-                            if (child)
-                                drawOutlineRef(child, drawOutlineRef);
-                        }
-                    }
-                };
-
-            // Kick off the recursion starting at whatever you clicked in the UI
-            drawOutline(selectedEntity, drawOutline);
-
-            // Restore default culling
-            RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
-        }
-
+        RenderCommand::SetBlend(true);
+        RenderCommand::SetDepthTest(true);
         RenderCommand::SetCullFace(RendererAPI::CullFace::None);
 
         m_GridShader->Bind();
         m_GridShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
         m_GridShader->SetFloat3("u_CameraPos", camera.GetPosition());
-
         m_GridQuadVAO->Bind();
         RenderCommand::DrawIndexed(m_GridQuadVAO);
 
         RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
-
         m_GeoPass->Unbind();
 
         RenderBloom();
@@ -180,6 +180,11 @@ namespace RXNEngine {
     void SceneRenderer::RenderRuntime()
     {
         OPTICK_EVENT();
+
+        m_OutlineMaskPass->Bind();
+        RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+        RenderCommand::Clear();
+        m_OutlineMaskPass->Unbind();
 
         Entity cameraEntity = m_Scene->GetPrimaryCameraEntity();
 
@@ -232,6 +237,10 @@ namespace RXNEngine {
         m_PostProcessShader->Bind();
         m_PostProcessShader->SetInt("u_ScreenTexture", 0);
         m_PostProcessShader->SetInt("u_BloomTexture", 1);
+        m_PostProcessShader->SetInt("u_OutlineTexture", 2);
+
+        const auto& spec = m_FinalPass->GetSpecification();
+        m_PostProcessShader->SetFloat2("u_TexelSize", glm::vec2(1.0f / spec.Width, 1.0f / spec.Height));
 
         m_PostProcessShader->SetFloat("u_Exposure", m_Settings.Exposure);
         m_PostProcessShader->SetFloat("u_Gamma", m_Settings.Gamma);
@@ -241,6 +250,8 @@ namespace RXNEngine {
 
         if (!m_BloomMips.empty())
             RenderCommand::BindTextureID(1, m_BloomMips[0].Target->GetColorAttachmentRendererID());
+
+        RenderCommand::BindTextureID(2, m_OutlineMaskPass->GetColorAttachmentRendererID());
 
         m_ScreenQuadVAO->Bind();
         RenderCommand::DrawIndexed(m_ScreenQuadVAO);

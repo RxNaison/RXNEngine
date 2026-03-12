@@ -1,4 +1,4 @@
-// --- VERTEX SHADER ---
+#type vertex
 #version 450 core
 layout(location = 0) in vec3 a_Position;
 
@@ -15,12 +15,11 @@ void main()
     gl_Position = u_ViewProjection * transform * vec4(a_Position, 1.0);
 }
 
-// --- FRAGMENT SHADER ---
+#type fragment
 #version 450 core
 layout(location = 0) out vec4 o_Color;
 
 void main()
 {
-    // Draw pure solid white
     o_Color = vec4(1.0); 
 }
