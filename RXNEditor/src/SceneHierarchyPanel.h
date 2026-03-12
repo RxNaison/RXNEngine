@@ -20,6 +20,8 @@ namespace RXNEditor {
 
         Entity ResolvePickedEntity(Entity entity);
 
+        void SetMeshDropCallback(const std::function<void(const std::string&)>& callback) { m_MeshDropCallback = callback; }
+
     private:
         void DrawEntityNode(Entity entity);
         void DrawComponents(Entity entity);
@@ -30,5 +32,7 @@ namespace RXNEditor {
         Ref<Scene> m_Context;
         Entity m_SelectedEntity;
         std::unordered_set<uint64_t> m_ExpandedNodes;
+
+        std::function<void(const std::string&)> m_MeshDropCallback;
     };
 }

@@ -83,11 +83,11 @@ namespace RXNEngine {
 		return nullptr;
 	}
 
-	Ref<StaticMesh> ModelImporter::ImportAsset(const std::string& filepath)
+	Ref<StaticMesh> ModelImporter::ImportAsset(const std::string& filepath, const ModelImportSettings& settings)
 	{
 		std::string cachePath = filepath + ".rxn";
 
-		if (std::filesystem::exists(cachePath))
+		if (!settings.ForceRebuildCache && std::filesystem::exists(cachePath))
 		{
 			RXN_CORE_INFO("Loading Cached Model: {0}", cachePath);
 			Ref<StaticMesh> cachedMesh = ModelSerializer::Deserialize(cachePath);
@@ -95,19 +95,24 @@ namespace RXNEngine {
 				return cachedMesh;
 		}
 
-		RXN_CORE_WARN("Cache miss. Importing raw model via Assimp: {0}", filepath);
-
 		RXN_CORE_INFO("Importing raw model: {0}", filepath);
 
+		uint32_t importFlags = aiProcess_Triangulate;
+		if (settings.GenerateNormals)
+			importFlags |= aiProcess_GenSmoothNormals;
+		if (settings.CalculateTangents)
+			importFlags |= aiProcess_CalcTangentSpace;
+		if (settings.JoinIdenticalVertices)
+			importFlags |= aiProcess_JoinIdenticalVertices;
+		if (settings.FlipUVs)
+			importFlags |= aiProcess_FlipUVs;
+		if (settings.OptimizeGraph)
+			importFlags |= aiProcess_OptimizeGraph;
+		if (settings.OptimizeMeshes)
+			importFlags |= aiProcess_OptimizeMeshes;
+
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(filepath,
-			aiProcess_Triangulate |
-			aiProcess_GenSmoothNormals |
-			aiProcess_CalcTangentSpace |
-			aiProcess_OptimizeMeshes |
-			aiProcess_OptimizeGraph |
-			aiProcess_JoinIdenticalVertices
-		);
+		const aiScene* scene = importer.ReadFile(filepath, importFlags);
 
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -198,7 +203,7 @@ namespace RXNEngine {
 			data.Materials.push_back(rxnMat);
 		}
 
-		ProcessNode(scene->mRootNode, scene, data, glm::mat4(1.0f));
+		ProcessNode(scene->mRootNode, scene, data, glm::mat4(1.0f), "Root");
 
 		Ref<StaticMesh> mesh = CreateRef<StaticMesh>(data.Vertices, data.Indices, data.Submeshes, data.Materials);
 		ModelSerializer::Serialize(cachePath, mesh);
@@ -206,10 +211,15 @@ namespace RXNEngine {
 		return mesh;
 	}
 
-	void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data, const glm::mat4& parentTransform)
+	void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data, const glm::mat4& parentTransform, const std::string& parentNodeName)
 	{
 		glm::mat4 localTransform = parentTransform * AssimpToGLM(node->mTransformation);
 		std::string nodeName = node->mName.C_Str();
+
+		if (nodeName.empty() || nodeName.find("$") != std::string::npos || nodeName.find("Object_") != std::string::npos)
+		{
+			nodeName = parentNodeName;
+		}
 
 		for (uint32_t i = 0; i < node->mNumMeshes; i++)
 		{
@@ -219,7 +229,7 @@ namespace RXNEngine {
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++)
 		{
-			ProcessNode(node->mChildren[i], scene, data, localTransform);
+			ProcessNode(node->mChildren[i], scene, data, localTransform, nodeName);
 		}
 	}
 
@@ -270,9 +280,9 @@ namespace RXNEngine {
 		data.Submeshes.push_back(submesh);
 	}
 
-	Entity ModelImporter::InstantiateToScene(Ref<Scene> scene, const std::string& filepath)
+	Entity ModelImporter::InstantiateToScene(Ref<Scene> scene, const std::string& filepath, const ModelImportSettings& settings)
 	{
-		Ref<StaticMesh> mesh = AssetManager::GetMesh(filepath);
+		Ref<StaticMesh> mesh = ImportAsset(filepath, settings);
 		if (!mesh) return {};
 
 		std::filesystem::path path(filepath);

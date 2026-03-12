@@ -4,6 +4,7 @@
 #include "SceneHierarchyPanel.h"
 #include "ContentBrowserPanel.h"
 #include "EnvironmentPanel.h"
+#include "RXNEngine/Renderer/ModelImporter.h"
 
 using namespace RXNEngine;
 
@@ -63,5 +64,9 @@ namespace RXNEditor {
 
 		uint32_t m_ViewportWidth = 0;
 		uint32_t m_ViewportHeight = 0;
+
+		std::string m_PendingImportPath;
+		bool m_ShowImportDialog = false;
+		ModelImportSettings m_ImportSettings;
 	};
 }

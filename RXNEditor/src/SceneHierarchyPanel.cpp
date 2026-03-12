@@ -65,7 +65,6 @@ namespace RXNEditor {
 
     void SceneHierarchyPanel::OnImGuiRender()
     {
-        // --- Hierarchy Panel ---
         ImGui::Begin("Scene Hierarchy");
 
         if (m_Context)
@@ -88,7 +87,8 @@ namespace RXNEditor {
                     std::string path = (const char*)payload->Data;
                     if (!path.empty() && (path.ends_with(".gltf") || path.ends_with(".glb") || path.ends_with(".obj") || path.ends_with(".fbx")))
                     {
-                        ModelImporter::InstantiateToScene(m_Context, path);
+                        if (m_MeshDropCallback)
+                            m_MeshDropCallback(path);
                     }
                 }
                 ImGui::EndDragDropTarget();
@@ -130,7 +130,6 @@ namespace RXNEditor {
         }
         ImGui::End();
 
-        // --- Properties Panel ---
         ImGui::Begin("Properties");
         if (m_SelectedEntity)
             DrawComponents(m_SelectedEntity);

@@ -29,6 +29,12 @@ namespace RXNEditor {
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_EnvironmentPanel.SetContext(m_SceneRenderer);
+
+        m_SceneHierarchyPanel.SetMeshDropCallback([this](const std::string& path)
+            {
+                m_PendingImportPath = path;
+                m_ShowImportDialog = true;
+            });
 	}
 
 	void EditorLayer::OnDetach()
@@ -310,7 +316,8 @@ namespace RXNEditor {
                 }
                 else if (!path.empty() && (path.ends_with(".gltf") || path.ends_with(".glb") || path.ends_with(".obj") || path.ends_with(".fbx")))
                 {
-                    ModelImporter::InstantiateToScene(m_ActiveScene, path);
+                    m_PendingImportPath = path;
+                    m_ShowImportDialog = true;
                 }
             }
             ImGui::EndDragDropTarget();
@@ -333,13 +340,62 @@ namespace RXNEditor {
 
         ImGui::End();
 
+        if (m_ShowImportDialog)
+        {
+            ImGui::OpenPopup("Import Model Settings");
+            m_ShowImportDialog = false;
+        }
+
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        if (ImGui::BeginPopupModal("Import Model Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            std::filesystem::path p(m_PendingImportPath);
+            ImGui::Text("Target: %s", p.filename().string().c_str());
+            ImGui::Separator();
+
+            ImGui::Checkbox("Force Rebuild Cache (.rxn)", &m_ImportSettings.ForceRebuildCache);
+            ImGui::Separator();
+
+            ImGui::Text("Geometry Flags");
+            ImGui::Checkbox("Generate Smooth Normals", &m_ImportSettings.GenerateNormals);
+            ImGui::Checkbox("Calculate Tangent Space", &m_ImportSettings.CalculateTangents);
+            ImGui::Checkbox("Join Identical Vertices", &m_ImportSettings.JoinIdenticalVertices);
+            ImGui::Checkbox("Flip UVs (For OpenGL Textures)", &m_ImportSettings.FlipUVs);
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Aggressive Optimizations (May break hierarchy)");
+            ImGui::Checkbox("Optimize Graph (Merge Nodes)", &m_ImportSettings.OptimizeGraph);
+            ImGui::Checkbox("Optimize Meshes (Merge Geometries)", &m_ImportSettings.OptimizeMeshes);
+            ImGui::Separator();
+
+            if (ImGui::Button("Import", ImVec2(120, 0)))
+            {
+                ModelImporter::InstantiateToScene(m_ActiveScene, m_PendingImportPath, m_ImportSettings);
+
+                ImGui::CloseCurrentPopup();
+                m_PendingImportPath.clear();
+            }
+
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                ImGui::CloseCurrentPopup();
+                m_PendingImportPath.clear();
+            }
+
+            ImGui::EndPopup();
+        }
+
         ImGui::End();
 
     }
 
     bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
     {
-        // Shortcuts
         if (e.GetRepeatCount() > 1)
             return false;
 
