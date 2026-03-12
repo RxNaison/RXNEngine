@@ -771,53 +771,59 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
-        if (s_Data.OpaqueQueue.empty()) return;
-
-        auto batchStart = s_Data.OpaqueQueue.begin();
-        static InstanceData batchData[MaxInstances];
-        uint32_t transformCount = 0;
-
-        batchData[transformCount].Transform = batchStart->Transform;
-        batchData[transformCount].EntityID = batchStart->EntityID;
-        transformCount++;
-
-        for (auto it = s_Data.OpaqueQueue.begin() + 1; it != s_Data.OpaqueQueue.end(); ++it)
-        {
-            bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
-
-            if (isSameMesh && transformCount < MaxInstances)
+        auto drawQueue = [](const std::vector<RenderCommandPacket>& queue)
             {
-                batchData[transformCount].Transform = it->Transform;
-                batchData[transformCount].EntityID = it->EntityID;
+                if (queue.empty()) return;
+
+                auto batchStart = queue.begin();
+                static InstanceData batchData[MaxInstances];
+                uint32_t transformCount = 0;
+
+                batchData[transformCount].Transform = batchStart->Transform;
+                batchData[transformCount].EntityID = batchStart->EntityID;
                 transformCount++;
-            }
-            else
-            {
-                s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
 
-                batchStart->Mesh->GetVertexArray()->Bind();
-                s_Data.InstanceVertexBuffer->Bind();
+                for (auto it = queue.begin() + 1; it != queue.end(); ++it)
+                {
+                    bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
 
-                const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                    if (isSameMesh && transformCount < MaxInstances)
+                    {
+                        batchData[transformCount].Transform = it->Transform;
+                        batchData[transformCount].EntityID = it->EntityID;
+                        transformCount++;
+                    }
+                    else
+                    {
+                        s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
 
-                batchStart = it;
-                transformCount = 0;
-                batchData[transformCount].Transform = it->Transform;
-                batchData[transformCount].EntityID = it->EntityID;
-                transformCount++;
-            }
-        }
+                        batchStart->Mesh->GetVertexArray()->Bind();
+                        s_Data.InstanceVertexBuffer->Bind();
 
-        if (transformCount > 0)
-        {
-            s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                        const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                        RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-            batchStart->Mesh->GetVertexArray()->Bind();
-            s_Data.InstanceVertexBuffer->Bind();
+                        batchStart = it;
+                        transformCount = 0;
+                        batchData[transformCount].Transform = it->Transform;
+                        batchData[transformCount].EntityID = it->EntityID;
+                        transformCount++;
+                    }
+                }
 
-            const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-            RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
-        }
+                if (transformCount > 0)
+                {
+                    s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+
+                    batchStart->Mesh->GetVertexArray()->Bind();
+                    s_Data.InstanceVertexBuffer->Bind();
+
+                    const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                }
+            };
+
+        drawQueue(s_Data.OpaqueQueue);
+        drawQueue(s_Data.TransparentQueue);
     }
 }
