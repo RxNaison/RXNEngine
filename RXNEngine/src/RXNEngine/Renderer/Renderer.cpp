@@ -226,18 +226,18 @@ namespace RXNEngine {
             -1.0f, -1.0f,  1.0f,
              1.0f, -1.0f,  1.0f
         };
-
+        //move it to the scene renderer
         Ref<VertexBuffer> skyboxVB = VertexBuffer::Create(skyboxVertices, sizeof(skyboxVertices));
         skyboxVB->SetLayout({ { ShaderDataType::Float3, "a_Position" } });
         s_Data.SkyboxVAO = VertexArray::Create();
         s_Data.SkyboxVAO->AddVertexBuffer(skyboxVB);
 
-        s_Data.SkyboxShader = Shader::Create("assets/shaders/skybox.glsl");
+        s_Data.SkyboxShader = Shader::Create("res/shaders/skybox.glsl");
 
         s_Data.ShadowData.ShadowTarget = ShadowMap::Create(4096);
         s_Data.ShadowData.ShadowTarget->Init(4096);
 
-        s_Data.ShadowData.ShadowShader = Shader::Create("assets/shaders/shadow_depth.glsl");
+        s_Data.ShadowData.ShadowShader = Shader::Create("res/shaders/shadow_depth.glsl");
 
         s_Data.ShadowData.ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowData::ShadowDataGPU), 2);
 
@@ -250,7 +250,7 @@ namespace RXNEngine {
             { ShaderDataType::Float4, "a_Color" }
             });
         s_Data.LineVAO->AddVertexBuffer(s_Data.LineVBO);
-        s_Data.LineShader = Shader::Create("assets/shaders/line.glsl");
+        s_Data.LineShader = Shader::Create("res/shaders/line.glsl");
     }
 
     void Renderer::Shutdown()

@@ -43,12 +43,12 @@ namespace RXNEngine {
         m_OutlineMaskPass = RenderTarget::Create(maskSpec);
 
 
-        m_PostProcessShader = Shader::Create("assets/shaders/postprocess/screen.glsl");
-        m_BloomDownsampleShader = Shader::Create("assets/shaders/postprocess/bloom_downsample.glsl");
-        m_BloomUpsampleShader = Shader::Create("assets/shaders/postprocess/bloom_upsample.glsl");
-        m_PickingShader = Shader::Create("assets/shaders/editor_picking.glsl");
-        m_GridShader = Shader::Create("assets/shaders/grid.glsl");
-        m_OutlineMaskShader = Shader::Create("assets/shaders/outline_mask.glsl");
+        m_PostProcessShader = Shader::Create("res/shaders/postprocess/screen.glsl");
+        m_BloomDownsampleShader = Shader::Create("res/shaders/postprocess/bloom_downsample.glsl");
+        m_BloomUpsampleShader = Shader::Create("res/shaders/postprocess/bloom_upsample.glsl");
+        m_PickingShader = Shader::Create("res/shaders/editor_picking.glsl");
+        m_GridShader = Shader::Create("res/shaders/grid.glsl");
+        m_OutlineMaskShader = Shader::Create("res/shaders/outline_mask.glsl");
 
         float quadVertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,  1.0f, -1.0f, 1.0f, 0.0f,

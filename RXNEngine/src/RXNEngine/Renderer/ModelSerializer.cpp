@@ -135,7 +135,7 @@ namespace RXNEngine {
         in.read((char*)&matCount, sizeof(uint32_t));
         std::vector<Ref<Material>> materials(matCount);
 
-        Ref<Shader> defaultPBR = AssetManager::GetShader("assets/shaders/pbr.glsl");
+        Ref<Shader> defaultPBR = AssetManager::GetShader("res/shaders/pbr.glsl");
 
         for (uint32_t i = 0; i < matCount; i++)
         {

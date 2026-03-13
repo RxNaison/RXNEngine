@@ -176,7 +176,7 @@ namespace RXNEngine {
 		   glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
 		};
 
-		m_EquirectShader = Shader::Create("assets/shaders/equirectangular_to_cubemap.glsl");
+		m_EquirectShader = Shader::Create("res/shaders/equirectangular_to_cubemap.glsl");
 		m_EquirectShader->Bind();
 		m_EquirectShader->SetInt("u_EquirectangularMap", 0);
 		m_EquirectShader->SetMat4("u_Projection", captureProjection);
@@ -250,7 +250,7 @@ namespace RXNEngine {
 			glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
 		};
 
-		Ref<Shader> irradianceShader = Shader::Create("assets/shaders/ibl_irradiance.glsl");
+		Ref<Shader> irradianceShader = Shader::Create("res/shaders/ibl_irradiance.glsl");
 		irradianceShader->Bind();
 		irradianceShader->SetInt("u_EnvironmentMap", 0);
 		irradianceShader->SetMat4("u_Projection", captureProjection);
@@ -308,7 +308,7 @@ namespace RXNEngine {
 			glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
 		};
 
-		Ref<Shader> prefilterShader = Shader::Create("assets/shaders/ibl_prefilter.glsl");
+		Ref<Shader> prefilterShader = Shader::Create("res/shaders/ibl_prefilter.glsl");
 		prefilterShader->Bind();
 		prefilterShader->SetInt("u_EnvironmentMap", 0);
 		prefilterShader->SetMat4("u_Projection", captureProjection);
@@ -364,7 +364,7 @@ namespace RXNEngine {
 
 		glDisable(GL_BLEND);
 		glViewport(0, 0, 512, 512);
-		Ref<Shader> brdfShader = Shader::Create("assets/shaders/ibl_brdf.glsl");
+		Ref<Shader> brdfShader = Shader::Create("res/shaders/ibl_brdf.glsl");
 		brdfShader->Bind();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

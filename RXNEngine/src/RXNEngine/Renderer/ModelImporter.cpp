@@ -125,7 +125,7 @@ namespace RXNEngine {
 			directory = filepath.substr(0, filepath.find_last_of('\\'));
 
 		ImporterData data;
-		Ref<Shader> defaultPBR = AssetManager::GetShader("assets/shaders/pbr.glsl");
+		Ref<Shader> defaultPBR = AssetManager::GetShader("res/shaders/pbr.glsl");
 
 		for (uint32_t i = 0; i < scene->mNumMaterials; i++)
 		{
