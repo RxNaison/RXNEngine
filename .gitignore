@@ -27,7 +27,7 @@ ipch
 # Directories
 **/bin/
 bin-int/
-Intermediates/
+int/
 
 # Files
 *.log
@@ -38,6 +38,6 @@ Intermediates/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
-*.csproj
 *.vcxproj
 *.filters
+**/obj/

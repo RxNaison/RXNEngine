@@ -20,6 +20,7 @@ IncludeDir["ImGuizmo"] = "RXNEngine/vendor/ImGuizmo"
 IncludeDir["PhysX"] = "RXNEngine/vendor/PhysX/physx/include"
 IncludeDir["PxShared"] = "RXNEngine/vendor/PhysX/pxshared/include"
 IncludeDir["Optick"] = "RXNEngine/vendor/optick/src"
+IncludeDir["CoreCLR"] = "RXNEngine/vendor/coreclr/include"
 
 PhysXBinDir = "RXNEngine/vendor/PhysX/physx/bin/win.x86_64.vc143.md"
 
@@ -83,9 +84,9 @@ project "RXNEngine"
         "%{IncludeDir.ImGuizmo}",
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.PxShared}",
-        "%{IncludeDir.Optick}"
+        "%{IncludeDir.Optick}",
+        "%{IncludeDir.CoreCLR}"
     }
-
 
     links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
 
@@ -206,6 +207,13 @@ project "RXNEditor"
        defines { "RXN_DEBUG", "USE_OPTICK=1" }
        runtime "Debug"
        symbols "on"
+
+       prebuildcommands
+       {
+           "dotnet build \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Debug -o \"%{wks.location}/RXNEditor/res/scripts\"",
+           "dotnet build \"%{wks.location}/RXNScriptCore/RXNScriptCore.csproj\" -c Debug -o \"%{wks.location}/RXNEditor/res/scripts\""
+       }
+
        postbuildcommands
        {
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/debug/*.dll\" \"%{cfg.targetdir}\""
@@ -215,6 +223,13 @@ project "RXNEditor"
        defines { "RXN_RELEASE", "USE_OPTICK=0" }
        runtime "Release"
        optimize "on"
+
+       prebuildcommands
+       {
+           "dotnet build \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\"",
+           "dotnet build \"%{wks.location}/RXNScriptCore/RXNScriptCore.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\""
+       }
+
        postbuildcommands
        {
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\""
@@ -224,7 +239,26 @@ project "RXNEditor"
        defines { "RXN_DIST", "USE_OPTICK=1" }
        runtime "Release"
        optimize "on"
+
+       prebuildcommands
+       {
+           "dotnet build \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\"",
+           "dotnet build \"%{wks.location}/RXNScriptCore/RXNScriptCore.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\""
+       }
+
        postbuildcommands
        {
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\""
        }
+
+group "Scripting"
+    externalproject "RXNScriptHost"
+        location "RXNScriptHost"
+        kind "SharedLib"
+        language "C#"
+
+    externalproject "RXNScriptCore"
+        location "RXNScriptCore"
+        kind "SharedLib"
+        language "C#"
+group ""

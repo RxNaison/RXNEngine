@@ -5,6 +5,7 @@
 #include "RXNEngine/Renderer/RenderCommand.h"
 #include "RXNEngine/Core/Time.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
+#include "RXNEngine/Scripting/ScriptEngine.h"
 
 namespace RXNEngine {
 
@@ -20,6 +21,7 @@ namespace RXNEngine {
 
 		Renderer::Init();
 		PhysicsSystem::Init();
+		ScriptEngine::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -28,6 +30,7 @@ namespace RXNEngine {
 	Application::~Application()
 	{
 		PhysicsSystem::Shutdown();
+		ScriptEngine::Shutdown();
 	}
 
 	void Application::PushLayer(Layer* layer)
