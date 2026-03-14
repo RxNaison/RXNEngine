@@ -9,6 +9,9 @@ namespace RXNScriptHost
     public struct InternalCalls
     {
         public IntPtr LogMessage;
+
+        public IntPtr Entity_GetTranslation;
+        public IntPtr Entity_SetTranslation;
     }
 
     class GameScriptALC : AssemblyLoadContext
@@ -53,10 +56,10 @@ namespace RXNScriptHost
                 s_CoreAssembly = s_ALC.LoadFromAssemblyPath(assemblyPath);
                 Console.WriteLine($"[.NET Host] Successfully loaded Game Scripts from: {assemblyPath}");
 
-                Type? mainType = s_CoreAssembly.GetType("RXNEngine.Main");
+                Type? mainType = s_CoreAssembly.GetType("RXNEngine.Player");
                 if (mainType != null)
                 {
-                    Activator.CreateInstance(mainType);
+                    //Activator.CreateInstance(mainType);
                 }
                 else
                 {
@@ -73,6 +76,54 @@ namespace RXNScriptHost
             }
         }
 
+        private static Dictionary<ulong, object> s_EntityInstances = new();
+
+        [UnmanagedCallersOnly]
+        public static void InstantiateScript(ulong entityID, IntPtr classNamePtr)
+        {
+            if (s_CoreAssembly == null) return;
+
+            string? className = Marshal.PtrToStringUTF8(classNamePtr);
+            if (className == null) return;
+
+            Type? scriptType = s_CoreAssembly.GetType(className);
+            if (scriptType != null)
+            {
+                object? instance = Activator.CreateInstance(scriptType);
+                if (instance != null)
+                {
+                    var idField = scriptType.BaseType?.GetField("ID", BindingFlags.Public | BindingFlags.Instance);
+                    idField?.SetValue(instance, entityID);
+
+                    s_EntityInstances[entityID] = instance;
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[.NET Host] Could not find script class: {className}");
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void InvokeOnCreate(ulong entityID)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                MethodInfo? onCreate = instance.GetType().GetMethod("OnCreate");
+                onCreate?.Invoke(instance, null);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void InvokeOnUpdate(ulong entityID, float ts)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                MethodInfo? onUpdate = instance.GetType().GetMethod("OnUpdate");
+                onUpdate?.Invoke(instance, new object[] { ts });
+            }
+        }
+
         [UnmanagedCallersOnly]
         public static void UnloadGameScripts()
         {
@@ -86,6 +137,19 @@ namespace RXNScriptHost
             GC.WaitForPendingFinalizers();
 
             Console.WriteLine("[.NET Host] Unloaded Game Scripts. Ready for Hot-Reload!");
+        }
+
+        [UnmanagedCallersOnly]
+        public static int EntityClassExists(IntPtr classNamePtr)
+        {
+            if (s_CoreAssembly == null) return 0;
+
+            string? className = Marshal.PtrToStringUTF8(classNamePtr);
+            if (className == null) return 0;
+
+            Type? scriptType = s_CoreAssembly.GetType(className);
+
+            return scriptType != null ? 1 : 0;
         }
     }
 }

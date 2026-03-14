@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "RXNEngine/Renderer/ModelImporter.h"
+#include "RXNEngine/Scripting/ScriptEngine.h"
 
 namespace RXNEditor {
 
@@ -322,6 +323,15 @@ namespace RXNEditor {
                     ImGui::CloseCurrentPopup();
                 }
             }
+            if (!entity.HasComponent<ScriptComponent>())
+            {
+                if (ImGui::MenuItem("Script Component"))
+                {
+                    entity.AddComponent<ScriptComponent>(m_SelectedEntity.GetComponent<TagComponent>().Tag);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();
@@ -598,6 +608,56 @@ namespace RXNEditor {
                 ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
                 ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
             });
+
+        // --- SCRIPT COMPONENT UI ---
+        if (entity.HasComponent<ScriptComponent>())
+        {
+            // Use ImGuiTreeNodeFlags_DefaultOpen and others to match your existing UI style
+            ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+            bool open = ImGui::TreeNodeEx((void*)typeid(ScriptComponent).hash_code(), treeNodeFlags, "Script");
+
+            // ImGui trick to move the "Remove Component" button to the right side of the header
+            ImGui::SameLine(ImGui::GetWindowWidth() - 25.0f);
+            if (ImGui::Button("+", ImVec2(20, 20)))
+            {
+                ImGui::OpenPopup("ComponentSettings");
+            }
+
+            bool removeComponent = false;
+            if (ImGui::BeginPopup("ComponentSettings"))
+            {
+                if (ImGui::MenuItem("Remove component"))
+                    removeComponent = true;
+                ImGui::EndPopup();
+            }
+
+            if (open)
+            {
+                auto& scriptComponent = entity.GetComponent<ScriptComponent>();
+
+                // ImGui needs a raw char buffer to edit strings
+                char buffer[256];
+                memset(buffer, 0, sizeof(buffer));
+                strncpy(buffer, scriptComponent.ClassName.c_str(), sizeof(buffer));
+
+                if (ImGui::InputText("Class", buffer, sizeof(buffer)))
+                {
+                    scriptComponent.ClassName = std::string(buffer);
+                }
+
+                bool classExists = ScriptEngine::EntityClassExists(scriptComponent.ClassName);
+                if (!classExists && !scriptComponent.ClassName.empty())
+                {
+                    ImGui::TextColored(ImVec4(0.9f, 0.2f, 0.2f, 1.0f), "Warning: Class does not exist in loaded Assembly!");
+                }
+
+                ImGui::TreePop();
+            }
+
+            if (removeComponent)
+                entity.RemoveComponent<ScriptComponent>();
+        }
     }
 
     template<typename T, typename UIFunction>

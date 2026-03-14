@@ -117,6 +117,15 @@ namespace RXNEngine {
 		}
 	};
 
+	struct ScriptComponent
+	{
+		std::string ClassName;
+
+		ScriptComponent() = default;
+		ScriptComponent(const ScriptComponent&) = default;
+		ScriptComponent(const std::string& className) : ClassName(className) {}
+	};
+
 	struct RigidbodyComponent
 	{
 		enum class BodyType { Static = 0, Dynamic, Kinematic };
@@ -193,6 +202,7 @@ namespace RXNEngine {
 		DirectionalLightComponent,
 		PointLightComponent,
 		NativeScriptComponent,
+		ScriptComponent,
 		RigidbodyComponent,
 		BoxColliderComponent,
 		SphereColliderComponent,

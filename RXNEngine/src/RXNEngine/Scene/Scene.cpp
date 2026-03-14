@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
+#include "RXNEngine/Scripting/ScriptEngine.h"
 
 namespace RXNEngine {
 
@@ -466,6 +467,13 @@ namespace RXNEngine {
 
                 nsc.Instance->OnUpdate(deltaTime);
             });
+
+        auto view = m_Registry.view<ScriptComponent>();
+        for (auto e : view)
+        {
+            Entity entity = { e, this };
+            ScriptEngine::OnUpdateEntity(entity, deltaTime);
+        }
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -528,11 +536,20 @@ namespace RXNEngine {
     void Scene::OnRuntimeStart()
     {
         OnSimulationStart();
+        ScriptEngine::OnRuntimeStart(this);
+
+        auto view = m_Registry.view<ScriptComponent>();
+        for (auto e : view)
+        {
+            Entity entity = { e, this };
+            ScriptEngine::OnCreateEntity(entity);
+        }
     }
 
     void Scene::OnRuntimeStop()
     {
         OnSimulationStop();
+        ScriptEngine::OnRuntimeStop();
     }
 
     void Scene::OnSimulationStart()
