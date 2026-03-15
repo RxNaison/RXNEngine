@@ -35,6 +35,11 @@ namespace RXNEngine {
         return Input::IsKeyPressed((KeyCode)keycode);
     }
 
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScriptField_Register(const char* className, const char* fieldName, uint32_t type)
+    {
+        ScriptEngine::RegisterField(className, fieldName, (ScriptFieldType)type);
+    }
+
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
     {
         RXN_CORE_ASSERT(outCalls, "InternalCalls struct is null!");
@@ -43,6 +48,7 @@ namespace RXNEngine {
         outCalls->Entity_GetTranslation = (void*)NativeEntity_GetTranslation;
         outCalls->Entity_SetTranslation = (void*)NativeEntity_SetTranslation;
         outCalls->Input_IsKeyDown = (void*)NativeInput_IsKeyDown;
+        outCalls->ScriptField_Register = (void*)NativeScriptField_Register;
     }
 
 }

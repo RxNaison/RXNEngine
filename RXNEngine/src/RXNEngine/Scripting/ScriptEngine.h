@@ -2,10 +2,38 @@
 
 #include "RXNEngine/Scene/Scene.h"
 #include "RXNEngine/Scene/Entity.h"
+#include "RXNEngine/Core/Base.h"
 
 #include <string>
 
 namespace RXNEngine {
+
+	enum class ScriptFieldType
+	{
+		None = 0, Float, Int, Bool, Vector3
+	};
+
+	struct ScriptField
+	{
+		ScriptFieldType Type;
+		std::string Name;
+	};
+
+	class ScriptInstance
+	{
+	public:
+		ScriptInstance(Entity entity, const std::string& className);
+
+		void InvokeOnCreate();
+		void InvokeOnUpdate(float deltaTime);
+
+		float GetFloatField(const std::string& name);
+		void SetFloatField(const std::string& name, float value);
+
+	private:
+		Entity m_Entity;
+		std::string m_ClassName;
+	};
 
 	class ScriptEngine
 	{
@@ -25,18 +53,10 @@ namespace RXNEngine {
 
 		static Scene* GetSceneContext();
 
-	};
+		static void RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type);
+		static const std::vector<ScriptField>& GetClassFields(const std::string& className);
 
-	class ScriptInstance
-	{
-	public:
-		ScriptInstance(Entity entity, const std::string& className);
+		static Ref<ScriptInstance> GetEntityScriptInstance(UUID uuid);
 
-		void InvokeOnCreate();
-		void InvokeOnUpdate(float deltaTime);
-
-	private:
-		Entity m_Entity;
-		std::string m_ClassName;
 	};
 }

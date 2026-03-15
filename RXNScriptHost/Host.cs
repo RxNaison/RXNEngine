@@ -133,5 +133,60 @@ namespace RXNScriptHost
 
             return scriptType != null ? 1 : 0;
         }
+
+        [UnmanagedCallersOnly]
+        public static void ReflectClass(IntPtr classNamePtr)
+        {
+            string? className = Marshal.PtrToStringUTF8(classNamePtr);
+            if (className == null || s_CoreAssembly == null) return;
+
+            Type? type = s_CoreAssembly.GetType(className);
+            if (type == null) return;
+
+            IntPtr classStr = Marshal.StringToHGlobalAnsi(className);
+
+            foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                uint fieldType = 0;
+                if (field.FieldType == typeof(float)) fieldType = 1;
+
+                if (fieldType != 0)
+                {
+                    IntPtr fieldStr = Marshal.StringToHGlobalAnsi(field.Name);
+
+                    unsafe
+                    {
+                        var registerFunc = (delegate* unmanaged<IntPtr, IntPtr, uint, void>)Interop.NativeFunctions.ScriptField_Register;
+                        registerFunc(classStr, fieldStr, fieldType);
+                    }
+
+                    Marshal.FreeHGlobal(fieldStr);
+                }
+            }
+            Marshal.FreeHGlobal(classStr);
+        }
+
+        [UnmanagedCallersOnly]
+        public static float GetFloatField(ulong entityID, IntPtr fieldNamePtr)
+        {
+            string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
+            if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var field = instance.GetType().GetField(fieldName);
+                if (field != null) return (float)field.GetValue(instance)!;
+            }
+            return 0.0f;
+        }
+
+        [UnmanagedCallersOnly]
+        public static void SetFloatField(ulong entityID, IntPtr fieldNamePtr, float value)
+        {
+            string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
+            if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var field = instance.GetType().GetField(fieldName);
+                field?.SetValue(instance, value);
+            }
+        }
     }
 }

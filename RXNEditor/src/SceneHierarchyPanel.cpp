@@ -237,7 +237,6 @@ namespace RXNEditor {
 
     void SceneHierarchyPanel::DrawComponents(Entity entity)
     {
-        // --- 1. Tag Component (Entity Name) ---
         if (entity.HasComponent<TagComponent>())
         {
             auto& tag = entity.GetComponent<TagComponent>().Tag;
@@ -251,7 +250,6 @@ namespace RXNEditor {
             }
         }
 
-        // Add Component Button (Right aligned)
         ImGui::SameLine();
         ImGui::PushItemWidth(-1);
         if (ImGui::Button("Add Component"))
@@ -337,7 +335,6 @@ namespace RXNEditor {
         ImGui::PopItemWidth();
 
 
-        // --- 2. Transform Component ---
         DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
             {
                 DrawVec3Control("Translation", component.Translation);
@@ -350,7 +347,6 @@ namespace RXNEditor {
             });
 
 
-        // --- 3. Camera Component ---
         DrawComponent<CameraComponent>("Camera", entity, [&](auto& component)
             {
                 auto& camera = component.Camera;
@@ -420,7 +416,6 @@ namespace RXNEditor {
             });
 
 
-        // --- 4. Mesh Component ---
         DrawComponent<StaticMeshComponent>("Mesh", entity, [](auto& component)
             {
                 ImGui::Columns(2);
@@ -486,7 +481,7 @@ namespace RXNEditor {
                         if (hasOverride)
                         {
                             uint32_t matIndex = component.Mesh->GetSubmeshes()[component.SubmeshIndex].MaterialIndex;
-                            Ref<Material> defaultMat = component.Mesh->GetMaterials()[matIndex]; // FIXED
+                            Ref<Material> defaultMat = component.Mesh->GetMaterials()[matIndex];
 
                             component.MaterialTableOverride = Material::CreateDefault(defaultMat->GetShader());
 
@@ -537,7 +532,6 @@ namespace RXNEditor {
             });
 
 
-        // --- 5. Directional Light ---
         DrawComponent<DirectionalLightComponent>("Directional Light", entity, [](auto& component)
             {
                 ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
@@ -545,7 +539,6 @@ namespace RXNEditor {
             });
 
 
-        // --- 6. Point Light ---
         DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
             {
                 ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
@@ -554,7 +547,6 @@ namespace RXNEditor {
                 ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 1.0f);
             });
 
-        // --- 7. Rigidbody ---
         DrawComponent<RigidbodyComponent>("Rigidbody", entity, [](auto& component)
             {
                 const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
@@ -579,7 +571,6 @@ namespace RXNEditor {
 				ImGui::DragFloat("Angular Drag", &component.AngularDrag, 0.01f, 0.0f, 1.0f);
             });
 
-        // --- 8. Box Collider ---
         DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
             {
 				DrawVec3Control("HalfExtents", component.HalfExtents, 0.5f);
@@ -588,7 +579,6 @@ namespace RXNEditor {
 				ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
             });
-        // --- 9. Sphere Collider ---
         DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
             {
                 ImGui::DragFloat("Radius", &component.Radius, 0.05f, 0.0f, 100.0f);
@@ -598,7 +588,6 @@ namespace RXNEditor {
                 ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
             });
 
-        // --- 10. Capsule Collider ---
         DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
             {
                 ImGui::DragFloat("Radius", &component.Radius, 0.05f, 0.0f, 100.0f);
@@ -609,55 +598,50 @@ namespace RXNEditor {
                 ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
             });
 
-        // --- SCRIPT COMPONENT UI ---
-        if (entity.HasComponent<ScriptComponent>())
-        {
-            // Use ImGuiTreeNodeFlags_DefaultOpen and others to match your existing UI style
-            ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
-
-            bool open = ImGui::TreeNodeEx((void*)typeid(ScriptComponent).hash_code(), treeNodeFlags, "Script");
-
-            // ImGui trick to move the "Remove Component" button to the right side of the header
-            ImGui::SameLine(ImGui::GetWindowWidth() - 25.0f);
-            if (ImGui::Button("+", ImVec2(20, 20)))
+        DrawComponent<ScriptComponent>("Script", entity, [&](auto& component)
             {
-                ImGui::OpenPopup("ComponentSettings");
-            }
-
-            bool removeComponent = false;
-            if (ImGui::BeginPopup("ComponentSettings"))
-            {
-                if (ImGui::MenuItem("Remove component"))
-                    removeComponent = true;
-                ImGui::EndPopup();
-            }
-
-            if (open)
-            {
-                auto& scriptComponent = entity.GetComponent<ScriptComponent>();
-
-                // ImGui needs a raw char buffer to edit strings
                 char buffer[256];
                 memset(buffer, 0, sizeof(buffer));
-                strncpy(buffer, scriptComponent.ClassName.c_str(), sizeof(buffer));
+                strncpy(buffer, component.ClassName.c_str(), sizeof(buffer));
 
                 if (ImGui::InputText("Class", buffer, sizeof(buffer)))
                 {
-                    scriptComponent.ClassName = std::string(buffer);
+                    component.ClassName = std::string(buffer);
                 }
 
-                bool classExists = ScriptEngine::EntityClassExists(scriptComponent.ClassName);
-                if (!classExists && !scriptComponent.ClassName.empty())
+                bool classExists = ScriptEngine::EntityClassExists(component.ClassName);
+                if (!classExists && !component.ClassName.empty())
                 {
                     ImGui::TextColored(ImVec4(0.9f, 0.2f, 0.2f, 1.0f), "Warning: Class does not exist in loaded Assembly!");
                 }
 
-                ImGui::TreePop();
-            }
-
-            if (removeComponent)
-                entity.RemoveComponent<ScriptComponent>();
-        }
+                if (ScriptEngine::EntityClassExists(component.ClassName))
+                {
+                    if (m_Context->IsRunning())
+                    {
+                        auto instance = ScriptEngine::GetEntityScriptInstance(entity.GetUUID());
+                        if (instance)
+                        {
+                            const auto& fields = ScriptEngine::GetClassFields(component.ClassName);
+                            for (const auto& field : fields)
+                            {
+                                if (field.Type == ScriptFieldType::Float)
+                                {
+                                    float data = instance->GetFloatField(field.Name);
+                                    if (ImGui::DragFloat(field.Name.c_str(), &data))
+                                    {
+                                        instance->SetFloatField(field.Name, data);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled("Variables can be edited while playing.");
+                    }
+                }
+            });
     }
 
     template<typename T, typename UIFunction>

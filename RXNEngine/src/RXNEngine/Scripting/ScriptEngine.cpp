@@ -50,6 +50,9 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_create_fn)(uint64_t entityID);
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_update_fn)(uint64_t entityID, float deltaTime);
     typedef int32_t(CORECLR_DELEGATE_CALLTYPE* entity_class_exists_fn)(const char* className);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* reflect_class_fn)(const char* className);
+    typedef float (CORECLR_DELEGATE_CALLTYPE* get_float_field_fn)(uint64_t entityID, const char* fieldName);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* set_float_field_fn)(uint64_t entityID, const char* fieldName, float value);
 
 
     static void* LoadLibraryOS(const char_t* path)
@@ -105,9 +108,14 @@ namespace RXNEngine {
 
         entity_class_exists_fn CheckEntityClassExists = nullptr;
 
+        reflect_class_fn ReflectClass = nullptr;
+        get_float_field_fn GetFloatField = nullptr;
+        set_float_field_fn SetFloatField = nullptr;
+
         Scene* SceneContext = nullptr;
 
         std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
+        std::unordered_map<std::string, std::vector<ScriptField>> ScriptClassFields;
     };
 
     static ScriptEngineData* s_Data = nullptr;
@@ -150,6 +158,9 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnCreate, s_Data->InvokeOnCreate);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, s_Data->InvokeOnUpdate);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, s_Data->CheckEntityClassExists);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ReflectClass, s_Data->ReflectClass);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFloatField, s_Data->GetFloatField);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFloatField, s_Data->SetFloatField);
 
         InternalCalls nativeFunctions;
         ScriptInterop::RegisterFunctions(&nativeFunctions);
@@ -230,18 +241,39 @@ namespace RXNEngine {
             s_Data->EntityInstances[entityID]->InvokeOnUpdate(deltaTime);
     }
 
+    Scene* ScriptEngine::GetSceneContext()
+    {
+        return s_Data->SceneContext;
+    }
+
+    Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID uuid)
+    {
+        if (s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end())
+            return s_Data->EntityInstances[uuid];
+        
+		return nullptr;
+    }
+
+    void ScriptEngine::RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type)
+    {
+        s_Data->ScriptClassFields[className].push_back({ type, fieldName });
+    }
+
+    const std::vector<ScriptField>& ScriptEngine::GetClassFields(const std::string& className)
+    {
+        return s_Data->ScriptClassFields[className];
+    }
+
     bool ScriptEngine::EntityClassExists(const std::string& fullClassName)
     {
         if (!s_Data || !s_Data->CheckEntityClassExists || fullClassName.empty())
             return false;
 
         int32_t exists = s_Data->CheckEntityClassExists(fullClassName.c_str());
-        return exists != 0;
-    }
+        if (exists != 0 && s_Data->ScriptClassFields.find(fullClassName) == s_Data->ScriptClassFields.end())
+            s_Data->ReflectClass(fullClassName.c_str());
 
-    Scene* ScriptEngine::GetSceneContext()
-    {
-        return s_Data->SceneContext;
+        return exists != 0;
     }
 
 
@@ -264,5 +296,18 @@ namespace RXNEngine {
     {
         if (s_Data->InvokeOnUpdate)
             s_Data->InvokeOnUpdate(m_Entity.GetUUID(), deltaTime);
+    }
+
+    float ScriptInstance::GetFloatField(const std::string& name)
+    {
+        if (s_Data->GetFloatField)
+            return s_Data->GetFloatField(m_Entity.GetUUID(), name.c_str());
+        return 0.0f;
+    }
+
+    void ScriptInstance::SetFloatField(const std::string& name, float value)
+    {
+        if (s_Data->SetFloatField)
+            s_Data->SetFloatField(m_Entity.GetUUID(), name.c_str(), value);
     }
 }

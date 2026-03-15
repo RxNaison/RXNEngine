@@ -544,12 +544,16 @@ namespace RXNEngine {
             Entity entity = { e, this };
             ScriptEngine::OnCreateEntity(entity);
         }
+
+        m_IsRunning = true;
     }
 
     void Scene::OnRuntimeStop()
     {
         OnSimulationStop();
         ScriptEngine::OnRuntimeStop();
+
+        m_IsRunning = false;
     }
 
     void Scene::OnSimulationStart()

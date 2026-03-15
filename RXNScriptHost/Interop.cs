@@ -10,6 +10,7 @@ namespace RXNScriptHost
         public IntPtr Entity_GetTranslation;
         public IntPtr Entity_SetTranslation;
         public IntPtr Input_IsKeyDown;
+        public IntPtr ScriptField_Register;
     }
 
     public static class Interop

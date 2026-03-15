@@ -50,6 +50,8 @@ namespace RXNEngine {
 
 		static Ref<Scene> Copy(Ref<Scene> other);
 
+		bool IsRunning() { return m_IsRunning; }
+
 	private:
 		void OnCameraComponentAdded(entt::registry& registry, entt::entity entity);
 
@@ -62,6 +64,8 @@ namespace RXNEngine {
 
 		uint32_t m_ViewportWidth = 0;
 		uint32_t m_ViewportHeight = 0;
+
+		bool m_IsRunning = false;
 
 		friend class Entity;
 		friend class SceneSerializer;
