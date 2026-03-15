@@ -74,7 +74,7 @@ namespace RXNEngine {
 	protected:
 		virtual void OnCreate() {}
 		virtual void OnDestroy() {}
-		virtual void OnUpdate(float ts) {}
+		virtual void OnUpdate(float deltaTime) {}
 
 		friend class Scene;
 

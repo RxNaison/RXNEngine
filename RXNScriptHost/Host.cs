@@ -5,15 +5,6 @@ using System.Runtime.Loader;
 
 namespace RXNScriptHost
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct InternalCalls
-    {
-        public IntPtr LogMessage;
-
-        public IntPtr Entity_GetTranslation;
-        public IntPtr Entity_SetTranslation;
-    }
-
     class GameScriptALC : AssemblyLoadContext
     {
         public GameScriptALC() : base("GameScriptALC", isCollectible: true) { }
@@ -33,15 +24,6 @@ namespace RXNScriptHost
     {
         private static GameScriptALC? s_ALC = null;
         private static Assembly? s_CoreAssembly = null;
-
-        public static InternalCalls NativeFunctions;
-
-        [UnmanagedCallersOnly]
-        public static void RegisterInternalCalls(IntPtr internalCallsPtr)
-        {
-            NativeFunctions = Marshal.PtrToStructure<InternalCalls>(internalCallsPtr);
-            Console.WriteLine("[.NET Host] Successfully registered C++ Internal Calls.");
-        }
 
         [UnmanagedCallersOnly]
         public static void LoadGameScripts(IntPtr assemblyPathPtr)
@@ -115,12 +97,12 @@ namespace RXNScriptHost
         }
 
         [UnmanagedCallersOnly]
-        public static void InvokeOnUpdate(ulong entityID, float ts)
+        public static void InvokeOnUpdate(ulong entityID, float deltaTime)
         {
             if (s_EntityInstances.TryGetValue(entityID, out object? instance))
             {
                 MethodInfo? onUpdate = instance.GetType().GetMethod("OnUpdate");
-                onUpdate?.Invoke(instance, new object[] { ts });
+                onUpdate?.Invoke(instance, new object[] { deltaTime });
             }
         }
 

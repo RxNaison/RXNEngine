@@ -423,9 +423,16 @@ namespace RXNEditor {
                 if (control)
                 {
                     if (shift)
+                    {
                         SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+                    }
                     else
-                        SaveSceneAs(m_ActiveScenePath);
+                    {
+                        if(m_ActiveScenePath.empty())
+                            SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+                        else
+                            SaveSceneAs(m_ActiveScenePath);
+                    }
                 }
 
                 break;

@@ -59,7 +59,7 @@ namespace RXNEngine {
 		return speed;
 	}
 
-	void EditorCamera::OnUpdate(float ts)
+	void EditorCamera::OnUpdate(float deltaTime)
 	{
 		OPTICK_EVENT();
 
@@ -88,12 +88,12 @@ namespace RXNEngine {
 
 			m_Position = CalculatePosition();
 
-			if (Input::IsKeyPressed(KeyCode::W)) m_Position += GetForwardDirection() * moveSpeed * ts;
-			if (Input::IsKeyPressed(KeyCode::S)) m_Position -= GetForwardDirection() * moveSpeed * ts;
-			if (Input::IsKeyPressed(KeyCode::A)) m_Position -= GetRightDirection() * moveSpeed * ts;
-			if (Input::IsKeyPressed(KeyCode::D)) m_Position += GetRightDirection() * moveSpeed * ts;
-			if (Input::IsKeyPressed(KeyCode::Q)) m_Position -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * ts;
-			if (Input::IsKeyPressed(KeyCode::E)) m_Position += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * ts;
+			if (Input::IsKeyPressed(KeyCode::W)) m_Position += GetForwardDirection() * moveSpeed * deltaTime;
+			if (Input::IsKeyPressed(KeyCode::S)) m_Position -= GetForwardDirection() * moveSpeed * deltaTime;
+			if (Input::IsKeyPressed(KeyCode::A)) m_Position -= GetRightDirection() * moveSpeed * deltaTime;
+			if (Input::IsKeyPressed(KeyCode::D)) m_Position += GetRightDirection() * moveSpeed * deltaTime;
+			if (Input::IsKeyPressed(KeyCode::Q)) m_Position -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
+			if (Input::IsKeyPressed(KeyCode::E)) m_Position += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
 
 			m_FocalPoint = m_Position + GetForwardDirection() * m_Distance;
 		}

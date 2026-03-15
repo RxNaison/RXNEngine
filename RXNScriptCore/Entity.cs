@@ -15,7 +15,7 @@ namespace RXNEngine
         }
 
         public virtual void OnCreate() { }
-        public virtual void OnUpdate(float ts) { }
+        public virtual void OnUpdate(float deltaTime) { }
 
         public Vector3 Translation
         {
@@ -24,7 +24,7 @@ namespace RXNEngine
                 Vector3 result;
                 unsafe
                 {
-                    var getTranslation = (delegate* unmanaged<ulong, Vector3*, void>)Host.NativeFunctions.Entity_GetTranslation;
+                    var getTranslation = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetTranslation;
                     getTranslation(ID, &result);
                 }
                 return result;
@@ -33,7 +33,7 @@ namespace RXNEngine
             {
                 unsafe
                 {
-                    var setTranslation = (delegate* unmanaged<ulong, Vector3*, void>)Host.NativeFunctions.Entity_SetTranslation;
+                    var setTranslation = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetTranslation;
                     setTranslation(ID, &value);
                 }
             }

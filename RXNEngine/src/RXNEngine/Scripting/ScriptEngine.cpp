@@ -1,6 +1,7 @@
 #include "rxnpch.h"
 #include "ScriptEngine.h"
 
+#include "ScriptInterop.h"
 #include "RXNEngine/Scene/Entity.h"
 #include "RXNEngine/Scene/Components.h"
 
@@ -23,6 +24,19 @@
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
 
+#define LOAD_MANAGED_METHOD(ClassString, MethodName, FuncPtrVar) \
+    { \
+        int rc = s_Data->LoadAssemblyAndGetFunctionPointer( \
+            hostDllPath.c_str(), \
+            STR(ClassString), \
+            STR(#MethodName), \
+            UNMANAGEDCALLERSONLY_METHOD, \
+            nullptr, \
+            (void**)&(FuncPtrVar)); \
+        if (rc != 0 || (FuncPtrVar) == nullptr) \
+            RXN_CORE_ERROR("Failed to extract " #MethodName "! Error code: {0}", rc); \
+    }
+
 namespace RXNEngine {
 
     hostfxr_initialize_for_runtime_config_fn init_fptr;
@@ -34,7 +48,7 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* register_internal_calls_fn)(void*);
     typedef void (CORECLR_DELEGATE_CALLTYPE* instantiate_script_fn)(uint64_t entityID, const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_create_fn)(uint64_t entityID);
-    typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_update_fn)(uint64_t entityID, float ts);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_update_fn)(uint64_t entityID, float deltaTime);
     typedef int32_t(CORECLR_DELEGATE_CALLTYPE* entity_class_exists_fn)(const char* className);
 
 
@@ -56,17 +70,10 @@ namespace RXNEngine {
 #endif
     }
 
-    struct InternalCalls
-    {
-        void* LogMessage = nullptr;
-        void* Entity_GetTranslation = nullptr;
-        void* Entity_SetTranslation = nullptr;
-    };
-
     static bool LoadHostFxr()
     {
         // use nethost.lib's get_hostfxr_path() 
-        STRING_TYPE hostfxrPath = STR("C:\\Program Files\\dotnet\\host\\fxr\\8.0.3\\hostfxr.dll");
+        STRING_TYPE hostfxrPath = STR("C:\\Program Files\\dotnet\\host\\fxr\\10.0.3\\hostfxr.dll");
 
         void* lib = LoadLibraryOS(hostfxrPath.c_str());
         if (!lib)
@@ -99,34 +106,11 @@ namespace RXNEngine {
         entity_class_exists_fn CheckEntityClassExists = nullptr;
 
         Scene* SceneContext = nullptr;
+
+        std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
     };
 
     static ScriptEngineData* s_Data = nullptr;
-
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeLogMessage(const char* message)
-    {
-        RXN_CORE_WARN("C# SAYS: {0}", message);
-    }
-    static glm::vec3 s_DummyTranslation = { 1.0f, 2.0f, 3.0f };
-
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetTranslation(uint64_t entityID, glm::vec3 * outTranslation)
-    {
-        Scene* scene = s_Data->SceneContext;
-        RXN_CORE_ASSERT(scene, "No active scene during script execution!");
-
-        Entity entity = scene->GetEntityByUUID(entityID);
-        *outTranslation = entity.GetComponent<TransformComponent>().Translation;
-    }
-
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_SetTranslation(uint64_t entityID, glm::vec3 * inTranslation)
-    {
-        Scene* scene = s_Data->SceneContext;
-        RXN_CORE_ASSERT(scene, "No active scene during script execution!");
-
-        Entity entity = scene->GetEntityByUUID(entityID);
-        entity.GetComponent<TransformComponent>().Translation = *inTranslation;
-    }
-
 
     void ScriptEngine::Init()
     {
@@ -159,87 +143,16 @@ namespace RXNEngine {
         s_Data->LoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
         close_fptr(cxt);
 
-        int rc1 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("LoadGameScripts"),
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->LoadGameScripts);
-
-        if (rc1 != 0 || s_Data->LoadGameScripts == nullptr)
-            RXN_CORE_ERROR("Failed to extract LoadGameScripts! Error code: {0}", rc1);
-
-        int rc2 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("UnloadGameScripts"),
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->UnloadGameScripts);
-
-        if (rc2 != 0 || s_Data->UnloadGameScripts == nullptr)
-            RXN_CORE_ERROR("Failed to extract UnloadGameScripts! Error code: {0}", rc2);
-
-        int rc3 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("RegisterInternalCalls"),
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->RegisterInternalCalls);
-
-        if (rc3 != 0 || s_Data->RegisterInternalCalls == nullptr)
-            RXN_CORE_ERROR("Failed to extract RegisterInternalCalls! Error code: {0}", rc3);
-
-        int rc4 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("InstantiateScript"),
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->InstantiateScript);
-
-        if (rc4 != 0 || s_Data->InstantiateScript == nullptr)
-            RXN_CORE_ERROR("Failed to extract InstantiateScript! Error code: {0}", rc4);
-
-        int rc5 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("InvokeOnCreate"),
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->InvokeOnCreate);
-
-        if (rc5 != 0 || s_Data->InvokeOnCreate == nullptr)
-            RXN_CORE_ERROR("Failed to extract InvokeOnCreate! Error code: {0}", rc5);
-
-        int rc6 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("InvokeOnUpdate"),
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->InvokeOnUpdate);
-
-        if (rc6 != 0 || s_Data->InvokeOnUpdate == nullptr)
-            RXN_CORE_ERROR("Failed to extract InvokeOnUpdate! Error code: {0}", rc6);
-
-        int rc7 = s_Data->LoadAssemblyAndGetFunctionPointer(
-            hostDllPath.c_str(),
-            STR("RXNScriptHost.Host, RXNScriptHost"),
-            STR("EntityClassExists"), // Our new C# method!
-            UNMANAGEDCALLERSONLY_METHOD,
-            nullptr,
-            (void**)&s_Data->CheckEntityClassExists);
-
-        if (rc7 != 0 || s_Data->CheckEntityClassExists == nullptr)
-            RXN_CORE_ERROR("Failed to extract EntityClassExists! Error code: {0}", rc7);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", LoadGameScripts, s_Data->LoadGameScripts);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", UnloadGameScripts, s_Data->UnloadGameScripts);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Interop, RXNScriptHost", RegisterInternalCalls, s_Data->RegisterInternalCalls);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InstantiateScript, s_Data->InstantiateScript);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnCreate, s_Data->InvokeOnCreate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, s_Data->InvokeOnUpdate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, s_Data->CheckEntityClassExists);
 
         InternalCalls nativeFunctions;
-        nativeFunctions.LogMessage = (void*)NativeLogMessage;
-        nativeFunctions.Entity_GetTranslation = (void*)NativeEntity_GetTranslation;
-        nativeFunctions.Entity_SetTranslation = (void*)NativeEntity_SetTranslation;
+        ScriptInterop::RegisterFunctions(&nativeFunctions);
 
         if (s_Data->RegisterInternalCalls)
         {
@@ -284,30 +197,37 @@ namespace RXNEngine {
     void ScriptEngine::OnRuntimeStop()
     {
         s_Data->SceneContext = nullptr;
+        s_Data->EntityInstances.clear();
         RXN_CORE_INFO("ScriptEngine: Runtime stopped, Scene context cleared.");
     }
 
     void ScriptEngine::OnCreateEntity(Entity entity)
     {
         const auto& sc = entity.GetComponent<ScriptComponent>();
-        if (sc.ClassName.empty())
-            return;
+        if (sc.ClassName.empty()) return;
 
-        UUID entityUUID = entity.GetUUID();
+        if (EntityClassExists(sc.ClassName))
+        {
+            UUID entityID = entity.GetUUID();
 
-        if (s_Data->InstantiateScript)
-            s_Data->InstantiateScript(entityUUID, sc.ClassName.c_str());
+            Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(entity, sc.ClassName);
 
-        if (s_Data->InvokeOnCreate)
-            s_Data->InvokeOnCreate(entityUUID);
+            s_Data->EntityInstances[entityID] = instance;
+
+            instance->InvokeOnCreate();
+        }
+        else
+        {
+            RXN_CORE_ERROR("ScriptEngine: EntityClass '{0}' does not exist!", sc.ClassName);
+        }
     }
 
-    void ScriptEngine::OnUpdateEntity(Entity entity, float ts)
+    void ScriptEngine::OnUpdateEntity(Entity entity, float deltaTime)
     {
-        UUID entityUUID = entity.GetUUID();
+        UUID entityID = entity.GetUUID();
 
-        if (s_Data->InvokeOnUpdate)
-            s_Data->InvokeOnUpdate(entityUUID, ts);
+        if (s_Data->EntityInstances.find(entityID) != s_Data->EntityInstances.end())
+            s_Data->EntityInstances[entityID]->InvokeOnUpdate(deltaTime);
     }
 
     bool ScriptEngine::EntityClassExists(const std::string& fullClassName)
@@ -317,5 +237,32 @@ namespace RXNEngine {
 
         int32_t exists = s_Data->CheckEntityClassExists(fullClassName.c_str());
         return exists != 0;
+    }
+
+    Scene* ScriptEngine::GetSceneContext()
+    {
+        return s_Data->SceneContext;
+    }
+
+
+
+
+    ScriptInstance::ScriptInstance(Entity entity, const std::string& className)
+        : m_Entity(entity), m_ClassName(className)
+    {
+        if (s_Data->InstantiateScript)
+            s_Data->InstantiateScript(m_Entity.GetUUID(), className.c_str());
+    }
+
+    void ScriptInstance::InvokeOnCreate()
+    {
+        if (s_Data->InvokeOnCreate)
+            s_Data->InvokeOnCreate(m_Entity.GetUUID());
+    }
+
+    void ScriptInstance::InvokeOnUpdate(float deltaTime)
+    {
+        if (s_Data->InvokeOnUpdate)
+            s_Data->InvokeOnUpdate(m_Entity.GetUUID(), deltaTime);
     }
 }

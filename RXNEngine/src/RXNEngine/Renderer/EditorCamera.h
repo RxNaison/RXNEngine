@@ -14,7 +14,7 @@ namespace RXNEngine {
 		EditorCamera() = default;
 		EditorCamera(float fov, float aspectRatio, float nearClip, float farClip);
 
-		void OnUpdate(float ts);
+		void OnUpdate(float deltaTime);
 		void OnEvent(Event& e);
 
 		inline float GetDistance() const { return m_Distance; }
