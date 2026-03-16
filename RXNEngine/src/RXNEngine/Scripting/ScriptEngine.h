@@ -41,7 +41,7 @@ namespace RXNEngine {
 		static void Init();
 		static void Shutdown();
 
-		static void LoadAssembly(const std::string& filepath);
+		static void LoadAssembly(const std::string& appFilepath);
 
 		static void OnRuntimeStart(Scene* scene);
 		static void OnRuntimeStop();

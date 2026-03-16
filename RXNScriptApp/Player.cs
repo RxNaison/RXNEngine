@@ -4,10 +4,15 @@ using RXNEngine;
 public class Player : Entity
 {
     public float Speed = 5.0f;
+    public float Gap = 0.0f;
+    private Entity? m_BulletPrefab;
 
     public override void OnCreate()
     {
-        Console.WriteLine($"Player Script Spawned!");
+        m_BulletPrefab = Entity.FindEntityByName("BulletTemplate");
+
+        if (m_BulletPrefab == null)
+            Console.WriteLine("ERROR: Could not find 'BulletTemplate' in the scene!");
     }
 
     public override void OnUpdate(float deltaTime)
@@ -27,6 +32,12 @@ public class Player : Entity
             velocity.Y += 1.0f;
         if (Input.IsKeyDown(KeyCode.E))
             velocity.Y -= 1.0f;
+        if (Input.IsKeyDown(KeyCode.Space) && m_BulletPrefab != null)
+        {
+            Entity firedBullet = Entity.Instantiate(m_BulletPrefab);
+            firedBullet.Translation = firedBullet.Translation + new Vector3(Gap, 0, 0);
+            Gap += 3.5f;
+        }
 
         pos.X += velocity.X * Speed * deltaTime;
         pos.Y += velocity.Y * Speed * deltaTime;

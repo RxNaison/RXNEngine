@@ -46,6 +46,21 @@ namespace RXNEngine {
         (CopyComponent<Component>(dst, src, enttMap), ...);
     }
 
+    template<typename... Component>
+    static void CopyComponents(ComponentGroup<Component...>, Entity src, Entity dst)
+    {
+        ([&]()
+            {
+                if (src.HasComponent<Component>())
+                {
+                    if (dst.HasComponent<Component>())
+                        dst.GetComponent<Component>() = src.GetComponent<Component>();
+                    else
+                        dst.AddComponent<Component>(src.GetComponent<Component>());
+                }
+            }(), ...);
+    }
+
     Ref<Scene> Scene::Copy(Ref<Scene> other)
     {
         OPTICK_EVENT();
@@ -103,6 +118,11 @@ namespace RXNEngine {
 
     void Scene::DestroyEntity(Entity entity)
     {
+        m_EntitiesToDestroy.push_back(entity);
+    }
+
+    void Scene::RemoveEntity(Entity entity)
+    {
         OPTICK_EVENT();
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
@@ -112,7 +132,7 @@ namespace RXNEngine {
         {
             Entity child = GetEntityByUUID(childID);
             if (child)
-                DestroyEntity(child);
+                RemoveEntity(child);
         }
 
         if (rc.ParentHandle != 0)
@@ -445,6 +465,12 @@ namespace RXNEngine {
         }
 
         Renderer::EndScene();
+
+        for (auto& entity : m_EntitiesToDestroy)
+        {
+            RemoveEntity(entity);
+        }
+        m_EntitiesToDestroy.clear();
     }
 
     void Scene::OnUpdateRuntime(float deltaTime)
@@ -474,6 +500,12 @@ namespace RXNEngine {
             Entity entity = { e, this };
             ScriptEngine::OnUpdateEntity(entity, deltaTime);
         }
+
+        for (auto& entity : m_EntitiesToDestroy)
+        {
+            RemoveEntity(entity);
+        }
+        m_EntitiesToDestroy.clear();
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -500,6 +532,45 @@ namespace RXNEngine {
             const auto& id = view.get<IDComponent>(entity);
             if (id.ID == uuid)
                 return { entity, this };
+        }
+        return {};
+    }
+
+    Entity Scene::DuplicateEntity(Entity entity)
+    {
+        std::string name = entity.GetComponent<TagComponent>().Tag;
+        Entity newEntity = CreateEntity(name + " (Clone)");
+
+        CopyComponents(AllComponents{}, entity, newEntity);
+
+        if (entity.HasComponent<RelationshipComponent>())
+        {
+            auto& originalRC = entity.GetComponent<RelationshipComponent>();
+
+            for (UUID childID : originalRC.Children)
+            {
+                Entity child = GetEntityByUUID(childID);
+                if (child)
+                {
+                    Entity clonedChild = DuplicateEntity(child);
+
+                    clonedChild.GetComponent<RelationshipComponent>().ParentHandle = newEntity.GetUUID();
+                    newEntity.GetComponent<RelationshipComponent>().Children.push_back(clonedChild.GetUUID());
+                }
+            }
+        }
+
+        return newEntity;
+    }
+
+    Entity Scene::FindEntityByName(std::string_view name)
+    {
+        auto view = m_Registry.view<TagComponent>();
+        for (auto entityID : view)
+        {
+            const auto& tc = view.get<TagComponent>(entityID);
+            if (tc.Tag == name)
+                return Entity{ entityID, this };
         }
         return {};
     }

@@ -40,6 +40,8 @@ namespace RXNEngine {
 		void OnViewportResize(uint32_t width, uint32_t height);
 
 		Entity GetEntityByUUID(UUID uuid);
+		Entity DuplicateEntity(Entity entity);
+		Entity FindEntityByName(std::string_view name);
 
 		Entity GetPrimaryCameraEntity();
 		void SetPrimaryCameraEntity(Entity entity);
@@ -54,6 +56,7 @@ namespace RXNEngine {
 
 	private:
 		void OnCameraComponentAdded(entt::registry& registry, entt::entity entity);
+		void RemoveEntity(Entity entity);
 
 	private:
 		entt::registry m_Registry;
@@ -66,6 +69,8 @@ namespace RXNEngine {
 		uint32_t m_ViewportHeight = 0;
 
 		bool m_IsRunning = false;
+
+		std::vector<Entity> m_EntitiesToDestroy;
 
 		friend class Entity;
 		friend class SceneSerializer;

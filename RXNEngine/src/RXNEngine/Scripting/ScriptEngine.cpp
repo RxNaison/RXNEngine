@@ -43,7 +43,7 @@ namespace RXNEngine {
     hostfxr_get_runtime_delegate_fn get_delegate_fptr;
     hostfxr_close_fn close_fptr;
 
-    typedef void (CORECLR_DELEGATE_CALLTYPE* load_game_scripts_fn)(const char* assemblyPath);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* load_game_scripts_fn)(const char* corePath, const char* appPath);
     typedef void (CORECLR_DELEGATE_CALLTYPE* unload_game_scripts_fn)();
     typedef void (CORECLR_DELEGATE_CALLTYPE* register_internal_calls_fn)(void*);
     typedef void (CORECLR_DELEGATE_CALLTYPE* instantiate_script_fn)(uint64_t entityID, const char* className);
@@ -73,15 +73,63 @@ namespace RXNEngine {
 #endif
     }
 
+    static STRING_TYPE GetLatestHostFxrPath()
+    {
+        std::filesystem::path fxrRoot = "C:\\Program Files\\dotnet\\host\\fxr";
+
+        if (!std::filesystem::exists(fxrRoot))
+            return STR("");
+
+        std::filesystem::path latestPath;
+        int maxMajor = -1, maxMinor = -1, maxPatch = -1;
+
+        for (const auto& entry : std::filesystem::directory_iterator(fxrRoot))
+        {
+            if (entry.is_directory())
+            {
+                std::string folderName = entry.path().filename().string();
+                int major = 0, minor = 0, patch = 0;
+
+                if (std::sscanf(folderName.c_str(), "%d.%d.%d", &major, &minor, &patch) >= 2)
+                {
+                    bool isNewer = false;
+                    if (major > maxMajor) isNewer = true;
+                    else if (major == maxMajor && minor > maxMinor) isNewer = true;
+                    else if (major == maxMajor && minor == maxMinor && patch > maxPatch) isNewer = true;
+
+                    if (isNewer)
+                    {
+                        maxMajor = major;
+                        maxMinor = minor;
+                        maxPatch = patch;
+                        latestPath = entry.path() / "hostfxr.dll";
+                    }
+                }
+            }
+        }
+
+#ifdef RXN_PLATFORM_WINDOWS
+        return latestPath.wstring();
+#else
+        return latestPath.string();
+#endif
+    }
+
     static bool LoadHostFxr()
     {
-        // use nethost.lib's get_hostfxr_path() 
-        STRING_TYPE hostfxrPath = STR("C:\\Program Files\\dotnet\\host\\fxr\\10.0.4\\hostfxr.dll");
+        std::filesystem::path localPath = std::filesystem::current_path() / "dotnet" / "hostfxr.dll";
+        STRING_TYPE hostfxrPath = localPath.wstring();
 
         void* lib = LoadLibraryOS(hostfxrPath.c_str());
         if (!lib)
         {
-            RXN_CORE_CRITICAL("Failed to load hostfxr.dll! Make sure .NET 8 SDK is installed.");
+            hostfxrPath = GetLatestHostFxrPath();
+            lib = LoadLibraryOS(hostfxrPath.c_str());
+        }
+
+        if (!lib)
+        {
+            RXN_CORE_CRITICAL("Failed to locate hostfxr.dll! Make sure the .NET SDK is installed.");
             return false;
         }
 
@@ -175,7 +223,7 @@ namespace RXNEngine {
             s_Data->RegisterInternalCalls(&nativeFunctions);
         }
 
-        LoadAssembly("res/scripts/RXNScriptCore.dll");
+        LoadAssembly("res/scripts/RXNScriptApp.dll");
         RXN_CORE_INFO("CoreCLR Runtime initialized successfully!");
     }
 
@@ -187,20 +235,20 @@ namespace RXNEngine {
         delete s_Data;
     }
 
-    void ScriptEngine::LoadAssembly(const std::string& filepath)
+    void ScriptEngine::LoadAssembly(const std::string& appFilepath)
     {
         if (s_Data && s_Data->LoadGameScripts)
         {
             s_Data->UnloadGameScripts();
 
-            std::filesystem::path absolutePath = std::filesystem::absolute(filepath);
-            std::string pathStr = absolutePath.string();
+            std::filesystem::path appAbsolutePath = std::filesystem::absolute(appFilepath);
+            std::filesystem::path coreAbsolutePath = std::filesystem::absolute("res/scripts/RXNScriptCore.dll");
 
-            s_Data->CoreAssemblyPath = absolutePath;
-            s_Data->CoreAssemblyLastWriteTime = std::filesystem::last_write_time(absolutePath);
+            s_Data->CoreAssemblyPath = appAbsolutePath;
+            s_Data->CoreAssemblyLastWriteTime = std::filesystem::last_write_time(appAbsolutePath);
             s_Data->ReloadPending = false;
 
-            s_Data->LoadGameScripts(pathStr.c_str());
+            s_Data->LoadGameScripts(coreAbsolutePath.string().c_str(), appAbsolutePath.string().c_str());
         }
         else
         {
@@ -267,8 +315,7 @@ namespace RXNEngine {
     {
         s_Data->ScriptClassFields.clear();
 
-        LoadAssembly("res/scripts/RXNScriptCore.dll");
-
+        LoadAssembly("res/scripts/RXNScriptApp.dll");
         RXN_CORE_INFO("ScriptEngine: Assembly Hot-Reloaded successfully!");
     }
 

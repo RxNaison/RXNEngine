@@ -14,6 +14,26 @@ namespace RXNEngine
             Z = z;
         }
 
+        public static Vector3 operator +(Vector3 a, Vector3 b)
+        {
+            return new Vector3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+        }
+
+        public static Vector3 operator -(Vector3 a, Vector3 b)
+        {
+            return new Vector3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+        }
+
+        public static Vector3 operator *(Vector3 a, float scalar)
+        {
+            return new Vector3(a.X * scalar, a.Y * scalar, a.Z * scalar);
+        }
+
+        public static Vector3 operator /(Vector3 a, float scalar)
+        {
+            return new Vector3(a.X / scalar, a.Y / scalar, a.Z / scalar);
+        }
+
         public override string ToString() => $"Vector3({X}, {Y}, {Z})";
     }
 }

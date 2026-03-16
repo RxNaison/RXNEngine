@@ -11,6 +11,10 @@ namespace RXNScriptHost
         public IntPtr Entity_SetTranslation;
         public IntPtr Input_IsKeyDown;
         public IntPtr ScriptField_Register;
+        public IntPtr Entity_Create;
+        public IntPtr Entity_Destroy;
+        public IntPtr Entity_FindByName;
+        public IntPtr Entity_InstantiatePrefab;
     }
 
     public static class Interop

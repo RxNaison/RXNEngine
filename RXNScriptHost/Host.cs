@@ -26,34 +26,44 @@ namespace RXNScriptHost
         private static GameScriptALC? s_ALC = null;
         private static Assembly? s_CoreAssembly = null;
 
+        private static Assembly? s_AppAssembly = null;
+
         private static Dictionary<ulong, object> s_EntityInstances = new();
 
         [UnmanagedCallersOnly]
-        public static void LoadGameScripts(IntPtr assemblyPathPtr)
+        public static void LoadGameScripts(IntPtr corePathPtr, IntPtr appPathPtr)
         {
-            string? assemblyPath = Marshal.PtrToStringUTF8(assemblyPathPtr);
-            if (assemblyPath == null) return;
+            string? corePath = Marshal.PtrToStringUTF8(corePathPtr);
+            string? appPath = Marshal.PtrToStringUTF8(appPathPtr);
+            if (corePath == null || appPath == null) return;
 
             s_ALC = new GameScriptALC();
 
             try
             {
-                string pdbPath = Path.ChangeExtension(assemblyPath, ".pdb");
-
-                using FileStream assemblyStream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-                if (File.Exists(pdbPath))
+                string corePdb = Path.ChangeExtension(corePath, ".pdb");
+                using (var coreStream = new FileStream(corePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    using FileStream pdbStream = new FileStream(pdbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    s_CoreAssembly = s_ALC.LoadFromStream(assemblyStream, pdbStream);
-                }
-                else
-                {
-                    s_CoreAssembly = s_ALC.LoadFromStream(assemblyStream);
+                    if (File.Exists(corePdb))
+                    {
+                        using var corePdbStream = new FileStream(corePdb, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        s_CoreAssembly = s_ALC.LoadFromStream(coreStream, corePdbStream);
+                    }
+                    else s_CoreAssembly = s_ALC.LoadFromStream(coreStream);
                 }
 
-                Console.WriteLine($"[.NET Host] Successfully loaded Game Scripts from Memory Stream: {assemblyPath}");
+                string appPdb = Path.ChangeExtension(appPath, ".pdb");
+                using (var appStream = new FileStream(appPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    if (File.Exists(appPdb))
+                    {
+                        using var appPdbStream = new FileStream(appPdb, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        s_AppAssembly = s_ALC.LoadFromStream(appStream, appPdbStream);
+                    }
+                    else s_AppAssembly = s_ALC.LoadFromStream(appStream);
+                }
 
+                Console.WriteLine($"[.NET Host] Successfully loaded Game Scripts.");
             }
             catch (Exception e)
             {
@@ -69,12 +79,12 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void InstantiateScript(ulong entityID, IntPtr classNamePtr)
         {
-            if (s_CoreAssembly == null) return;
+            if (s_AppAssembly == null) return;
 
             string? className = Marshal.PtrToStringUTF8(classNamePtr);
             if (className == null) return;
 
-            Type? scriptType = s_CoreAssembly.GetType(className);
+            Type? scriptType = s_AppAssembly.GetType(className);
             if (scriptType != null)
             {
                 object? instance = Activator.CreateInstance(scriptType);
@@ -130,12 +140,12 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static int EntityClassExists(IntPtr classNamePtr)
         {
-            if (s_CoreAssembly == null) return 0;
+            if (s_AppAssembly == null) return 0;
 
             string? className = Marshal.PtrToStringUTF8(classNamePtr);
             if (className == null) return 0;
 
-            Type? scriptType = s_CoreAssembly.GetType(className);
+            Type? scriptType = s_AppAssembly.GetType(className);
 
             return scriptType != null ? 1 : 0;
         }
@@ -144,9 +154,9 @@ namespace RXNScriptHost
         public static void ReflectClass(IntPtr classNamePtr)
         {
             string? className = Marshal.PtrToStringUTF8(classNamePtr);
-            if (className == null || s_CoreAssembly == null) return;
+            if (className == null || s_AppAssembly == null) return;
 
-            Type? type = s_CoreAssembly.GetType(className);
+            Type? type = s_AppAssembly.GetType(className);
             if (type == null) return;
 
             IntPtr classStr = Marshal.StringToHGlobalAnsi(className);
@@ -179,7 +189,8 @@ namespace RXNScriptHost
             if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
             {
                 var field = instance.GetType().GetField(fieldName);
-                if (field != null) return (float)field.GetValue(instance)!;
+                if (field != null)
+                    return (float)field.GetValue(instance)!;
             }
             return 0.0f;
         }

@@ -9,6 +9,10 @@ namespace RXNEngine {
         void* Entity_SetTranslation = nullptr;
         void* Input_IsKeyDown = nullptr;
         void* ScriptField_Register = nullptr;
+        void* Entity_Create = nullptr;
+        void* Entity_Destroy = nullptr;
+        void* NativeEntity_FindByName = nullptr;
+        void* NativeEntity_InstantiatePrefab = nullptr;
     };
 
     class ScriptInterop
