@@ -5,8 +5,7 @@ namespace RXNEngine
 {
     public abstract class Entity
     {
-        public readonly ulong ID;
-
+        public ulong ID { get; internal set; }
         protected Entity() { ID = 0; }
 
         internal Entity(ulong id)

@@ -256,9 +256,11 @@ group "Scripting"
         location "RXNScriptHost"
         kind "SharedLib"
         language "C#"
+        targetdir ("%{wks.location}/RXNEditor/res/scripts")
 
     externalproject "RXNScriptCore"
         location "RXNScriptCore"
         kind "SharedLib"
         language "C#"
+        targetdir ("%{wks.location}/RXNEditor/res/scripts")
 group ""

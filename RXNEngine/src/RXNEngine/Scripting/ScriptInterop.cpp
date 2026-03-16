@@ -30,9 +30,9 @@ namespace RXNEngine {
         entity.GetComponent<TransformComponent>().Translation = *inTranslation;
     }
 
-    extern "C" bool CORECLR_DELEGATE_CALLTYPE NativeInput_IsKeyDown(uint32_t keycode)
+    extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeInput_IsKeyDown(uint32_t keycode)
     {
-        return Input::IsKeyPressed((KeyCode)keycode);
+        return Input::IsKeyPressed((KeyCode)keycode) ? 1 : 0;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScriptField_Register(const char* className, const char* fieldName, uint32_t type)

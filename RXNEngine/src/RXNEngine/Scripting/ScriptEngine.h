@@ -58,5 +58,8 @@ namespace RXNEngine {
 
 		static Ref<ScriptInstance> GetEntityScriptInstance(UUID uuid);
 
+		static void ReloadAssembly();
+		static void ReloadIfModified(float deltaTime);
+
 	};
 }

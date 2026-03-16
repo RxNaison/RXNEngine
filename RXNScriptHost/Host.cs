@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.IO;
 
 namespace RXNScriptHost
 {
@@ -25,6 +26,8 @@ namespace RXNScriptHost
         private static GameScriptALC? s_ALC = null;
         private static Assembly? s_CoreAssembly = null;
 
+        private static Dictionary<ulong, object> s_EntityInstances = new();
+
         [UnmanagedCallersOnly]
         public static void LoadGameScripts(IntPtr assemblyPathPtr)
         {
@@ -35,18 +38,22 @@ namespace RXNScriptHost
 
             try
             {
-                s_CoreAssembly = s_ALC.LoadFromAssemblyPath(assemblyPath);
-                Console.WriteLine($"[.NET Host] Successfully loaded Game Scripts from: {assemblyPath}");
+                string pdbPath = Path.ChangeExtension(assemblyPath, ".pdb");
 
-                Type? mainType = s_CoreAssembly.GetType("RXNEngine.Player");
-                if (mainType != null)
+                using FileStream assemblyStream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                if (File.Exists(pdbPath))
                 {
-                    //Activator.CreateInstance(mainType);
+                    using FileStream pdbStream = new FileStream(pdbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    s_CoreAssembly = s_ALC.LoadFromStream(assemblyStream, pdbStream);
                 }
                 else
                 {
-                    Console.WriteLine("[.NET Host] Warning: Could not find class RXNEngine.Main");
+                    s_CoreAssembly = s_ALC.LoadFromStream(assemblyStream);
                 }
+
+                Console.WriteLine($"[.NET Host] Successfully loaded Game Scripts from Memory Stream: {assemblyPath}");
+
             }
             catch (Exception e)
             {
@@ -58,7 +65,6 @@ namespace RXNScriptHost
             }
         }
 
-        private static Dictionary<ulong, object> s_EntityInstances = new();
 
         [UnmanagedCallersOnly]
         public static void InstantiateScript(ulong entityID, IntPtr classNamePtr)
@@ -74,8 +80,8 @@ namespace RXNScriptHost
                 object? instance = Activator.CreateInstance(scriptType);
                 if (instance != null)
                 {
-                    var idField = scriptType.BaseType?.GetField("ID", BindingFlags.Public | BindingFlags.Instance);
-                    idField?.SetValue(instance, entityID);
+                    var idProperty = scriptType.BaseType?.GetProperty("ID", BindingFlags.Public | BindingFlags.Instance);
+                    idProperty?.SetValue(instance, entityID);
 
                     s_EntityInstances[entityID] = instance;
                 }

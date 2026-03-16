@@ -9,8 +9,8 @@ namespace RXNEngine
         {
             unsafe
             {
-                var isKeyDown = (delegate* unmanaged<KeyCode, bool>)Interop.NativeFunctions.Input_IsKeyDown;
-                return isKeyDown(keycode);
+                var isKeyDown = (delegate* unmanaged<KeyCode, byte>)Interop.NativeFunctions.Input_IsKeyDown;
+                return isKeyDown(keycode) != 0;
             }
         }
     }

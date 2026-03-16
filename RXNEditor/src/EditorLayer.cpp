@@ -1,6 +1,7 @@
 #include "rxnpch.h"
 #include "EditorLayer.h"
 #include "RXNEngine/Renderer/ModelImporter.h"
+#include "RXNEngine/Scripting/ScriptEngine.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -53,6 +54,7 @@ namespace RXNEditor {
             {
                 m_EditorCamera->OnUpdate(deltaTime);
                 m_SceneRenderer->RenderEditor(*m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                ScriptEngine::ReloadIfModified(deltaTime);
                 break;
             }
             case SceneState::Simulate:
@@ -458,8 +460,15 @@ namespace RXNEditor {
             }
             case KeyCode::R:
             {
-                if (!ImGuizmo::IsUsing())
-                    m_GizmoType = ImGuizmo::OPERATION::SCALE;
+                if (control && shift)
+                {
+                    ScriptEngine::ReloadAssembly();
+                }
+                else
+                {
+                    if (!ImGuizmo::IsUsing())
+                        m_GizmoType = ImGuizmo::OPERATION::SCALE;
+                }
                 break;
             }
             case KeyCode::Delete:

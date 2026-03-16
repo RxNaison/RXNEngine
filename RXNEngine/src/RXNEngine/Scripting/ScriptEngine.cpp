@@ -76,7 +76,7 @@ namespace RXNEngine {
     static bool LoadHostFxr()
     {
         // use nethost.lib's get_hostfxr_path() 
-        STRING_TYPE hostfxrPath = STR("C:\\Program Files\\dotnet\\host\\fxr\\10.0.3\\hostfxr.dll");
+        STRING_TYPE hostfxrPath = STR("C:\\Program Files\\dotnet\\host\\fxr\\10.0.4\\hostfxr.dll");
 
         void* lib = LoadLibraryOS(hostfxrPath.c_str());
         if (!lib)
@@ -116,6 +116,11 @@ namespace RXNEngine {
 
         std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
         std::unordered_map<std::string, std::vector<ScriptField>> ScriptClassFields;
+
+        std::filesystem::path CoreAssemblyPath;
+        std::filesystem::file_time_type CoreAssemblyLastWriteTime;
+        bool ReloadPending = false;
+        float ReloadTimer = 0.0f;
     };
 
     static ScriptEngineData* s_Data = nullptr;
@@ -191,6 +196,10 @@ namespace RXNEngine {
             std::filesystem::path absolutePath = std::filesystem::absolute(filepath);
             std::string pathStr = absolutePath.string();
 
+            s_Data->CoreAssemblyPath = absolutePath;
+            s_Data->CoreAssemblyLastWriteTime = std::filesystem::last_write_time(absolutePath);
+            s_Data->ReloadPending = false;
+
             s_Data->LoadGameScripts(pathStr.c_str());
         }
         else
@@ -252,6 +261,39 @@ namespace RXNEngine {
             return s_Data->EntityInstances[uuid];
         
 		return nullptr;
+    }
+
+    void ScriptEngine::ReloadAssembly()
+    {
+        s_Data->ScriptClassFields.clear();
+
+        LoadAssembly("res/scripts/RXNScriptCore.dll");
+
+        RXN_CORE_INFO("ScriptEngine: Assembly Hot-Reloaded successfully!");
+    }
+
+    void ScriptEngine::ReloadIfModified(float deltaTime)
+    {
+        if (s_Data->ReloadPending)
+        {
+            s_Data->ReloadTimer -= deltaTime;
+            if (s_Data->ReloadTimer <= 0.0f)
+            {
+                s_Data->ReloadPending = false;
+                ReloadAssembly();
+            }
+            return;
+        }
+
+        std::error_code ec;
+        auto currentWriteTime = std::filesystem::last_write_time(s_Data->CoreAssemblyPath, ec);
+
+        if (!ec && currentWriteTime > s_Data->CoreAssemblyLastWriteTime)
+        {
+            s_Data->ReloadPending = true;
+            s_Data->ReloadTimer = 0.5f;
+            RXN_CORE_TRACE("ScriptEngine: Assembly modification detected. Waiting for compiler...");
+        }
     }
 
     void ScriptEngine::RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type)
