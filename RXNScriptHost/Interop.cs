@@ -15,6 +15,7 @@ namespace RXNScriptHost
         public IntPtr Entity_Destroy;
         public IntPtr Entity_FindByName;
         public IntPtr Entity_InstantiatePrefab;
+        public IntPtr Rigidbody_ApplyLinearImpulse;
     }
 
     public static class Interop
@@ -25,7 +26,6 @@ namespace RXNScriptHost
         public static void RegisterInternalCalls(IntPtr internalCallsPtr)
         {
             NativeFunctions = Marshal.PtrToStructure<InternalCalls>(internalCallsPtr);
-            Console.WriteLine("[.NET Host] Successfully registered C++ ScriptInterop.");
         }
     }
 }

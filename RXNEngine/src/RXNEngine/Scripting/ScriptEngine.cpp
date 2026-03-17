@@ -51,8 +51,8 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_update_fn)(uint64_t entityID, float deltaTime);
     typedef int32_t(CORECLR_DELEGATE_CALLTYPE* entity_class_exists_fn)(const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* reflect_class_fn)(const char* className);
-    typedef float (CORECLR_DELEGATE_CALLTYPE* get_float_field_fn)(uint64_t entityID, const char* fieldName);
-    typedef void (CORECLR_DELEGATE_CALLTYPE* set_float_field_fn)(uint64_t entityID, const char* fieldName, float value);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* get_field_value_fn)(uint64_t entityID, const char* fieldName, void* outBuffer);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* set_field_value_fn)(uint64_t entityID, const char* fieldName, const void* inBuffer);
 
 
     static void* LoadLibraryOS(const char_t* path)
@@ -157,8 +157,8 @@ namespace RXNEngine {
         entity_class_exists_fn CheckEntityClassExists = nullptr;
 
         reflect_class_fn ReflectClass = nullptr;
-        get_float_field_fn GetFloatField = nullptr;
-        set_float_field_fn SetFloatField = nullptr;
+        get_field_value_fn GetFieldValue = nullptr;
+        set_field_value_fn SetFieldValue = nullptr;
 
         Scene* SceneContext = nullptr;
 
@@ -212,8 +212,8 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, s_Data->InvokeOnUpdate);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, s_Data->CheckEntityClassExists);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ReflectClass, s_Data->ReflectClass);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFloatField, s_Data->GetFloatField);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFloatField, s_Data->SetFloatField);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFieldValue, s_Data->GetFieldValue);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFieldValue, s_Data->SetFieldValue);
 
         InternalCalls nativeFunctions;
         ScriptInterop::RegisterFunctions(&nativeFunctions);
@@ -387,16 +387,19 @@ namespace RXNEngine {
             s_Data->InvokeOnUpdate(m_Entity.GetUUID(), deltaTime);
     }
 
-    float ScriptInstance::GetFloatField(const std::string& name)
+    bool ScriptInstance::GetFieldValueInternal(const std::string& name, void* outBuffer)
     {
-        if (s_Data->GetFloatField)
-            return s_Data->GetFloatField(m_Entity.GetUUID(), name.c_str());
-        return 0.0f;
+        if (s_Data->GetFieldValue)
+        {
+            s_Data->GetFieldValue(m_Entity.GetUUID(), name.c_str(), outBuffer);
+            return true;
+        }
+        return false;
     }
 
-    void ScriptInstance::SetFloatField(const std::string& name, float value)
+    void ScriptInstance::SetFieldValueInternal(const std::string& name, const void* inBuffer)
     {
-        if (s_Data->SetFloatField)
-            s_Data->SetFloatField(m_Entity.GetUUID(), name.c_str(), value);
+        if (s_Data->SetFieldValue)
+            s_Data->SetFieldValue(m_Entity.GetUUID(), name.c_str(), inBuffer);
     }
 }

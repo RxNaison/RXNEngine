@@ -35,7 +35,9 @@ namespace RXNEngine {
 		void OnRuntimeStop();
 
 		void OnSimulationStart();
-		void OnSimulationStop(); 
+		void OnSimulationStop();
+
+		void SyncTransformToPhysics(Entity entity);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 
@@ -53,11 +55,12 @@ namespace RXNEngine {
 		static Ref<Scene> Copy(Ref<Scene> other);
 
 		bool IsRunning() { return m_IsRunning; }
+		bool IsSimulating() { return m_IsSimulating; }
 
 	private:
 		void OnCameraComponentAdded(entt::registry& registry, entt::entity entity);
 		void RemoveEntity(Entity entity);
-
+		void CreatePhysicsBody(Entity entity);
 	private:
 		entt::registry m_Registry;
 		UUID m_PrimaryCameraID = UUID::Null;
@@ -69,6 +72,7 @@ namespace RXNEngine {
 		uint32_t m_ViewportHeight = 0;
 
 		bool m_IsRunning = false;
+		bool m_IsSimulating = false;
 
 		std::vector<Entity> m_EntitiesToDestroy;
 

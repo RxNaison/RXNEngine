@@ -4,15 +4,16 @@ using RXNEngine;
 public class Player : Entity
 {
     public float Speed = 5.0f;
-    public float Gap = 0.0f;
-    private Entity? m_BulletPrefab;
+    public Entity? m_BulletPrefab;
+
+    public bool IsInvincible = false;
+    public int Ammo = 30;
+    public Vector3 SpawnOffset = new Vector3(0, 0.0f, 0);
+    public Vector4 LaserColor = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+    public Vector4 Laser = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
 
     public override void OnCreate()
     {
-        m_BulletPrefab = Entity.FindEntityByName("BulletTemplate");
-
-        if (m_BulletPrefab == null)
-            Console.WriteLine("ERROR: Could not find 'BulletTemplate' in the scene!");
     }
 
     public override void OnUpdate(float deltaTime)
@@ -32,11 +33,16 @@ public class Player : Entity
             velocity.Y += 1.0f;
         if (Input.IsKeyDown(KeyCode.E))
             velocity.Y -= 1.0f;
-        if (Input.IsKeyDown(KeyCode.Space) && m_BulletPrefab != null)
+        if (Input.IsKeyDown(KeyCode.Space))
+        {
+            Vector3 jumpForce = new Vector3(0.0f, 1.0f, 0.0f);
+            this.ApplyLinearImpulse(jumpForce);
+        }
+        if (Input.IsKeyDown(KeyCode.F) && m_BulletPrefab != null)
         {
             Entity firedBullet = Entity.Instantiate(m_BulletPrefab);
-            firedBullet.Translation = firedBullet.Translation + new Vector3(Gap, 0, 0);
-            Gap += 3.5f;
+            firedBullet.Translation = new Vector3(pos.X, pos.Y, pos.Z - 1.0f) + SpawnOffset;
+            firedBullet.ApplyLinearImpulse(new Vector3(0.0f, 0.0f, -0.1f));
         }
 
         pos.X += velocity.X * Speed * deltaTime;

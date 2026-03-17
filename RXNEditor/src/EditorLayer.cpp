@@ -297,6 +297,11 @@ namespace RXNEditor {
                 entityTC.Translation = translation;
                 entityTC.Rotation = rotation;
                 entityTC.Scale = scale;
+
+                if (m_SceneState == SceneState::Simulate)
+                {
+                    m_ActiveScene->SyncTransformToPhysics(selectedEntity);
+                }
             }
 
         }
@@ -374,7 +379,9 @@ namespace RXNEditor {
 
             if (ImGui::Button("Import", ImVec2(120, 0)))
             {
-                ModelImporter::InstantiateToScene(m_ActiveScene, m_PendingImportPath, m_ImportSettings);
+                Entity importedEntity = ModelImporter::InstantiateToScene(m_ActiveScene, m_PendingImportPath, m_ImportSettings);
+
+                m_SceneHierarchyPanel.SetSelectedEntity(importedEntity);
 
                 ImGui::CloseCurrentPopup();
                 m_PendingImportPath.clear();
@@ -512,6 +519,19 @@ namespace RXNEditor {
                         m_SceneState = SceneState::Play;
                     }
                 }
+                break;
+            }
+            case KeyCode::D:
+            {
+                if (control)
+                {
+                    Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+                    if (selectedEntity)
+                    {
+                        Entity duplicate = m_ActiveScene->DuplicateEntity(selectedEntity);
+                        m_SceneHierarchyPanel.SetSelectedEntity(duplicate);
+                    }
+				}
                 break;
             }
         }

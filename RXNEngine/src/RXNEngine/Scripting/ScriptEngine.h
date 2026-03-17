@@ -10,7 +10,12 @@ namespace RXNEngine {
 
 	enum class ScriptFieldType
 	{
-		None = 0, Float, Int, Bool, Vector3
+		None = 0,
+		Float, Double,
+		Bool, Char, Byte, Short, Int, Long,
+		UByte, UShort, UInt, ULong,
+		Vector2, Vector3, Vector4,
+		Entity
 	};
 
 	struct ScriptField
@@ -27,9 +32,22 @@ namespace RXNEngine {
 		void InvokeOnCreate();
 		void InvokeOnUpdate(float deltaTime);
 
-		float GetFloatField(const std::string& name);
-		void SetFloatField(const std::string& name, float value);
+		template<typename T>
+		T GetFieldValue(const std::string& name)
+		{
+			T value;
+			bool success = GetFieldValueInternal(name, &value);
+			return value;
+		}
 
+		template<typename T>
+		void SetFieldValue(const std::string& name, T value)
+		{
+			SetFieldValueInternal(name, &value);
+		}
+	private:
+		bool GetFieldValueInternal(const std::string& name, void* outBuffer);
+		void SetFieldValueInternal(const std::string& name, const void* inBuffer);
 	private:
 		Entity m_Entity;
 		std::string m_ClassName;

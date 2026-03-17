@@ -1,9 +1,9 @@
 cd RXNScriptHost
 
-dotnet build RXNScriptHost.csproj -c Debug -o ../RXNEditor/res/scripts
+dotnet build RXNScriptHost.csproj -c Debug
 cd ..
 
 cd RXNScriptCore
-dotnet build RXNScriptCore.csproj -c Debug -o ../RXNEditor/res/scripts
+dotnet build RXNScriptCore.csproj -c Debug
 
 PAUSE

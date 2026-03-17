@@ -6,6 +6,7 @@
 #include "RXNEngine/Core/KeyCodes.h"
 
 #include <coreclr_delegates.h>
+#include <PxPhysicsAPI.h>
 
 namespace RXNEngine {
 
@@ -44,6 +45,9 @@ namespace RXNEngine {
         }
 
         entity.GetComponent<TransformComponent>().Translation = *inTranslation;
+
+        if(entity.HasComponent<RigidbodyComponent>())
+            scene->SyncTransformToPhysics(entity);
     }
 
     extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeInput_IsKeyDown(uint32_t keycode)
@@ -98,6 +102,30 @@ namespace RXNEngine {
         return newEntity.GetUUID();
     }
 
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_ApplyLinearImpulse(uint64_t entityID, glm::vec3* impulse, uint8_t wakeUp)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        if (!scene) return;
+
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity || !entity.HasComponent<RigidbodyComponent>())
+            return;
+
+        auto& rb = entity.GetComponent<RigidbodyComponent>();
+        if (rb.RuntimeActor)
+        {
+            physx::PxRigidDynamic* dynamicActor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor)->is<physx::PxRigidDynamic>();
+            if (dynamicActor)
+            {
+                dynamicActor->addForce(
+                    physx::PxVec3(impulse->x, impulse->y, impulse->z),
+                    physx::PxForceMode::eIMPULSE,
+                    wakeUp != 0
+                );
+            }
+        }
+    }
+
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
     {
         RXN_CORE_ASSERT(outCalls, "InternalCalls struct is null!");
@@ -111,6 +139,7 @@ namespace RXNEngine {
         outCalls->Entity_Destroy = (void*)NativeEntity_Destroy;
 		outCalls->NativeEntity_FindByName = (void*)NativeEntity_FindByName;
 		outCalls->NativeEntity_InstantiatePrefab = (void*)NativeEntity_InstantiatePrefab;
+		outCalls->NativeRigidbody_ApplyLinearImpulse = (void*)NativeRigidbody_ApplyLinearImpulse;
     }
 
 }

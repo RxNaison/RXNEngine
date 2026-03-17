@@ -13,6 +13,7 @@ namespace RXNEngine {
         void* Entity_Destroy = nullptr;
         void* NativeEntity_FindByName = nullptr;
         void* NativeEntity_InstantiatePrefab = nullptr;
+        void* NativeRigidbody_ApplyLinearImpulse = nullptr;
     };
 
     class ScriptInterop

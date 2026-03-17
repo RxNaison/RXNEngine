@@ -543,6 +543,42 @@ namespace RXNEngine {
 
         CopyComponents(AllComponents{}, entity, newEntity);
 
+        if (newEntity.HasComponent<RelationshipComponent>())
+        {
+            auto& clonedRC = newEntity.GetComponent<RelationshipComponent>();
+            clonedRC.ParentHandle = 0;
+            clonedRC.Children.clear();
+        }
+
+        if (newEntity.HasComponent<RigidbodyComponent>())
+        {
+            newEntity.GetComponent<RigidbodyComponent>().RuntimeActor = nullptr;
+
+            if (newEntity.HasComponent<BoxColliderComponent>()) {
+                newEntity.GetComponent<BoxColliderComponent>().RuntimeShape = nullptr;
+                newEntity.GetComponent<BoxColliderComponent>().RuntimeMaterial = nullptr;
+            }
+            if (newEntity.HasComponent<SphereColliderComponent>()) {
+                newEntity.GetComponent<SphereColliderComponent>().RuntimeShape = nullptr;
+                newEntity.GetComponent<SphereColliderComponent>().RuntimeMaterial = nullptr;
+            }
+            if (newEntity.HasComponent<CapsuleColliderComponent>()) {
+                newEntity.GetComponent<CapsuleColliderComponent>().RuntimeShape = nullptr;
+                newEntity.GetComponent<CapsuleColliderComponent>().RuntimeMaterial = nullptr;
+            }
+
+            if (m_IsSimulating)
+            {
+                CreatePhysicsBody(newEntity);
+            }
+        }
+
+        if (newEntity.HasComponent<ScriptComponent>())
+        {
+            if (m_IsRunning)
+                ScriptEngine::OnCreateEntity(newEntity);
+        }
+
         if (entity.HasComponent<RelationshipComponent>())
         {
             auto& originalRC = entity.GetComponent<RelationshipComponent>();
@@ -627,103 +663,132 @@ namespace RXNEngine {
         m_IsRunning = false;
     }
 
+    void Scene::CreatePhysicsBody(Entity entity)
+    {
+        physx::PxPhysics* physics = PhysicsSystem::GetPhysics();
+        physx::PxScene* physicsScene = PhysicsSystem::GetScene();
+
+        auto& transform = entity.GetComponent<TransformComponent>();
+        auto& rb = entity.GetComponent<RigidbodyComponent>();
+
+        glm::mat4 worldTransform = GetWorldTransform(entity);
+        glm::vec3 worldTranslation, worldRotation, worldScale;
+        Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
+
+        glm::quat rotation = glm::quat(worldRotation);
+        physx::PxTransform pxTransform(PhysicsUtils::GLMToPhysX(worldTranslation), PhysicsUtils::GLMToPhysX(rotation));
+
+        physx::PxRigidActor* actor = nullptr;
+
+        if (rb.Type == RigidbodyComponent::BodyType::Static)
+        {
+            actor = physics->createRigidStatic(pxTransform);
+        }
+        else
+        {
+            physx::PxRigidDynamic* dynamicActor = physics->createRigidDynamic(pxTransform);
+
+            if (rb.Type == RigidbodyComponent::BodyType::Kinematic)
+                dynamicActor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
+
+            dynamicActor->setLinearDamping(rb.LinearDrag);
+            dynamicActor->setAngularDamping(rb.AngularDrag);
+            actor = dynamicActor;
+        }
+
+        if (entity.HasComponent<BoxColliderComponent>())
+        {
+            auto& bc = entity.GetComponent<BoxColliderComponent>();
+            physx::PxMaterial* material = physics->createMaterial(bc.StaticFriction, bc.DynamicFriction, bc.Restitution);
+            bc.RuntimeMaterial = material;
+
+            glm::vec3 colliderSize = bc.HalfExtents * worldScale;
+            physx::PxBoxGeometry boxGeom(PhysicsUtils::GLMToPhysX(colliderSize));
+
+            physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
+            shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(bc.Offset)));
+            bc.RuntimeShape = shape;
+        }
+
+        if (entity.HasComponent<SphereColliderComponent>())
+        {
+            auto& sc = entity.GetComponent<SphereColliderComponent>();
+            physx::PxMaterial* material = physics->createMaterial(sc.StaticFriction, sc.DynamicFriction, sc.Restitution);
+            sc.RuntimeMaterial = material;
+
+            float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
+            physx::PxSphereGeometry sphereGeom(sc.Radius * maxScale);
+
+            physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, sphereGeom, *material);
+            shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(sc.Offset)));
+            sc.RuntimeShape = shape;
+        }
+
+        if (entity.HasComponent<CapsuleColliderComponent>())
+        {
+            auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+            physx::PxMaterial* material = physics->createMaterial(cc.StaticFriction, cc.DynamicFriction, cc.Restitution);
+            cc.RuntimeMaterial = material;
+
+            float radiusScale = glm::max(worldScale.x, worldScale.z);
+            physx::PxCapsuleGeometry capsuleGeom(cc.Radius * radiusScale, (cc.Height / 2.0f) * worldScale.y);
+
+            physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, capsuleGeom, *material);
+
+            // align it to the Y
+            physx::PxQuat relativeRot(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f));
+
+            shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(cc.Offset), relativeRot));
+            cc.RuntimeShape = shape;
+        }
+
+        if (rb.Type != RigidbodyComponent::BodyType::Static)
+        {
+            physx::PxRigidBodyExt::updateMassAndInertia(*(physx::PxRigidDynamic*)actor, rb.Mass);
+        }
+
+        physicsScene->addActor(*actor);
+        rb.RuntimeActor = actor;
+    }
+
     void Scene::OnSimulationStart()
     {
         PhysicsSystem::CreateScene();
-        physx::PxPhysics* physics = PhysicsSystem::GetPhysics();
-        physx::PxScene* physicsScene = PhysicsSystem::GetScene();
 
         auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
         for (auto e : view)
         {
-            Entity entity = { e, this };
-            auto& transform = entity.GetComponent<TransformComponent>();
-            auto& rb = entity.GetComponent<RigidbodyComponent>();
-
-            glm::mat4 worldTransform = GetWorldTransform(entity);
-            glm::vec3 worldTranslation, worldRotation, worldScale;
-            Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
-
-            glm::quat rotation = glm::quat(worldRotation);
-            physx::PxTransform pxTransform(PhysicsUtils::GLMToPhysX(worldTranslation), PhysicsUtils::GLMToPhysX(rotation));
-
-            physx::PxRigidActor* actor = nullptr;
-
-            if (rb.Type == RigidbodyComponent::BodyType::Static)
-            {
-                actor = physics->createRigidStatic(pxTransform);
-            }
-            else
-            {
-                physx::PxRigidDynamic* dynamicActor = physics->createRigidDynamic(pxTransform);
-
-                if (rb.Type == RigidbodyComponent::BodyType::Kinematic)
-                    dynamicActor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
-
-                dynamicActor->setLinearDamping(rb.LinearDrag);
-                dynamicActor->setAngularDamping(rb.AngularDrag);
-                actor = dynamicActor;
-            }
-
-            if (entity.HasComponent<BoxColliderComponent>())
-            {
-                auto& bc = entity.GetComponent<BoxColliderComponent>();
-                physx::PxMaterial* material = physics->createMaterial(bc.StaticFriction, bc.DynamicFriction, bc.Restitution);
-                bc.RuntimeMaterial = material;
-
-                glm::vec3 colliderSize = bc.HalfExtents * worldScale;
-                physx::PxBoxGeometry boxGeom(PhysicsUtils::GLMToPhysX(colliderSize));
-
-                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
-                shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(bc.Offset)));
-                bc.RuntimeShape = shape;
-            }
-
-            if (entity.HasComponent<SphereColliderComponent>())
-            {
-                auto& sc = entity.GetComponent<SphereColliderComponent>();
-                physx::PxMaterial* material = physics->createMaterial(sc.StaticFriction, sc.DynamicFriction, sc.Restitution);
-                sc.RuntimeMaterial = material;
-
-                float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
-                physx::PxSphereGeometry sphereGeom(sc.Radius * maxScale);
-
-                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, sphereGeom, *material);
-                shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(sc.Offset)));
-                sc.RuntimeShape = shape;
-            }
-
-            if (entity.HasComponent<CapsuleColliderComponent>())
-            {
-                auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-                physx::PxMaterial* material = physics->createMaterial(cc.StaticFriction, cc.DynamicFriction, cc.Restitution);
-                cc.RuntimeMaterial = material;
-
-                float radiusScale = glm::max(worldScale.x, worldScale.z);
-                physx::PxCapsuleGeometry capsuleGeom(cc.Radius * radiusScale, (cc.Height / 2.0f) * worldScale.y);
-
-                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, capsuleGeom, *material);
-
-                // align it to the Y
-                physx::PxQuat relativeRot(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f));
-
-                shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(cc.Offset), relativeRot));
-                cc.RuntimeShape = shape;
-            }
-
-            if (rb.Type != RigidbodyComponent::BodyType::Static)
-            {
-                physx::PxRigidBodyExt::updateMassAndInertia(*(physx::PxRigidDynamic*)actor, rb.Mass);
-            }
-
-            physicsScene->addActor(*actor);
-            rb.RuntimeActor = actor;
+            CreatePhysicsBody({ e, this });
         }
 
+        m_IsSimulating = true;
     }
 
     void Scene::OnSimulationStop()
     {
         PhysicsSystem::DestroyScene();
+        m_IsSimulating = false;
+    }
+
+    void Scene::SyncTransformToPhysics(Entity entity)
+    {
+        if (!entity.HasComponent<RigidbodyComponent>()) return;
+
+        auto& rb = entity.GetComponent<RigidbodyComponent>();
+        auto& tc = entity.GetComponent<TransformComponent>();
+
+        if (rb.RuntimeActor)
+        {
+            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+
+            glm::quat rotation = glm::quat(tc.Rotation);
+
+            physx::PxTransform physxTransform(
+                physx::PxVec3(tc.Translation.x, tc.Translation.y, tc.Translation.z),
+                physx::PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+            );
+
+            actor->setGlobalPose(physxTransform);
+        }
     }
 }

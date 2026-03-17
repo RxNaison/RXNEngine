@@ -23,6 +23,15 @@ namespace RXNEngine
                 return new Entity() { ID = newID };
             }
         }
+        public static Entity Instantiate(Entity original)
+        {
+            unsafe
+            {
+                var instantiate = (delegate* unmanaged<ulong, ulong>)Interop.NativeFunctions.Entity_InstantiatePrefab;
+                ulong newID = instantiate(original.ID);
+                return new Entity() { ID = newID };
+            }
+        }
 
         public void Destroy()
         {
@@ -72,13 +81,14 @@ namespace RXNEngine
             }
         }
 
-        public static Entity Instantiate(Entity original)
+        public void ApplyLinearImpulse(Vector3 impulse, bool wakeUp = true)
         {
             unsafe
             {
-                var instantiate = (delegate* unmanaged<ulong, ulong>)Interop.NativeFunctions.Entity_InstantiatePrefab;
-                ulong newID = instantiate(original.ID);
-                return new Entity() { ID = newID };
+                var applyImpulse = (delegate* unmanaged<ulong, Vector3*, byte, void>)Interop.NativeFunctions.Rigidbody_ApplyLinearImpulse;
+                byte wakeFlag = (byte)(wakeUp ? 1 : 0);
+
+                applyImpulse(ID, &impulse, wakeFlag);
             }
         }
     }

@@ -196,9 +196,10 @@ namespace RXNEditor {
             ImGui::EndDragDropTarget();
         }
 
-        if (ImGui::IsItemClicked())
+        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
-            m_SelectedEntity = entity;
+            if (!ImGui::IsMouseDragPastThreshold(ImGuiMouseButton_Left))
+                m_SelectedEntity = entity;
         }
 
         bool entityDeleted = false;
@@ -237,6 +238,10 @@ namespace RXNEditor {
 
     void SceneHierarchyPanel::DrawComponents(Entity entity)
     {
+        uint64_t id = entity.GetComponent<IDComponent>().ID;
+
+        ImGui::Text(std::to_string(id).c_str());
+
         if (entity.HasComponent<TagComponent>())
         {
             auto& tag = entity.GetComponent<TagComponent>().Tag;
@@ -335,7 +340,7 @@ namespace RXNEditor {
         ImGui::PopItemWidth();
 
 
-        DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
+        DrawComponent<TransformComponent>("Transform", entity, [&](auto& component)
             {
                 DrawVec3Control("Translation", component.Translation);
 
@@ -344,6 +349,11 @@ namespace RXNEditor {
                 component.Rotation = glm::radians(rotation);
 
                 DrawVec3Control("Scale", component.Scale, 1.0f);
+
+                if (m_Context->IsSimulating())
+                {
+                  m_Context->SyncTransformToPhysics(entity);
+                }
             });
 
 
@@ -625,13 +635,102 @@ namespace RXNEditor {
                             const auto& fields = ScriptEngine::GetClassFields(component.ClassName);
                             for (const auto& field : fields)
                             {
-                                if (field.Type == ScriptFieldType::Float)
+                                // Optional: You can use ImGui Tables or Columns here to make it look like Unreal Engine!
+                                // ImGui::Text("%s", field.Name.c_str());
+                                // ImGui::SameLine();
+
+                                switch (field.Type)
                                 {
-                                    float data = instance->GetFloatField(field.Name);
-                                    if (ImGui::DragFloat(field.Name.c_str(), &data))
+                                case ScriptFieldType::Float:
+                                {
+                                    float data = instance->GetFieldValue<float>(field.Name);
+                                    if (ImGui::DragFloat(field.Name.c_str(), &data, 0.1f))
+                                        instance->SetFieldValue(field.Name, data);
+                                    break;
+                                }
+                                case ScriptFieldType::Bool:
+                                {
+                                    bool data = instance->GetFieldValue<bool>(field.Name);
+                                    if (ImGui::Checkbox(field.Name.c_str(), &data))
+                                        instance->SetFieldValue(field.Name, data);
+                                    break;
+                                }
+                                case ScriptFieldType::Int:
+                                {
+                                    int data = instance->GetFieldValue<int>(field.Name);
+                                    if (ImGui::DragInt(field.Name.c_str(), &data))
+                                        instance->SetFieldValue(field.Name, data);
+                                    break;
+                                }
+                                case ScriptFieldType::Double:
+                                {
+                                    double data = instance->GetFieldValue<double>(field.Name);
+                                    if (ImGui::DragScalar(field.Name.c_str(), ImGuiDataType_Double, &data, 0.1f))
+                                        instance->SetFieldValue(field.Name, data);
+                                    break;
+                                }
+                                case ScriptFieldType::Vector2:
+                                {
+                                    glm::vec2 data = instance->GetFieldValue<glm::vec2>(field.Name);
+                                    if (ImGui::DragFloat2(field.Name.c_str(), glm::value_ptr(data), 0.1f))
+                                        instance->SetFieldValue(field.Name, data);
+                                    break;
+                                }
+                                case ScriptFieldType::Vector3:
+                                {
+                                    glm::vec3 data = instance->GetFieldValue<glm::vec3>(field.Name);
+                                    if (ImGui::DragFloat3(field.Name.c_str(), glm::value_ptr(data), 0.1f))
+                                        instance->SetFieldValue(field.Name, data);
+                                    break;
+                                }
+                                case ScriptFieldType::Vector4:
+                                {
+                                    glm::vec4 data = instance->GetFieldValue<glm::vec4>(field.Name);
+
+                                    if (field.Name.find("Color") != std::string::npos)
                                     {
-                                        instance->SetFloatField(field.Name, data);
+                                        if (ImGui::ColorEdit4(field.Name.c_str(), glm::value_ptr(data)))
+                                            instance->SetFieldValue(field.Name, data);
                                     }
+                                    else
+                                    {
+                                        if (ImGui::DragFloat4(field.Name.c_str(), glm::value_ptr(data), 0.1f))
+                                            instance->SetFieldValue(field.Name, data);
+                                    }
+                                    break;
+                                }
+                                case ScriptFieldType::Entity:
+                                {
+                                    ImGui::Text("%s", field.Name.c_str());
+                                    ImGui::SameLine();
+
+                                    uint64_t targetID = instance->GetFieldValue<uint64_t>(field.Name);
+                                    std::string buttonText = targetID == 0 ? "None (Entity)" : std::to_string(targetID);
+
+                                    if (targetID != 0)
+                                    {
+                                        Entity targetEntity = m_Context->GetEntityByUUID(targetID);
+                                        if (targetEntity)
+                                            buttonText = targetEntity.GetComponent<TagComponent>().Tag;
+                                        else
+                                            buttonText = "Invalid Entity";
+                                    }
+
+                                    ImGui::Button(buttonText.c_str(), ImVec2(100.0f, 0.0f));
+
+                                    if (ImGui::BeginDragDropTarget())
+                                    {
+                                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY"))
+                                        {
+                                            UUID droppedEntityID = *(UUID*)payload->Data;
+                                            instance->SetFieldValue(field.Name, droppedEntityID);
+                                        }
+                                        ImGui::EndDragDropTarget();
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
                                 }
                             }
                         }

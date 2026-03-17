@@ -30,6 +30,30 @@ namespace RXNScriptHost
 
         private static Dictionary<ulong, object> s_EntityInstances = new();
 
+        private static uint GetScriptFieldType(Type type)
+        {
+            if (type == typeof(float)) return 1;
+            if (type == typeof(double)) return 2;
+            if (type == typeof(bool)) return 3;
+            if (type == typeof(char)) return 4;
+            if (type == typeof(sbyte)) return 5;
+            if (type == typeof(short)) return 6;
+            if (type == typeof(int)) return 7;
+            if (type == typeof(long)) return 8;
+            if (type == typeof(byte)) return 9;
+            if (type == typeof(ushort)) return 10;
+            if (type == typeof(uint)) return 11;
+            if (type == typeof(ulong)) return 12;
+
+            if (type == s_CoreAssembly?.GetType("RXNEngine.Vector2")) return 13;
+            if (type == s_CoreAssembly?.GetType("RXNEngine.Vector3")) return 14;
+            if (type == s_CoreAssembly?.GetType("RXNEngine.Vector4")) return 15;
+
+            if (type == s_CoreAssembly?.GetType("RXNEngine.Entity")) return 16;
+
+            return 0;
+        }
+
         [UnmanagedCallersOnly]
         public static void LoadGameScripts(IntPtr corePathPtr, IntPtr appPathPtr)
         {
@@ -62,8 +86,6 @@ namespace RXNScriptHost
                     }
                     else s_AppAssembly = s_ALC.LoadFromStream(appStream);
                 }
-
-                Console.WriteLine($"[.NET Host] Successfully loaded Game Scripts.");
             }
             catch (Exception e)
             {
@@ -133,8 +155,6 @@ namespace RXNScriptHost
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-
-            Console.WriteLine("[.NET Host] Unloaded Game Scripts. Ready for Hot-Reload!");
         }
 
         [UnmanagedCallersOnly]
@@ -163,8 +183,7 @@ namespace RXNScriptHost
 
             foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
-                uint fieldType = 0;
-                if (field.FieldType == typeof(float)) fieldType = 1;
+                uint fieldType = GetScriptFieldType(field.FieldType);
 
                 if (fieldType != 0)
                 {
@@ -183,26 +202,60 @@ namespace RXNScriptHost
         }
 
         [UnmanagedCallersOnly]
-        public static float GetFloatField(ulong entityID, IntPtr fieldNamePtr)
+        public static void GetFieldValue(ulong entityID, IntPtr fieldNamePtr, IntPtr outBuffer)
         {
             string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
             if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
             {
                 var field = instance.GetType().GetField(fieldName);
                 if (field != null)
-                    return (float)field.GetValue(instance)!;
+                {
+                    object? value = field.GetValue(instance);
+                    if (value == null) return;
+
+                    // Special Case: If it's an Entity, extract the 64-bit UUID and pack that instead!
+                    if (field.FieldType == s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                    {
+                        var idProp = value.GetType().GetProperty("ID", BindingFlags.Public | BindingFlags.Instance);
+                        ulong targetID = idProp != null ? (ulong)idProp.GetValue(value)! : 0;
+                        Marshal.WriteInt64(outBuffer, (long)targetID);
+                    }
+                    else
+                    {
+                        // For all Primitives and Vectors, C# can safely blast the raw memory straight into the C++ buffer!
+                        Marshal.StructureToPtr(value, outBuffer, false);
+                    }
+                }
             }
-            return 0.0f;
         }
 
         [UnmanagedCallersOnly]
-        public static void SetFloatField(ulong entityID, IntPtr fieldNamePtr, float value)
+        public static void SetFieldValue(ulong entityID, IntPtr fieldNamePtr, IntPtr inBuffer)
         {
             string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
             if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
             {
                 var field = instance.GetType().GetField(fieldName);
-                field?.SetValue(instance, value);
+                if (field != null)
+                {
+                    if (field.FieldType == s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                    {
+                        ulong targetID = (ulong)Marshal.ReadInt64(inBuffer);
+                        if (targetID == 0) field.SetValue(instance, null);
+                        else
+                        {
+                            object? newEntity = Activator.CreateInstance(field.FieldType, true);
+                            var idProp = field.FieldType.GetProperty("ID", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            idProp?.SetValue(newEntity, targetID);
+                            field.SetValue(instance, newEntity);
+                        }
+                    }
+                    else
+                    {
+                        object value = Marshal.PtrToStructure(inBuffer, field.FieldType)!;
+                        field.SetValue(instance, value);
+                    }
+                }
             }
         }
     }
