@@ -5,6 +5,18 @@ namespace RXNEngine {
 
     using namespace physx;
 
+    physx::PxFilterFlags ContactReportFilterShader(
+        physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0,
+        physx::PxFilterObjectAttributes attributes1, physx::PxFilterData filterData1,
+        physx::PxPairFlags& pairFlags, const void* constantBlock, physx::PxU32 constantBlockSize)
+    {
+        pairFlags = physx::PxPairFlag::eCONTACT_DEFAULT;
+        pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
+        return physx::PxFilterFlag::eDEFAULT;
+    }
+
+    static PhysicsContactListener s_ContactListener;
+
     PxFoundation* PhysicsSystem::s_Foundation = nullptr;
     PxPhysics* PhysicsSystem::s_Physics = nullptr;
     PxDefaultCpuDispatcher* PhysicsSystem::s_Dispatcher = nullptr;
@@ -56,10 +68,9 @@ namespace RXNEngine {
         PxSceneDesc sceneDesc(s_Physics->getTolerancesScale());
 
         sceneDesc.cpuDispatcher = s_Dispatcher;
-
         sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-
-        sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+        sceneDesc.filterShader = ContactReportFilterShader;
+        sceneDesc.simulationEventCallback = &s_ContactListener;
 
         s_Scene = s_Physics->createScene(sceneDesc);
 

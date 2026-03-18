@@ -60,7 +60,6 @@ namespace RXNEditor {
             case SceneState::Simulate:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_ActiveScene->OnUpdateSimulation(deltaTime);
                 m_SceneRenderer->RenderEditor(*m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
                 break;
             }
@@ -77,6 +76,10 @@ namespace RXNEditor {
 
 	void EditorLayer::OnFixedUpdate(float fixedDeltaTime)
 	{
+        if (m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate)
+        {
+            m_ActiveScene->OnUpdateSimulation(fixedDeltaTime);
+        }
 	}
 
 	void EditorLayer::OnEvent(Event& event)

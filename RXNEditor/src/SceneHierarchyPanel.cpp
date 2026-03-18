@@ -133,7 +133,12 @@ namespace RXNEditor {
 
         ImGui::Begin("Properties");
         if (m_SelectedEntity)
-            DrawComponents(m_SelectedEntity);
+        {
+            if (m_SelectedEntity.IsValid())
+                DrawComponents(m_SelectedEntity);
+            else
+                m_SelectedEntity = {};
+        }
         ImGui::End();
     }
 

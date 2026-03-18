@@ -125,6 +125,11 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
+        if (m_IsRunning && entity.HasComponent<ScriptComponent>())
+        {
+            ScriptEngine::OnDestroyEntity(entity);
+        }
+
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
         std::vector<UUID> childrenToDestroy = rc.Children;
@@ -218,6 +223,16 @@ namespace RXNEngine {
     void Scene::OnUpdateSimulation(float deltaTime)
     {
         OPTICK_EVENT();
+
+        if (m_IsRunning)
+        {
+            auto scriptView = m_Registry.view<ScriptComponent>();
+            for (auto e : scriptView)
+            {
+                Entity entity = { e, this };
+                ScriptEngine::OnFixedUpdateEntity(entity, deltaTime);
+            }
+        }
 
         PhysicsSystem::Update(deltaTime);
         auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
@@ -481,8 +496,6 @@ namespace RXNEngine {
     void Scene::OnUpdateRuntime(float deltaTime)
     {
         OPTICK_EVENT();
-
-        OnUpdateSimulation(deltaTime);
 
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
             {
@@ -751,6 +764,8 @@ namespace RXNEngine {
         {
             physx::PxRigidBodyExt::updateMassAndInertia(*(physx::PxRigidDynamic*)actor, rb.Mass);
         }
+
+        actor->userData = (void*)(uint64_t)entity.GetUUID();
 
         physicsScene->addActor(*actor);
         rb.RuntimeActor = actor;

@@ -135,12 +135,42 @@ namespace RXNScriptHost
         }
 
         [UnmanagedCallersOnly]
+        public static void InvokeOnDestroy(ulong entityID)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var method = instance.GetType().GetMethod("OnDestroy", BindingFlags.Public | BindingFlags.Instance);
+
+                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                {
+                    method.Invoke(instance, null);
+                }
+
+                s_EntityInstances.Remove(entityID);
+            }
+        }
+
+        [UnmanagedCallersOnly]
         public static void InvokeOnUpdate(ulong entityID, float deltaTime)
         {
             if (s_EntityInstances.TryGetValue(entityID, out object? instance))
             {
                 MethodInfo? onUpdate = instance.GetType().GetMethod("OnUpdate");
                 onUpdate?.Invoke(instance, new object[] { deltaTime });
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void InvokeOnFixedUpdate(ulong entityID, float fixedTimeStep)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var method = instance.GetType().GetMethod("OnFixedUpdate", BindingFlags.Public | BindingFlags.Instance);
+
+                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                {
+                    method.Invoke(instance, new object[] { fixedTimeStep });
+                }
             }
         }
 
@@ -213,7 +243,6 @@ namespace RXNScriptHost
                     object? value = field.GetValue(instance);
                     if (value == null) return;
 
-                    // Special Case: If it's an Entity, extract the 64-bit UUID and pack that instead!
                     if (field.FieldType == s_CoreAssembly?.GetType("RXNEngine.Entity"))
                     {
                         var idProp = value.GetType().GetProperty("ID", BindingFlags.Public | BindingFlags.Instance);
@@ -222,7 +251,6 @@ namespace RXNScriptHost
                     }
                     else
                     {
-                        // For all Primitives and Vectors, C# can safely blast the raw memory straight into the C++ buffer!
                         Marshal.StructureToPtr(value, outBuffer, false);
                     }
                 }
@@ -255,6 +283,42 @@ namespace RXNScriptHost
                         object value = Marshal.PtrToStructure(inBuffer, field.FieldType)!;
                         field.SetValue(instance, value);
                     }
+                }
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void OnCollisionEnter(ulong entityID, ulong otherEntityID)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var method = instance.GetType().GetMethod("OnCollisionEnter", BindingFlags.Public | BindingFlags.Instance);
+
+                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                {
+                    Type? entityType = s_CoreAssembly?.GetType("RXNEngine.Entity");
+                    object? otherEntity = Activator.CreateInstance(entityType!, true);
+                    entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
+
+                    method.Invoke(instance, new object[] { otherEntity });
+                }
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void OnCollisionExit(ulong entityID, ulong otherEntityID)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var method = instance.GetType().GetMethod("OnCollisionExit", BindingFlags.Public | BindingFlags.Instance);
+
+                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                {
+                    Type? entityType = s_CoreAssembly?.GetType("RXNEngine.Entity");
+                    object? otherEntity = Activator.CreateInstance(entityType!, true);
+                    entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
+
+                    method.Invoke(instance, new object[] { otherEntity });
                 }
             }
         }

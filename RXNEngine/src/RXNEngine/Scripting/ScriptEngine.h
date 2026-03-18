@@ -31,6 +31,7 @@ namespace RXNEngine {
 
 		void InvokeOnCreate();
 		void InvokeOnUpdate(float deltaTime);
+		void InvokeOnFixedUpdate(float deltaTime);
 
 		template<typename T>
 		T GetFieldValue(const std::string& name)
@@ -65,7 +66,13 @@ namespace RXNEngine {
 		static void OnRuntimeStop();
 
 		static void OnCreateEntity(Entity entity);
+		static void OnDestroyEntity(Entity entity);
+
 		static void OnUpdateEntity(Entity entity, float deltaTime);
+		static void OnFixedUpdateEntity(Entity entity, float deltaTime);
+
+		static void OnCollisionEnter(uint64_t entityID, uint64_t otherID);
+		static void OnCollisionExit(uint64_t entityID, uint64_t otherID);
 
 		static bool EntityClassExists(const std::string& fullClassName);
 

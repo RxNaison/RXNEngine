@@ -43,7 +43,12 @@ namespace RXNEngine
         }
 
         public virtual void OnCreate() { }
+        public virtual void OnDestroy() { }
         public virtual void OnUpdate(float deltaTime) { }
+        public virtual void OnFixedUpdate(float deltaTime) { }
+
+        public virtual void OnCollisionEnter(Entity other) { }
+        public virtual void OnCollisionExit(Entity other) { }
 
         public Vector3 Translation
         {

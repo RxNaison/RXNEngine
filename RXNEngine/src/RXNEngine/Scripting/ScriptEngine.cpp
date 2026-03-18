@@ -48,11 +48,14 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* register_internal_calls_fn)(void*);
     typedef void (CORECLR_DELEGATE_CALLTYPE* instantiate_script_fn)(uint64_t entityID, const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_create_fn)(uint64_t entityID);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_destroy_fn)(uint64_t entityID);
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_update_fn)(uint64_t entityID, float deltaTime);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_fixed_update_fn)(uint64_t entityID, float deltaTime);
     typedef int32_t(CORECLR_DELEGATE_CALLTYPE* entity_class_exists_fn)(const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* reflect_class_fn)(const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* get_field_value_fn)(uint64_t entityID, const char* fieldName, void* outBuffer);
     typedef void (CORECLR_DELEGATE_CALLTYPE* set_field_value_fn)(uint64_t entityID, const char* fieldName, const void* inBuffer);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* on_collision_fn)(uint64_t entityID, uint64_t otherEntityID);
 
 
     static void* LoadLibraryOS(const char_t* path)
@@ -152,13 +155,18 @@ namespace RXNEngine {
 
         instantiate_script_fn InstantiateScript = nullptr;
         invoke_on_create_fn InvokeOnCreate = nullptr;
+        invoke_on_destroy_fn InvokeOnDestroy = nullptr;
         invoke_on_update_fn InvokeOnUpdate = nullptr;
+		invoke_on_fixed_update_fn InvokeOnFixedUpdate = nullptr;
 
         entity_class_exists_fn CheckEntityClassExists = nullptr;
 
         reflect_class_fn ReflectClass = nullptr;
         get_field_value_fn GetFieldValue = nullptr;
         set_field_value_fn SetFieldValue = nullptr;
+
+        on_collision_fn OnCollisionEnter = nullptr;
+        on_collision_fn OnCollisionExit = nullptr;
 
         Scene* SceneContext = nullptr;
 
@@ -209,11 +217,15 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Interop, RXNScriptHost", RegisterInternalCalls, s_Data->RegisterInternalCalls);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InstantiateScript, s_Data->InstantiateScript);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnCreate, s_Data->InvokeOnCreate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnDestroy, s_Data->InvokeOnDestroy);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, s_Data->InvokeOnUpdate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnFixedUpdate, s_Data->InvokeOnFixedUpdate);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, s_Data->CheckEntityClassExists);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ReflectClass, s_Data->ReflectClass);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFieldValue, s_Data->GetFieldValue);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFieldValue, s_Data->SetFieldValue);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionEnter, s_Data->OnCollisionEnter);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionExit, s_Data->OnCollisionExit);
 
         InternalCalls nativeFunctions;
         ScriptInterop::RegisterFunctions(&nativeFunctions);
@@ -290,12 +302,38 @@ namespace RXNEngine {
         }
     }
 
+    void ScriptEngine::OnDestroyEntity(Entity entity)
+    {
+        if (s_Data && s_Data->InvokeOnDestroy)
+            s_Data->InvokeOnDestroy(entity.GetUUID());
+    }
+
     void ScriptEngine::OnUpdateEntity(Entity entity, float deltaTime)
     {
         UUID entityID = entity.GetUUID();
 
         if (s_Data->EntityInstances.find(entityID) != s_Data->EntityInstances.end())
             s_Data->EntityInstances[entityID]->InvokeOnUpdate(deltaTime);
+    }
+
+    void ScriptEngine::OnFixedUpdateEntity(Entity entity, float deltaTime)
+    {
+        UUID entityID = entity.GetUUID();
+
+        if (s_Data->EntityInstances.find(entityID) != s_Data->EntityInstances.end())
+            s_Data->EntityInstances[entityID]->InvokeOnFixedUpdate(deltaTime);
+    }
+
+    void ScriptEngine::OnCollisionEnter(uint64_t entityID, uint64_t otherID)
+    {
+        if (s_Data && s_Data->OnCollisionEnter)
+            s_Data->OnCollisionEnter(entityID, otherID);
+    }
+
+    void ScriptEngine::OnCollisionExit(uint64_t entityID, uint64_t otherID)
+    {
+        if (s_Data && s_Data->OnCollisionExit)
+            s_Data->OnCollisionExit(entityID, otherID);
     }
 
     Scene* ScriptEngine::GetSceneContext()
@@ -385,6 +423,12 @@ namespace RXNEngine {
     {
         if (s_Data->InvokeOnUpdate)
             s_Data->InvokeOnUpdate(m_Entity.GetUUID(), deltaTime);
+    }
+
+    void ScriptInstance::InvokeOnFixedUpdate(float deltaTime)
+    {
+        if (s_Data->InvokeOnFixedUpdate)
+            s_Data->InvokeOnFixedUpdate(m_Entity.GetUUID(), deltaTime);
     }
 
     bool ScriptInstance::GetFieldValueInternal(const std::string& name, void* outBuffer)
