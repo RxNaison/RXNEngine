@@ -236,9 +236,9 @@ namespace RXNEngine {
 			out << YAML::Key << "DirectionalLightComponent";
 			out << YAML::BeginMap; // DirectionalLightComponent
 
-			auto& tc = entity.GetComponent<DirectionalLightComponent>();
-			out << YAML::Key << "Color" << YAML::Value << tc.Color;
-			out << YAML::Key << "Intensity" << YAML::Value << tc.Intensity;
+			auto& dl = entity.GetComponent<DirectionalLightComponent>();
+			out << YAML::Key << "Color" << YAML::Value << dl.Color;
+			out << YAML::Key << "Intensity" << YAML::Value << dl.Intensity;
 
 			out << YAML::EndMap; // DirectionalLightComponent
 		}
@@ -248,11 +248,11 @@ namespace RXNEngine {
 			out << YAML::Key << "PointLightComponent";
 			out << YAML::BeginMap; // PointLightComponent
 
-			auto& tc = entity.GetComponent<PointLightComponent>();
-			out << YAML::Key << "Color" << YAML::Value << tc.Color;
-			out << YAML::Key << "Intensity" << YAML::Value << tc.Intensity;
-			out << YAML::Key << "Radius" << YAML::Value << tc.Radius;
-			out << YAML::Key << "Falloff" << YAML::Value << tc.Falloff;
+			auto& pl = entity.GetComponent<PointLightComponent>();
+			out << YAML::Key << "Color" << YAML::Value << pl.Color;
+			out << YAML::Key << "Intensity" << YAML::Value << pl.Intensity;
+			out << YAML::Key << "Radius" << YAML::Value << pl.Radius;
+			out << YAML::Key << "Falloff" << YAML::Value << pl.Falloff;
 
 			out << YAML::EndMap; // PointLightComponent
 		}
@@ -315,6 +315,17 @@ namespace RXNEngine {
 			out << YAML::Key << "Restitution" << YAML::Value << cc.Restitution;
 
 			out << YAML::EndMap; // CapsuleColliderComponent
+		}
+
+		if (entity.HasComponent<ScriptComponent>())
+		{
+			out << YAML::Key << "ScriptComponent";
+			out << YAML::BeginMap; // ScriptComponent
+
+			auto& sc = entity.GetComponent<ScriptComponent>();
+			out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
+
+			out << YAML::EndMap; // ScriptComponent
 		}
 
 		out << YAML::EndMap; // Entity
@@ -537,6 +548,13 @@ namespace RXNEngine {
 					cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
 					cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
 					cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
+				}
+
+				auto scriptComponent = entity["ScriptComponent"];
+				if (scriptComponent)
+				{
+					auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+					sc.ClassName = scriptComponent["ClassName"].as<std::string>();
 				}
 
 				if (primaryCameraID != UUID::Null && uuid == (uint64_t)primaryCameraID)

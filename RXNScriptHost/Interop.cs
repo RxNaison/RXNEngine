@@ -16,6 +16,9 @@ namespace RXNScriptHost
         public IntPtr Entity_FindByName;
         public IntPtr Entity_InstantiatePrefab;
         public IntPtr Rigidbody_ApplyLinearImpulse;
+        public IntPtr Entity_GetForward;
+        public IntPtr Entity_GetRight;
+        public IntPtr Entity_GetUp;
     }
 
     public static class Interop

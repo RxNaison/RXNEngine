@@ -14,6 +14,9 @@ namespace RXNEngine {
         void* NativeEntity_FindByName = nullptr;
         void* NativeEntity_InstantiatePrefab = nullptr;
         void* NativeRigidbody_ApplyLinearImpulse = nullptr;
+        void* NativeEntity_GetForward = nullptr;
+        void* NativeEntity_GetRight = nullptr;
+        void* NativeEntity_GetUp = nullptr;
     };
 
     class ScriptInterop

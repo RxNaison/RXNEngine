@@ -273,7 +273,7 @@ namespace RXNEditor {
             glm::mat4 entityWorldTransform = m_ActiveScene->GetWorldTransform(selectedEntity);
 
             bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
-            float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 10.0f : 0.5f;
+            float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 5.0f : 0.5f;
             float snapValues[3] = { snapValue, snapValue, snapValue };
 
             ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,

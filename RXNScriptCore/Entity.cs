@@ -91,5 +91,47 @@ namespace RXNEngine
                 applyImpulse(ID, &impulse, wakeFlag);
             }
         }
+
+        public Vector3 Forward
+        {
+            get
+            {
+                unsafe
+                {
+                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetForward;
+                    Vector3 result;
+                    func(ID, &result);
+                    return result;
+                }
+            }
+        }
+
+        public Vector3 Right
+        {
+            get
+            {
+                unsafe
+                {
+                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetRight;
+                    Vector3 result;
+                    func(ID, &result);
+                    return result;
+                }
+            }
+        }
+
+        public Vector3 Up
+        {
+            get
+            {
+                unsafe
+                {
+                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetUp;
+                    Vector3 result;
+                    func(ID, &result);
+                    return result;
+                }
+            }
+        }
     }
 }

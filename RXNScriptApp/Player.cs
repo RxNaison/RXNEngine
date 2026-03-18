@@ -7,7 +7,7 @@ public class Player : Entity
     public Entity? m_BulletPrefab;
 
     public bool IsInvincible = false;
-    public int Ammo = 30;
+    public int Amount = 0;
     public Vector3 SpawnOffset = new Vector3(0, 0.0f, 0);
     public Vector4 LaserColor = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
     public Vector4 Laser = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -21,34 +21,37 @@ public class Player : Entity
         Vector3 pos = Translation;
         Vector3 velocity = new Vector3(0, 0, 0);
 
+        Vector3 forward = this.Forward;
+        Vector3 right = this.Right;
+        Vector3 up = this.Up;
+
         if (Input.IsKeyDown(KeyCode.W))
-            velocity.Z -= 1.0f;
+            velocity += forward;
         if (Input.IsKeyDown(KeyCode.S))
-            velocity.Z += 1.0f;
-        if (Input.IsKeyDown(KeyCode.A))
-            velocity.X -= 1.0f;
+            velocity -= forward;
         if (Input.IsKeyDown(KeyCode.D))
-            velocity.X += 1.0f;
+            velocity += right;
+        if (Input.IsKeyDown(KeyCode.A))
+            velocity -= right;
         if (Input.IsKeyDown(KeyCode.Q))
-            velocity.Y += 1.0f;
+            velocity += up;
         if (Input.IsKeyDown(KeyCode.E))
-            velocity.Y -= 1.0f;
+            velocity -= up;
+
         if (Input.IsKeyDown(KeyCode.Space))
         {
-            Vector3 jumpForce = new Vector3(0.0f, 1.0f, 0.0f);
-            this.ApplyLinearImpulse(jumpForce);
+            this.ApplyLinearImpulse(up * 1.0f);
         }
         if (Input.IsKeyDown(KeyCode.F) && m_BulletPrefab != null)
         {
             Entity firedBullet = Entity.Instantiate(m_BulletPrefab);
-            firedBullet.Translation = new Vector3(pos.X, pos.Y, pos.Z - 1.0f) + SpawnOffset;
-            firedBullet.ApplyLinearImpulse(new Vector3(0.0f, 0.0f, -0.1f));
+            firedBullet.Translation = pos + (forward * 1.0f) + SpawnOffset;
+            firedBullet.ApplyLinearImpulse(forward * 0.1f);
+
+            Amount++;
         }
 
-        pos.X += velocity.X * Speed * deltaTime;
-        pos.Y += velocity.Y * Speed * deltaTime;
-        pos.Z += velocity.Z * Speed * deltaTime;
-
+        pos += velocity * Speed * deltaTime;
         Translation = pos;
     }
 }

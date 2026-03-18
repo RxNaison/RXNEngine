@@ -236,6 +236,9 @@ namespace RXNEngine {
                 glm::vec3 worldPos = PhysicsUtils::PhysXToGLM(pxTransform.p);
                 glm::quat worldRot = PhysicsUtils::PhysXToGLM(pxTransform.q);
 
+                glm::quat currentRot = glm::quat(tc.Rotation);
+                bool physicsRotated = glm::abs(glm::dot(currentRot, worldRot)) < 0.9999f;
+
                 if (rc.ParentHandle != 0)
                 {
                     Entity parent = GetEntityByUUID(rc.ParentHandle);
@@ -249,13 +252,15 @@ namespace RXNEngine {
                         Math::DecomposeTransform(localTransform, localPos, localRotEuler, localScale);
 
                         tc.Translation = localPos;
-                        tc.Rotation = localRotEuler;
+                        if (physicsRotated)
+                            tc.Rotation = localRotEuler;
                     }
                 }
                 else
                 {
                     tc.Translation = worldPos;
-                    tc.Rotation = glm::eulerAngles(worldRot);
+                    if (physicsRotated)
+                        tc.Rotation = glm::eulerAngles(worldRot);
                 }
             }
         }

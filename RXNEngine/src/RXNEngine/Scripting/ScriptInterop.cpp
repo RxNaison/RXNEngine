@@ -126,6 +126,36 @@ namespace RXNEngine {
         }
     }
 
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetForward(uint64_t entityID, glm::vec3* outForward)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        glm::quat rotation(entity.GetComponent<TransformComponent>().Rotation);
+        *outForward = glm::rotate(rotation, glm::vec3(0.0f, 0.0f, -1.0f));
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetRight(uint64_t entityID, glm::vec3* outRight)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        glm::quat rotation(entity.GetComponent<TransformComponent>().Rotation);
+        *outRight = glm::rotate(rotation, glm::vec3(1.0f, 0.0f, 0.0f));
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetUp(uint64_t entityID, glm::vec3* outUp)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        glm::quat rotation(entity.GetComponent<TransformComponent>().Rotation);
+        *outUp = glm::rotate(rotation, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
     {
         RXN_CORE_ASSERT(outCalls, "InternalCalls struct is null!");
@@ -140,6 +170,9 @@ namespace RXNEngine {
 		outCalls->NativeEntity_FindByName = (void*)NativeEntity_FindByName;
 		outCalls->NativeEntity_InstantiatePrefab = (void*)NativeEntity_InstantiatePrefab;
 		outCalls->NativeRigidbody_ApplyLinearImpulse = (void*)NativeRigidbody_ApplyLinearImpulse;
+		outCalls->NativeEntity_GetForward = (void*)NativeEntity_GetForward;
+		outCalls->NativeEntity_GetRight = (void*)NativeEntity_GetRight;
+		outCalls->NativeEntity_GetUp = (void*)NativeEntity_GetUp;
     }
 
 }
