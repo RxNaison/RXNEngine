@@ -4,6 +4,7 @@
 #include "RXNEngine/Scene/Entity.h"
 #include "RXNEngine/Core/Input.h"
 #include "RXNEngine/Core/KeyCodes.h"
+#include "RXNEngine/Core/Application.h"
 
 #include <coreclr_delegates.h>
 #include <PxPhysicsAPI.h>
@@ -156,6 +157,38 @@ namespace RXNEngine {
         *outUp = glm::rotate(rotation, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_GetMousePosition(glm::vec2* outPosition)
+    {
+        float x = Input::GetMouseX();
+        float y = Input::GetMouseY();
+        *outPosition = glm::vec2(x, y);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_SetCursorMode(int mode)
+    {
+        Application::Get().GetWindow().SetCursorMode((CursorMode)mode);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetRotation(uint64_t entityID, glm::vec3* outRotation)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        *outRotation = entity.GetComponent<TransformComponent>().Rotation;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_SetRotation(uint64_t entityID, glm::vec3* inRotation)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        entity.GetComponent<TransformComponent>().Rotation = *inRotation;
+
+        scene->SyncTransformToPhysics(entity);
+    }
+
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
     {
         RXN_CORE_ASSERT(outCalls, "InternalCalls struct is null!");
@@ -173,6 +206,10 @@ namespace RXNEngine {
 		outCalls->NativeEntity_GetForward = (void*)NativeEntity_GetForward;
 		outCalls->NativeEntity_GetRight = (void*)NativeEntity_GetRight;
 		outCalls->NativeEntity_GetUp = (void*)NativeEntity_GetUp;
+		outCalls->NativeInput_GetMousePosition = (void*)NativeInput_GetMousePosition;
+		outCalls->NativeInput_SetCursorMode = (void*)NativeInput_SetCursorMode;
+		outCalls->NativeEntity_GetRotation = (void*)NativeEntity_GetRotation;
+		outCalls->NativeEntity_SetRotation = (void*)NativeEntity_SetRotation;
     }
 
 }

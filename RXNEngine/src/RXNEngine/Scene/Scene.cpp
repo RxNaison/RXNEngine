@@ -711,6 +711,16 @@ namespace RXNEngine {
 
             dynamicActor->setLinearDamping(rb.LinearDrag);
             dynamicActor->setAngularDamping(rb.AngularDrag);
+
+            if (rb.FixedRotation)
+            {
+                dynamicActor->setRigidDynamicLockFlags(
+                    physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_X |
+                    physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y |
+                    physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z
+                );
+            }
+
             actor = dynamicActor;
         }
 

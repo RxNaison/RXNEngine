@@ -268,6 +268,8 @@ namespace RXNEngine {
 			out << YAML::Key << "LinearDrag" << YAML::Value << rb.LinearDrag;
 			out << YAML::Key << "AngularDrag" << YAML::Value << rb.AngularDrag;
 
+			out << YAML::Key << "FixedRotation" << YAML::Value << rb.FixedRotation;
+
 			out << YAML::EndMap; // RigidbodyComponent
 		}
 
@@ -514,6 +516,8 @@ namespace RXNEngine {
 					rb.Mass = rigidbodyComponent["Mass"].as<float>();
 					rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
 					rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
+
+					rb.FixedRotation = rigidbodyComponent["FixedRotation"].as<bool>();
 				}
 
 				auto boxColliderComponent = entity["BoxColliderComponent"];

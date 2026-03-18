@@ -17,6 +17,10 @@ namespace RXNEngine {
         void* NativeEntity_GetForward = nullptr;
         void* NativeEntity_GetRight = nullptr;
         void* NativeEntity_GetUp = nullptr;
+        void* NativeInput_GetMousePosition = nullptr;
+        void* NativeInput_SetCursorMode = nullptr;
+        void* NativeEntity_GetRotation = nullptr;
+        void* NativeEntity_SetRotation = nullptr;
     };
 
     class ScriptInterop

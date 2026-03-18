@@ -634,6 +634,8 @@ namespace RXNEditor {
 
         if (selectedUUID != 0)
             m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));
+
+		Application::Get().GetWindow().SetCursorMode(CursorMode::Normal);
     }
 
     void EditorLayer::OnSceneSimulate()

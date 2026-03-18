@@ -22,6 +22,8 @@ namespace RXNEngine {
 		void SetVSync(bool enabled) override;
 		inline bool IsVSync() const override { return m_Data.VSync; }
 
+		void SetCursorMode(CursorMode mode) override;
+
 		inline virtual void* GetNativeWindow() const { return m_Window; }
 	private:
 		virtual void Init(const WindowProps& props);

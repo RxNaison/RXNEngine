@@ -72,6 +72,28 @@ namespace RXNEngine
             }
         }
 
+        public Vector3 Rotation
+        {
+            get
+            {
+                unsafe
+                {
+                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetRotation;
+                    Vector3 result;
+                    func(ID, &result);
+                    return result;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetRotation;
+                    func(ID, &value);
+                }
+            }
+        }
+
         public static Entity? FindEntityByName(string name)
         {
             unsafe

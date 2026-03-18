@@ -584,6 +584,8 @@ namespace RXNEditor {
                 ImGui::DragFloat("Mass", &component.Mass, 0.1f, 0.0f, 1000.0f);
                 ImGui::DragFloat("Linear Drag", &component.LinearDrag, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Angular Drag", &component.AngularDrag, 0.01f, 0.0f, 1.0f);
+
+                ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
             });
 
         DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)

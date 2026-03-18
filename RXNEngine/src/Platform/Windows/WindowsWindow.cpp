@@ -203,4 +203,20 @@ namespace RXNEngine {
 
 		m_Data.VSync = enabled;
 	}
+
+	void WindowsWindow::SetCursorMode(CursorMode mode)
+	{
+		switch (mode)
+		{
+			case CursorMode::Normal:
+				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				break;
+			case CursorMode::Hidden:
+				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+				break;
+			case CursorMode::Locked:
+				glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				break;
+		}
+	}
 }

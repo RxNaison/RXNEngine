@@ -19,6 +19,10 @@ namespace RXNScriptHost
         public IntPtr Entity_GetForward;
         public IntPtr Entity_GetRight;
         public IntPtr Entity_GetUp;
+        public IntPtr Input_GetMousePosition;
+        public IntPtr Input_SetCursorMode;
+        public IntPtr Entity_GetRotation;
+        public IntPtr Entity_SetRotation;
     }
 
     public static class Interop

@@ -129,12 +129,13 @@ namespace RXNEngine {
 	struct RigidbodyComponent
 	{
 		enum class BodyType { Static = 0, Dynamic, Kinematic };
-
 		BodyType Type = BodyType::Dynamic;
-		float Mass = 1.0f;
 
+		float Mass = 1.0f;
 		float LinearDrag = 0.05f;
 		float AngularDrag = 0.05f;
+
+		bool FixedRotation = false;
 
 		void* RuntimeActor = nullptr;
 

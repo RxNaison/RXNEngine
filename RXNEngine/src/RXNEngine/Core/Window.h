@@ -7,6 +7,13 @@
 
 namespace RXNEngine {
 
+	enum class CursorMode
+	{
+		Normal = 0,
+		Hidden = 1,
+		Locked = 2
+	};
+
 	enum class WindowMode
 	{
 		Windowed,
@@ -44,6 +51,8 @@ namespace RXNEngine {
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool IsVSync() const = 0;
+
+		virtual void SetCursorMode(CursorMode mode) = 0;
 
 		virtual void* GetNativeWindow() const = 0;
 
