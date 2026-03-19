@@ -49,6 +49,18 @@ namespace RXNEngine
         #endregion
 
         #region Transform Properties
+        public Vector3 WorldPosition
+        {
+            get
+            {
+                unsafe
+                {
+                    Vector3 result;
+                    ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetWorldPosition)(ID, &result);
+                    return result;
+                }
+            }
+        }
         public Vector3 Translation
         {
             get { unsafe { Vector3 res; ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetTranslation)(ID, &res); return res; } }

@@ -68,16 +68,40 @@ public class Player : Entity
         if (Input.IsKeyDown(KeyCode.Space))
             m_JumpRequested = true;
 
-        if (Input.IsKeyDown(KeyCode.F) && BulletPrefab != null && Ammo > 0)
+        if (Input.IsKeyDown(KeyCode.F) && Ammo > 0)
         {
-            Entity firedBullet = Entity.Instantiate(BulletPrefab);
+            /*
+             if(BulletPrefab != null)
+             {
+                Entity firedBullet = Entity.Instantiate(BulletPrefab);
 
-            firedBullet.Translation = pos + (HeadCamera.Forward * 1.5f) + SpawnOffset;
+                firedBullet.Translation = pos + (HeadCamera.Forward * 1.5f) + SpawnOffset;
 
-            firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
+                firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
 
-            Ammo--;
-            Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
+                Ammo--;
+                Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
+             }
+            */
+
+            Vector3 origin = HeadCamera != null ? HeadCamera.WorldPosition : this.WorldPosition;
+            Vector3 dir = HeadCamera != null ? HeadCamera.Forward : forward;
+
+            if (Physics.Raycast(origin, dir, 1000.0f, out RaycastHit hit, this))
+            {
+                Console.WriteLine($"[Hitscan] POW! Hit Entity {hit.EntityID} at Distance: {hit.Distance}");
+                Console.WriteLine($"[Hitscan] Hit Coordinate: {hit.Position}");
+
+                Entity? target = Entity.FindEntityByName("Enemy");
+                if (target != null && target.ID == hit.EntityID)
+                {
+                    target.ApplyLinearImpulse(dir * 50.0f);
+                }
+            }
+            else
+            {
+                Console.WriteLine("[Hitscan] Missed! Shot went into the void.");
+            }
         }
 
         if (Input.IsKeyDown(KeyCode.X))

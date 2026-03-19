@@ -1,6 +1,16 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 namespace RXNEngine {
+
+    struct RaycastHit
+    {
+        uint64_t EntityID;
+        glm::vec3 Position;
+        glm::vec3 Normal;
+        float Distance;
+    };
 
     struct InternalCalls
     {
@@ -20,6 +30,7 @@ namespace RXNEngine {
         void* NativeEntity_FindByName = nullptr;
 
         //Transform Math
+        void* NativeEntity_GetWorldPosition = nullptr;
         void* Entity_GetTranslation = nullptr;
         void* Entity_SetTranslation = nullptr;
         void* NativeEntity_GetRotation = nullptr;
@@ -30,6 +41,7 @@ namespace RXNEngine {
 
         //Physics Interop
         void* NativeRigidbody_ApplyLinearImpulse = nullptr;
+        void* Physics_Raycast = nullptr;
     };
 
     class ScriptInterop

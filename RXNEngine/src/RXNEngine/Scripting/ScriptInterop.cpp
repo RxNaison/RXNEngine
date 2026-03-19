@@ -5,11 +5,34 @@
 #include "RXNEngine/Core/Input.h"
 #include "RXNEngine/Core/KeyCodes.h"
 #include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Physics/PhysicsSystem.h"
 
 #include <coreclr_delegates.h>
 #include <PxPhysicsAPI.h>
 
 namespace RXNEngine {
+
+    namespace {
+        class IgnoreEntityFilter : public physx::PxQueryFilterCallback
+        {
+        public:
+            uint64_t IgnoreID;
+            IgnoreEntityFilter(uint64_t id) : IgnoreID(id) {}
+
+            virtual physx::PxQueryHitType::Enum preFilter(const physx::PxFilterData& filterData, const physx::PxShape* shape, const physx::PxRigidActor* actor, physx::PxHitFlags& queryFlags) override
+            {
+                if (actor && actor->userData && (uint64_t)actor->userData == IgnoreID)
+                    return physx::PxQueryHitType::eNONE;
+
+                return physx::PxQueryHitType::eBLOCK;
+            }
+
+            virtual physx::PxQueryHitType::Enum postFilter(const physx::PxFilterData& filterData, const physx::PxQueryHit& hit, const physx::PxShape* shape, const physx::PxRigidActor* actor) override
+            {
+                return physx::PxQueryHitType::eBLOCK;
+            }
+        };
+    }
 
 #pragma region Logging & Core
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeLogMessage(const char* message)
@@ -87,6 +110,17 @@ namespace RXNEngine {
 #pragma endregion
 
 #pragma region Transform Math
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetWorldPosition(uint64_t entityID, glm::vec3* outPosition)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        glm::mat4 transform = scene->GetWorldTransform(entity);
+        *outPosition = glm::vec3(transform[3]);
+    }
+
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetTranslation(uint64_t entityID, glm::vec3* outTranslation)
     {
         Scene* scene = ScriptEngine::GetSceneContext();
@@ -197,6 +231,45 @@ namespace RXNEngine {
             }
         }
     }
+
+    extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativePhysics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* outHit, uint64_t ignoreEntityID)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        if (!scene) return 0;
+
+        physx::PxScene* pxScene = PhysicsSystem::GetScene();
+        if (!pxScene) return 0;
+
+        physx::PxVec3 pxOrigin(origin->x, origin->y, origin->z);
+        physx::PxVec3 pxDir(direction->x, direction->y, direction->z);
+        pxDir.normalize();
+
+        physx::PxRaycastBuffer hitInfo;
+
+        IgnoreEntityFilter filter(ignoreEntityID);
+        physx::PxQueryFilterData filterData;
+        filterData.flags |= physx::PxQueryFlag::ePREFILTER;
+
+        bool hit = pxScene->raycast(pxOrigin, pxDir, maxDistance, hitInfo, physx::PxHitFlags(physx::PxHitFlag::eDEFAULT), filterData, &filter);
+
+        if (hit && hitInfo.hasBlock)
+        {
+            physx::PxRaycastHit block = hitInfo.block;
+
+            if (block.actor && block.actor->userData)
+            {
+                outHit->EntityID = (uint64_t)block.actor->userData;
+                outHit->Position = glm::vec3(block.position.x, block.position.y, block.position.z);
+                outHit->Normal = glm::vec3(block.normal.x, block.normal.y, block.normal.z);
+                outHit->Distance = block.distance;
+
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+
 #pragma endregion
 
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
@@ -219,6 +292,7 @@ namespace RXNEngine {
 		outCalls->NativeEntity_FindByName = (void*)NativeEntity_FindByName;
 
         //Transform Math
+        outCalls->NativeEntity_GetWorldPosition = (void*)NativeEntity_GetWorldPosition;
         outCalls->Entity_GetTranslation = (void*)NativeEntity_GetTranslation;
         outCalls->Entity_SetTranslation = (void*)NativeEntity_SetTranslation;
 		outCalls->NativeEntity_GetRotation = (void*)NativeEntity_GetRotation;
@@ -229,6 +303,7 @@ namespace RXNEngine {
 
         //Physics Interop
 		outCalls->NativeRigidbody_ApplyLinearImpulse = (void*)NativeRigidbody_ApplyLinearImpulse;
+        outCalls->Physics_Raycast = (void*)NativePhysics_Raycast;
     }
 
 }
