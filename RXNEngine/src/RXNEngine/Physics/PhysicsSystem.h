@@ -39,7 +39,6 @@ namespace RXNEngine {
         virtual void onWake(physx::PxActor** actors, physx::PxU32 count) override {}
         virtual void onSleep(physx::PxActor** actors, physx::PxU32 count) override {}
         virtual void onAdvance(const physx::PxRigidBody* const* bodyBuffer, const physx::PxTransform* poseBuffer, const physx::PxU32 count) override {}
-        virtual void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count) override {}
 
         virtual void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs) override
         {
@@ -64,6 +63,36 @@ namespace RXNEngine {
                 {
                     ScriptEngine::OnCollisionExit(entityA, entityB);
                     ScriptEngine::OnCollisionExit(entityB, entityA);
+                }
+            }
+        }
+
+        virtual void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count) override
+        {
+            for (physx::PxU32 i = 0; i < count; i++)
+            {
+                physx::PxTriggerPair& tp = pairs[i];
+
+                if (tp.flags & (physx::PxTriggerPairFlag::eREMOVED_SHAPE_TRIGGER | physx::PxTriggerPairFlag::eREMOVED_SHAPE_OTHER))
+                    continue;
+
+                physx::PxRigidActor* triggerActor = (physx::PxRigidActor*)tp.triggerActor;
+                physx::PxRigidActor* otherActor = (physx::PxRigidActor*)tp.otherActor;
+
+                if (!triggerActor || !otherActor) continue;
+
+                uint64_t triggerEntity = (uint64_t)triggerActor->userData;
+                uint64_t otherEntity = (uint64_t)otherActor->userData;
+
+                if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
+                {
+                    ScriptEngine::OnTriggerEnter(triggerEntity, otherEntity);
+                    ScriptEngine::OnTriggerEnter(otherEntity, triggerEntity);
+                }
+                else if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
+                {
+                    ScriptEngine::OnTriggerExit(triggerEntity, otherEntity);
+                    ScriptEngine::OnTriggerExit(otherEntity, triggerEntity);
                 }
             }
         }

@@ -169,6 +169,9 @@ namespace RXNEngine {
         on_collision_fn OnCollisionEnter = nullptr;
         on_collision_fn OnCollisionExit = nullptr;
 
+        on_collision_fn OnTriggerEnter = nullptr;
+        on_collision_fn OnTriggerExit = nullptr;
+
         Scene* SceneContext = nullptr;
         std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
         std::unordered_map<std::string, std::vector<ScriptField>> ScriptClassFields;
@@ -228,6 +231,8 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFieldValue, s_Data->SetFieldValue);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionEnter, s_Data->OnCollisionEnter);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionExit, s_Data->OnCollisionExit);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerEnter, s_Data->OnTriggerEnter);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerExit, s_Data->OnTriggerExit);
 
         InternalCalls nativeFunctions;
         ScriptInterop::RegisterFunctions(&nativeFunctions);
@@ -381,6 +386,17 @@ namespace RXNEngine {
     {
         if (s_Data && s_Data->OnCollisionExit)
             s_Data->OnCollisionExit(entityID, otherID);
+    }
+
+    void ScriptEngine::OnTriggerEnter(uint64_t entityID, uint64_t otherID)
+    {
+        if (s_Data && s_Data->OnTriggerEnter)
+            s_Data->OnTriggerEnter(entityID, otherID);
+    }
+    void ScriptEngine::OnTriggerExit(uint64_t entityID, uint64_t otherID)
+    {
+        if (s_Data && s_Data->OnTriggerExit)
+            s_Data->OnTriggerExit(entityID, otherID);
     }
 #pragma endregion
 

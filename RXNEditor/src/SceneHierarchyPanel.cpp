@@ -595,6 +595,7 @@ namespace RXNEditor {
 				ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+                ImGui::Checkbox("Is Trigger", &component.IsTrigger);
             });
         DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
             {
@@ -603,6 +604,7 @@ namespace RXNEditor {
                 ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
                 ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
                 ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+                ImGui::Checkbox("Is Trigger", &component.IsTrigger);
             });
 
         DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
@@ -613,6 +615,7 @@ namespace RXNEditor {
                 ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
                 ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
                 ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+                ImGui::Checkbox("Is Trigger", &component.IsTrigger);
             });
 
         DrawComponent<ScriptComponent>("Script", entity, [&](auto& component)

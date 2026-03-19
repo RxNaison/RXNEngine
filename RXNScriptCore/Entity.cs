@@ -46,6 +46,8 @@ namespace RXNEngine
         public virtual void OnFixedUpdate(float deltaTime) { }
         public virtual void OnCollisionEnter(Entity other) { }
         public virtual void OnCollisionExit(Entity other) { }
+        public virtual void OnTriggerEnter(Entity other) { }
+        public virtual void OnTriggerExit(Entity other) { }
         #endregion
 
         #region Transform Properties

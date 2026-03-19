@@ -152,6 +152,8 @@ namespace RXNEngine {
 		float DynamicFriction = 0.5f;
 		float Restitution = 0.1f;
 
+		bool IsTrigger = false;
+
 		void* RuntimeShape = nullptr;
 		void* RuntimeMaterial = nullptr;
 
@@ -167,6 +169,8 @@ namespace RXNEngine {
 		float StaticFriction = 0.5f;
 		float DynamicFriction = 0.5f;
 		float Restitution = 0.1f;
+
+		bool IsTrigger = false;
 
 		void* RuntimeShape = nullptr;
 		void* RuntimeMaterial = nullptr;
@@ -184,6 +188,8 @@ namespace RXNEngine {
 		float StaticFriction = 0.5f;
 		float DynamicFriction = 0.5f;
 		float Restitution = 0.1f;
+
+		bool IsTrigger = false;
 
 		void* RuntimeShape = nullptr;
 		void* RuntimeMaterial = nullptr;

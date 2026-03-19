@@ -95,7 +95,7 @@ public class Player : Entity
                 Entity? target = Entity.FindEntityByName("Enemy");
                 if (target != null && target.ID == hit.EntityID)
                 {
-                    target.ApplyLinearImpulse(dir * 50.0f);
+                    target.ApplyLinearImpulse(dir * 5.0f);
                 }
             }
             else
@@ -157,6 +157,16 @@ public class Player : Entity
     {
         m_CurrentContacts--;
         Console.WriteLine($"[Player] Collision EXIT with Entity {other.ID}.");
+    }
+
+    public override void OnTriggerEnter(Entity other)
+    {
+        var trigger = Entity.FindEntityByName("ReloadAmmoPlace");
+
+        if (trigger != null && other.ID == trigger.ID)
+            Ammo = 1000;
+
+        Console.WriteLine($"[SENSOR] Player walked into a trigger zone! Entity ID: {other.ID}");
     }
 
     public override void OnDestroy()

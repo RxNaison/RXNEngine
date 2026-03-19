@@ -74,6 +74,9 @@ namespace RXNEngine {
 		static void OnCollisionEnter(uint64_t entityID, uint64_t otherID);
 		static void OnCollisionExit(uint64_t entityID, uint64_t otherID);
 
+		static void OnTriggerEnter(uint64_t entityID, uint64_t otherID);
+		static void OnTriggerExit(uint64_t entityID, uint64_t otherID);
+
 		static bool EntityClassExists(const std::string& fullClassName);
 
 		static Scene* GetSceneContext();

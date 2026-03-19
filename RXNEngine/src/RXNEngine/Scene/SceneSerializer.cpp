@@ -285,6 +285,8 @@ namespace RXNEngine {
 			out << YAML::Key << "DynamicFriction" << YAML::Value << bc.DynamicFriction;
 			out << YAML::Key << "Restitution" << YAML::Value << bc.Restitution;
 
+			out << YAML::Key << "IsTrigger" << YAML::Value << bc.IsTrigger;
+
 			out << YAML::EndMap; // BoxColliderComponent
 		}
 
@@ -299,6 +301,8 @@ namespace RXNEngine {
 			out << YAML::Key << "StaticFriction" << YAML::Value << sc.StaticFriction;
 			out << YAML::Key << "DynamicFriction" << YAML::Value << sc.DynamicFriction;
 			out << YAML::Key << "Restitution" << YAML::Value << sc.Restitution;
+
+			out << YAML::Key << "IsTrigger" << YAML::Value << sc.IsTrigger;
 
 			out << YAML::EndMap; // SphereColliderComponent
 		}
@@ -315,6 +319,8 @@ namespace RXNEngine {
 			out << YAML::Key << "StaticFriction" << YAML::Value << cc.StaticFriction;
 			out << YAML::Key << "DynamicFriction" << YAML::Value << cc.DynamicFriction;
 			out << YAML::Key << "Restitution" << YAML::Value << cc.Restitution;
+
+			out << YAML::Key << "IsTrigger" << YAML::Value << cc.IsTrigger;
 
 			out << YAML::EndMap; // CapsuleColliderComponent
 		}
@@ -526,9 +532,12 @@ namespace RXNEngine {
 					auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
 					bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
 					bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+
 					bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
 					bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
 					bc.Restitution = boxColliderComponent["Restitution"].as<float>();
+
+					bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto sphereColliderComponent = entity["SphereColliderComponent"];
@@ -537,9 +546,12 @@ namespace RXNEngine {
 					auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
 					sc.Radius = sphereColliderComponent["Radius"].as<float>();
 					sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
+
 					sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
 					sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
 					sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
+
+					sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
@@ -549,9 +561,12 @@ namespace RXNEngine {
 					cc.Radius = capsuleColliderComponent["Radius"].as<float>();
 					cc.Height = capsuleColliderComponent["Height"].as<float>();
 					cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
+
 					cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
 					cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
 					cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
+
+					cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto scriptComponent = entity["ScriptComponent"];

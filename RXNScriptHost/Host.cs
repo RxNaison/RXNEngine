@@ -323,5 +323,41 @@ namespace RXNScriptHost
                 }
             }
         }
+
+        [UnmanagedCallersOnly]
+        public static void OnTriggerEnter(ulong entityID, ulong otherEntityID)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var method = instance.GetType().GetMethod("OnTriggerEnter", BindingFlags.Public | BindingFlags.Instance);
+
+                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                {
+                    Type? entityType = s_CoreAssembly?.GetType("RXNEngine.Entity");
+                    object? otherEntity = Activator.CreateInstance(entityType!, true);
+                    entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
+
+                    method.Invoke(instance, new object[] { otherEntity });
+                }
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void OnTriggerExit(ulong entityID, ulong otherEntityID)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            {
+                var method = instance.GetType().GetMethod("OnTriggerExit", BindingFlags.Public | BindingFlags.Instance);
+
+                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                {
+                    Type? entityType = s_CoreAssembly?.GetType("RXNEngine.Entity");
+                    object? otherEntity = Activator.CreateInstance(entityType!, true);
+                    entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
+
+                    method.Invoke(instance, new object[] { otherEntity });
+                }
+            }
+        }
     }
 }

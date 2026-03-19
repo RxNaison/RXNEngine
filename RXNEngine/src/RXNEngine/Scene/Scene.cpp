@@ -735,6 +735,13 @@ namespace RXNEngine {
 
             physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
             shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(bc.Offset)));
+
+            if (bc.IsTrigger)
+            {
+                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
+            }
+
             bc.RuntimeShape = shape;
         }
 
@@ -749,6 +756,13 @@ namespace RXNEngine {
 
             physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, sphereGeom, *material);
             shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(sc.Offset)));
+
+            if (sc.IsTrigger)
+            {
+                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
+            }
+
             sc.RuntimeShape = shape;
         }
 
@@ -763,10 +777,16 @@ namespace RXNEngine {
 
             physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, capsuleGeom, *material);
 
-            // align it to the Y
             physx::PxQuat relativeRot(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f));
 
             shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(cc.Offset), relativeRot));
+
+            if (cc.IsTrigger)
+            {
+                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
+            }
+
             cc.RuntimeShape = shape;
         }
 

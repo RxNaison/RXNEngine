@@ -1,0 +1,2659 @@
+Scene: Untitled
+PrimaryCameraID: 9515878402757550907
+Skybox:
+  TexturePath: assets/textures/skyboxes/autumn_hill_view_4k.hdr
+  Intensity: 1
+Entities:
+  - Entity: 9223027845615510184
+    TagComponent:
+      Tag: Cube
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 13304839909504209576
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+  - Entity: 13304839909504209576
+    TagComponent:
+      Tag: ReloadAmmoPlace
+    TransformComponent:
+      Translation: [-8.663574, 2.8617048, 11.136319]
+      Rotation: [0, -0, 0]
+      Scale: [2.92, 2.92, 2.92]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 9223027845615510184
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: true
+  - Entity: 11873200981400455789
+    TagComponent:
+      Tag: Sandbox
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 8143408826906669679
+        - 274291961609010476
+        - 7532522321108319609
+  - Entity: 4146204036034150384
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 83
+  - Entity: 655995719355908370
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 82
+  - Entity: 15468069411793715623
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 81
+  - Entity: 10703306772755535202
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 80
+  - Entity: 276294356897492076
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 79
+  - Entity: 6040693030586929172
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 78
+  - Entity: 1939532828742708183
+    TagComponent:
+      Tag: node_mesh_Adam_spine_-5718
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 77
+  - Entity: 13108726356478377660
+    TagComponent:
+      Tag: node_mesh_Adam_spine_-5718
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 76
+  - Entity: 9319896430388579199
+    TagComponent:
+      Tag: node_mesh_Adam_mask_-5716
+    TransformComponent:
+      Translation: [-2.4414061e-05, 0.3157627, -0.114485465]
+      Rotation: [-1.5707932, -0.104771316, -1.5707952]
+      Scale: [99.99999, 99.999985, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 75
+  - Entity: 9567017074690907661
+    TagComponent:
+      Tag: node_mesh_Adam_mask_-5716
+    TransformComponent:
+      Translation: [-2.4414061e-05, 0.3157627, -0.114485465]
+      Rotation: [-1.5707932, -0.104771316, -1.5707952]
+      Scale: [99.99999, 99.999985, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 74
+  - Entity: 10467086124216561452
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_07_-5892
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [-0.0006355286, -1.8853127e-06, 6.2206595e-09]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 73
+  - Entity: 11922704628387596217
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_00_-5890
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [-0.0006355286, -1.8708034e-06, 1.1099222e-08]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 72
+  - Entity: 11581359171460588284
+    TagComponent:
+      Tag: node_Eye_R_UpperEyelid_-5730
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [0.32436448, -1.9038209e-06, -2.5828777e-12]
+      Scale: [100, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 71
+  - Entity: 17919487566573860708
+    TagComponent:
+      Tag: node_Eye_R_Side2_-5728
+    TransformComponent:
+      Translation: [0.3952698, 0.832956, -1.1916838]
+      Rotation: [-1.5729538, -1.5701983, 1.5729535]
+      Scale: [99.99998, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 70
+  - Entity: 8446583823234714549
+    TagComponent:
+      Tag: node_Eye_R_Side1_-5726
+    TransformComponent:
+      Translation: [0.17706001, 0.832956, -1.1916835]
+      Rotation: [1.5683573, -1.5701983, 1.5729535]
+      Scale: [99.99998, 99.99998, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 69
+  - Entity: 8896937182056023351
+    TagComponent:
+      Tag: node_Eye_R_Lens_-5942
+    TransformComponent:
+      Translation: [0.28729564, 0.83287877, -1.2373234]
+      Rotation: [0.0016982318, 0.032470383, 3.1411538]
+      Scale: [113.06411, 113.064095, 113.06409]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 68
+  - Entity: 10910469308049830504
+    TagComponent:
+      Tag: node_Eye_R_Sclera_-5724
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [-0.0016991887, -0.032470226, -0.00043872124]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 67
+  - Entity: 10884179544651589937
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_15_-5856
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [-0.00063528074, -1.7932067e-06, -1.8280135e-08]
+      Scale: [99.99997, 99.99998, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 66
+  - Entity: 6344323251244072138
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_08_-5854
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [-0.00063528074, -1.7932067e-06, -1.8280135e-08]
+      Scale: [99.99997, 99.99998, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 65
+  - Entity: 585767800054725994
+    TagComponent:
+      Tag: node_Eye_R_LowerEyelid_-5722
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1909999]
+      Rotation: [0.30763552, 1.9111237e-06, 3.1415923]
+      Scale: [99.999985, 99.99998, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 64
+  - Entity: 18267296762677289569
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_14_-5712
+    TransformComponent:
+      Translation: [0.285669, 0.83316857, -1.1910479]
+      Rotation: [-0.16868673, -0.00088167, 0.0020184512]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 63
+  - Entity: 13179664681509872047
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_13_-5710
+    TransformComponent:
+      Translation: [0.2858398, 0.8329183, -1.1910479]
+      Rotation: [-0.16868258, 0.0002502671, -0.0006022453]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 62
+  - Entity: 2928905551756117510
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_12_-5708
+    TransformComponent:
+      Translation: [0.2856445, 0.8329794, -1.1910479]
+      Rotation: [-0.16897598, -0.0004725454, 0.0013341911]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 61
+  - Entity: 7280150820142773716
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_11_-5706
+    TransformComponent:
+      Translation: [0.2857178, 0.832903, -1.1912428]
+      Rotation: [-0.16972351, -0.0005993842, 0.000734806]
+      Scale: [100.00001, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 60
+  - Entity: 16527195932138288093
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_10_-5704
+    TransformComponent:
+      Translation: [0.2859375, 0.83308613, -1.1910479]
+      Rotation: [-0.16867112, 0.0045184363, -0.0024886387]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 59
+  - Entity: 809553619326616118
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_09_-5702
+    TransformComponent:
+      Translation: [0.28603518, 0.83344936, -1.1908529]
+      Rotation: [-0.16856492, 0.0021154454, -0.004765521]
+      Scale: [100.00001, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 58
+  - Entity: 2914941714050992395
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_06_-5700
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1910479]
+      Rotation: [-0.00062823296, -1.9073482e-06, -9.536743e-07]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 57
+  - Entity: 6202429673275433333
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_05_-5698
+    TransformComponent:
+      Translation: [0.285791, 0.832958, -1.1910479]
+      Rotation: [-0.00064778316, -1.4305118e-06, -5.684345e-14]
+      Scale: [100, 100.00002, 100.00002]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 56
+  - Entity: 10165808288260496871
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_04_-5696
+    TransformComponent:
+      Translation: [0.2858154, 0.8333242, -1.1937828]
+      Rotation: [0.0212794, -0.006356715, -0.000607027]
+      Scale: [100.00001, 100.000015, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 55
+  - Entity: 9945570067695579598
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_03_-5694
+    TransformComponent:
+      Translation: [0.2856934, 0.8331411, -1.1926109]
+      Rotation: [0.011578405, 0.0033389437, -0.00040817427]
+      Scale: [100, 100.000015, 100.000015]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 54
+  - Entity: 18032426804005285772
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_02_-5692
+    TransformComponent:
+      Translation: [0.285791, 0.8329549, -1.1910479]
+      Rotation: [-0.00064241886, -1.4305116e-06, -4.7683744e-07]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 53
+  - Entity: 6864608055934694010
+    TagComponent:
+      Tag: node_Eye_R_EyelidSegment_01_-5690
+    TransformComponent:
+      Translation: [0.285791, 0.8329611, -1.1910479]
+      Rotation: [-0.00063550484, -9.5367426e-07, -4.7683733e-07]
+      Scale: [100, 99.99998, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 52
+  - Entity: 9543049204540694375
+    TagComponent:
+      Tag: node_Eye_R_BlendScrew_05_-5688
+    TransformComponent:
+      Translation: [0.2519775, 0.85406715, -1.2836258]
+      Rotation: [-3.1126208, 0.014761462, -2.094649]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 51
+  - Entity: 10281004880148047624
+    TagComponent:
+      Tag: node_Eye_R_BlendScrew_04_-5686
+    TransformComponent:
+      Translation: [0.2519531, 0.81157136, -1.2836258]
+      Rotation: [-3.1143193, -0.017704684, -1.0479059]
+      Scale: [99.99999, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 50
+  - Entity: 13398537045799301082
+    TagComponent:
+      Tag: node_Eye_R_BlendScrew_03_-5684
+    TransformComponent:
+      Translation: [0.2887207, 0.79030365, -1.2824539]
+      Rotation: [3.1398928, -0.032470223, -0.00043987215]
+      Scale: [100, 100.000015, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 49
+  - Entity: 4184499010524742536
+    TagComponent:
+      Tag: node_Eye_R_BlendScrew_02_-5682
+    TransformComponent:
+      Translation: [0.3257813, 0.85435396, -1.281282]
+      Rotation: [3.114319, 0.017704204, 2.093687]
+      Scale: [100.000015, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 48
+  - Entity: 15607954271520690024
+    TagComponent:
+      Tag: node_Eye_R_BlendScrew_01_-5680
+    TransformComponent:
+      Translation: [0.3255371, 0.81153166, -1.281282]
+      Rotation: [3.1126206, -0.014761729, 1.0469445]
+      Scale: [100.00001, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 47
+  - Entity: 3059785628217300260
+    TagComponent:
+      Tag: node_Eye_R_BlendScrew_00_-5678
+    TransformComponent:
+      Translation: [0.2887696, 0.8753012, -1.2824539]
+      Rotation: [-3.139893, 0.03247038, 3.1411536]
+      Scale: [99.999985, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 46
+  - Entity: 8887257096678470833
+    TagComponent:
+      Tag: node_Eye_R_BlendBase_-5676
+    TransformComponent:
+      Translation: [0.28857422, 0.83281463, -1.2765949]
+      Rotation: [-3.139893, 0.032470137, 3.1411533]
+      Scale: [99.999985, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 45
+  - Entity: 16118352695746315585
+    TagComponent:
+      Tag: node_Eye_R_Blend_05_-5674
+    TransformComponent:
+      Translation: [0.2519531, 0.8540701, -1.2830399]
+      Rotation: [-3.1225777, 0.026376743, -2.569611]
+      Scale: [100.000015, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 44
+  - Entity: 16042940411536657232
+    TagComponent:
+      Tag: node_Eye_R_Blend_04_-5672
+    TransformComponent:
+      Translation: [0.2519287, 0.81157136, -1.2829429]
+      Rotation: [-3.1092439, -0.0032741488, -1.5227176]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 43
+  - Entity: 595173273630120059
+    TagComponent:
+      Tag: node_Eye_R_Blend_03_-5670
+    TransformComponent:
+      Translation: [0.2887207, 0.79030365, -1.2816728]
+      Rotation: [-3.1282501, -0.029651657, -0.4756655]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 42
+  - Entity: 3506706903796353875
+    TagComponent:
+      Tag: node_Eye_R_Blend_02_-5668
+    TransformComponent:
+      Translation: [0.3254883, 0.81153166, -1.2805009]
+      Rotation: [3.1225772, -0.026376717, 0.57198167]
+      Scale: [100.00001, 100.00002, 100.00002]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 41
+  - Entity: 1487254619819255779
+    TagComponent:
+      Tag: node_Eye_R_Blend_01_-5666
+    TransformComponent:
+      Translation: [0.3257324, 0.85435694, -1.2805989]
+      Rotation: [3.10924, 0.003273969, 1.6188755]
+      Scale: [100.00002, 100.000015, 100.000015]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 40
+  - Entity: 13568667853937670530
+    TagComponent:
+      Tag: node_Eye_R_Blend_00_-5664
+    TransformComponent:
+      Translation: [0.2887451, 0.8753012, -1.2818679]
+      Rotation: [3.1282496, 0.029652648, 2.665928]
+      Scale: [100.00002, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 39
+  - Entity: 9161174477578855625
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_07_-5774
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [-0.0006355286, -1.8853127e-06, 6.2206595e-09]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 38
+  - Entity: 6980523131521893851
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_00_-5772
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [-0.0006355286, -1.8708034e-06, 1.1099222e-08]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 37
+  - Entity: 1604568308443256882
+    TagComponent:
+      Tag: node_Eye_L_UpperEyelid_-5740
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [0.32436448, -1.9038209e-06, -2.5828777e-12]
+      Scale: [100, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 36
+  - Entity: 6555957964548342864
+    TagComponent:
+      Tag: node_Eye_L_Side2_-5738
+    TransformComponent:
+      Translation: [-0.17633659, 0.83295834, -1.1916834]
+      Rotation: [-1.5729538, -1.5701983, 1.5729535]
+      Scale: [99.99998, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 35
+  - Entity: 3788836298732869812
+    TagComponent:
+      Tag: node_Eye_L_Side1_-5736
+    TransformComponent:
+      Translation: [-0.3945466, 0.83295834, -1.191683]
+      Rotation: [1.5683573, -1.5701983, 1.5729535]
+      Scale: [99.99998, 99.99998, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 34
+  - Entity: 7799273506076248048
+    TagComponent:
+      Tag: node_Eye_L_Lens_-5962
+    TransformComponent:
+      Translation: [-0.28643972, 0.8328811, -1.2373435]
+      Rotation: [0.0017034566, -0.013472126, -3.140936]
+      Scale: [113.064095, 113.0641, 113.064095]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 33
+  - Entity: 11455801660540471491
+    TagComponent:
+      Tag: node_Eye_L_Sclera_-5734
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [-0.0017044093, 0.0134722795, 0.00065695925]
+      Scale: [99.99999, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 32
+  - Entity: 7824332980265552574
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_15_-5830
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [-0.00063528074, -1.7932067e-06, -1.8280135e-08]
+      Scale: [99.99997, 99.99998, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 31
+  - Entity: 13570122510508191615
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_08_-5828
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [-0.00063528074, -1.7932067e-06, -1.8280135e-08]
+      Scale: [99.99997, 99.99998, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 30
+  - Entity: 17315676131458254287
+    TagComponent:
+      Tag: node_Eye_L_LowerEyelid_-5732
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329603, -1.1909999]
+      Rotation: [0.30763552, 1.9111237e-06, 3.1415923]
+      Scale: [99.999985, 99.99998, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 29
+  - Entity: 7402704428474901882
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_14_-5660
+    TransformComponent:
+      Translation: [-0.2859375, 0.83316547, -1.1910479]
+      Rotation: [-0.16868673, -0.00088167103, 0.0020189292]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 28
+  - Entity: 12007467056566520461
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_13_-5658
+    TransformComponent:
+      Translation: [-0.2857666, 0.8329519, -1.1910479]
+      Rotation: [-0.16869394, 0.00024994081, -0.0006022452]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 27
+  - Entity: 1331540035336439760
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_12_-5656
+    TransformComponent:
+      Translation: [-0.2859619, 0.8329611, -1.1910479]
+      Rotation: [-0.16956393, -0.00030755988, 0.0013384821]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 26
+  - Entity: 2195469893530325106
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_11_-5654
+    TransformComponent:
+      Translation: [-0.2858887, 0.8329305, -1.1910479]
+      Rotation: [-0.16907474, -0.00041246417, 0.00073194527]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 25
+  - Entity: 15435082289408062428
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_10_-5652
+    TransformComponent:
+      Translation: [-0.2856445, 0.8331014, -1.1909498]
+      Rotation: [-0.16868237, 0.0045186565, -0.002488638]
+      Scale: [100, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 24
+  - Entity: 7404423462613109361
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_09_-5650
+    TransformComponent:
+      Translation: [-0.2855469, 0.83354694, -1.1908529]
+      Rotation: [-0.16858135, 0.002115466, -0.004765998]
+      Scale: [100.00001, 100.000015, 100.000015]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 23
+  - Entity: 1526860087635317676
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_06_-5648
+    TransformComponent:
+      Translation: [-0.2858154, 0.83294576, -1.1910479]
+      Rotation: [-0.00062847155, -1.9073489e-06, -1.430512e-06]
+      Scale: [100, 99.99998, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 22
+  - Entity: 104101602430919479
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_05_-5646
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329549, -1.1910479]
+      Rotation: [-0.0006575585, -9.5367426e-07, -4.768372e-07]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 21
+  - Entity: 7142057938567529717
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_04_-5644
+    TransformComponent:
+      Translation: [-0.285791, 0.8332419, -1.1933919]
+      Rotation: [0.017951818, -0.00540018, -0.0005149918]
+      Scale: [100, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 20
+  - Entity: 6051458987175858346
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_03_-5642
+    TransformComponent:
+      Translation: [-0.2859619, 0.8332601, -1.1931969]
+      Rotation: [0.016332814, 0.00463055, -0.0005669642]
+      Scale: [100, 99.99999, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 19
+  - Entity: 8922600685148977309
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_02_-5640
+    TransformComponent:
+      Translation: [-0.2858154, 0.8329611, -1.1910479]
+      Rotation: [-0.000633359, -1.4305111e-06, -9.536743e-07]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 18
+  - Entity: 9617395938018969517
+    TagComponent:
+      Tag: node_Eye_L_EyelidSegment_01_-5638
+    TransformComponent:
+      Translation: [-0.2858154, 0.8330404, -1.1910479]
+      Rotation: [-0.0006774664, -2.3841862e-06, 4.7683707e-07]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 17
+  - Entity: 5303144255982660805
+    TagComponent:
+      Tag: node_Eye_L_BlendScrew_05_-5636
+    TransformComponent:
+      Translation: [-0.323877, 0.85402435, -1.2820638]
+      Rotation: [3.1307778, -0.008212971, -2.0936844]
+      Scale: [100.00002, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 16
+  - Entity: 12571676221941915207
+    TagComponent:
+      Tag: node_Eye_L_BlendScrew_04_-5634
+    TransformComponent:
+      Translation: [-0.3238281, 0.8115286, -1.2819659]
+      Rotation: [3.1290724, 0.005259284, -1.0465628]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 15
+  - Entity: 13354124530175810641
+    TagComponent:
+      Tag: node_Eye_L_BlendScrew_03_-5632
+    TransformComponent:
+      Translation: [-0.2870117, 0.79030365, -1.2824539]
+      Rotation: [3.1398869, 0.013472237, 0.0006558594]
+      Scale: [100, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 14
+  - Entity: 8079410881517586508
+    TagComponent:
+      Tag: node_Eye_L_BlendScrew_02_-5630
+    TransformComponent:
+      Translation: [-0.2500488, 0.8543965, -1.2830399]
+      Rotation: [-3.1290722, -0.0052599097, 2.0950303]
+      Scale: [99.99999, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 13
+  - Entity: 2270131831297139105
+    TagComponent:
+      Tag: node_Eye_L_BlendScrew_01_-5628
+    TransformComponent:
+      Translation: [-0.2502442, 0.8115805, -1.2829429]
+      Rotation: [-3.1307783, 0.008212198, 1.0479097]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 12
+  - Entity: 11286742969686153304
+    TagComponent:
+      Tag: node_Eye_L_BlendScrew_00_-5626
+    TransformComponent:
+      Translation: [-0.2870606, 0.8753012, -1.2825519]
+      Rotation: [-3.1398883, -0.013471995, -3.140936]
+      Scale: [99.99998, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 11
+  - Entity: 12460747669722291738
+    TagComponent:
+      Tag: node_Eye_L_BlendBase_-5624
+    TransformComponent:
+      Translation: [-0.2869629, 0.83281463, -1.2766929]
+      Rotation: [-3.1398883, -0.013472233, -3.1409364]
+      Scale: [99.99998, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 10
+  - Entity: 16638262999120814227
+    TagComponent:
+      Tag: node_Eye_L_Blend_05_-5622
+    TransformComponent:
+      Translation: [-0.3238525, 0.85403055, -1.2813799]
+      Rotation: [3.1357305, -0.0122496495, -2.5686913]
+      Scale: [100.00002, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 9
+  - Entity: 15961424197232422404
+    TagComponent:
+      Tag: node_Eye_L_Blend_04_-5620
+    TransformComponent:
+      Translation: [-0.3238281, 0.8115286, -1.281282]
+      Rotation: [3.1280549, -0.0010485057, -1.5215228]
+      Scale: [100.00001, 100.00001, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 8
+  - Entity: 14846715984965470747
+    TagComponent:
+      Tag: node_Eye_L_Blend_03_-5618
+    TransformComponent:
+      Translation: [-0.2870117, 0.79030365, -1.2817708]
+      Rotation: [3.1339147, 0.01120073, -0.47437596]
+      Scale: [100.00001, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 7
+  - Entity: 5090737177781202234
+    TagComponent:
+      Tag: node_Eye_L_Blend_02_-5616
+    TransformComponent:
+      Translation: [-0.2502197, 0.8115805, -1.2822589]
+      Rotation: [-3.1357312, 0.012249265, 0.5729011]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 6
+  - Entity: 15454245810615832188
+    TagComponent:
+      Tag: node_Eye_L_Blend_01_-5614
+    TransformComponent:
+      Translation: [-0.2500488, 0.8544028, -1.2823569]
+      Rotation: [-3.1280544, 0.0010480587, 1.6200702]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 5
+  - Entity: 3122712192269321487
+    TagComponent:
+      Tag: node_Eye_L_Blend_00_-5612
+    TransformComponent:
+      Translation: [-0.2870606, 0.8753012, -1.2818679]
+      Rotation: [-3.133915, -0.011201018, 2.6672175]
+      Scale: [99.99998, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 4
+  - Entity: 12001177348105736700
+    TagComponent:
+      Tag: node_cables_-5610
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 3
+  - Entity: 17894408738186424041
+    TagComponent:
+      Tag: node_Adam_monitor_back_-5608
+    TransformComponent:
+      Translation: [-2.4414061e-05, 0.3157627, -0.114485666]
+      Rotation: [-1.5707947, -0.104770854, -1.5707949]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 2
+  - Entity: 4136984385437136225
+    TagComponent:
+      Tag: node_Adam_BloodyHeadBracket_-5606
+    TransformComponent:
+      Translation: [-2.4414061e-05, 0.3157627, -0.114485666]
+      Rotation: [-1.5707947, -0.104770854, -1.5707949]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 1
+  - Entity: 129197572068101138
+    TagComponent:
+      Tag: node_Adam_BloodyHeadBracket_-5606
+    TransformComponent:
+      Translation: [-2.4414061e-05, 0.3157627, -0.114485666]
+      Rotation: [-1.5707947, -0.104770854, -1.5707949]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 0
+  - Entity: 13459023092463429833
+    TagComponent:
+      Tag: Enemy
+    TransformComponent:
+      Translation: [0, 2.4868057, -8.30213]
+      Rotation: [0, -0, 0]
+      Scale: [0.27000004, 0.27000004, 0.27000004]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 129197572068101138
+        - 4136984385437136225
+        - 17894408738186424041
+        - 12001177348105736700
+        - 3122712192269321487
+        - 15454245810615832188
+        - 5090737177781202234
+        - 14846715984965470747
+        - 15961424197232422404
+        - 16638262999120814227
+        - 12460747669722291738
+        - 11286742969686153304
+        - 2270131831297139105
+        - 8079410881517586508
+        - 13354124530175810641
+        - 12571676221941915207
+        - 5303144255982660805
+        - 9617395938018969517
+        - 8922600685148977309
+        - 6051458987175858346
+        - 7142057938567529717
+        - 104101602430919479
+        - 1526860087635317676
+        - 7404423462613109361
+        - 15435082289408062428
+        - 2195469893530325106
+        - 1331540035336439760
+        - 12007467056566520461
+        - 7402704428474901882
+        - 17315676131458254287
+        - 13570122510508191615
+        - 7824332980265552574
+        - 11455801660540471491
+        - 7799273506076248048
+        - 3788836298732869812
+        - 6555957964548342864
+        - 1604568308443256882
+        - 6980523131521893851
+        - 9161174477578855625
+        - 13568667853937670530
+        - 1487254619819255779
+        - 3506706903796353875
+        - 595173273630120059
+        - 16042940411536657232
+        - 16118352695746315585
+        - 8887257096678470833
+        - 3059785628217300260
+        - 15607954271520690024
+        - 4184499010524742536
+        - 13398537045799301082
+        - 10281004880148047624
+        - 9543049204540694375
+        - 6864608055934694010
+        - 18032426804005285772
+        - 9945570067695579598
+        - 10165808288260496871
+        - 6202429673275433333
+        - 2914941714050992395
+        - 809553619326616118
+        - 16527195932138288093
+        - 7280150820142773716
+        - 2928905551756117510
+        - 13179664681509872047
+        - 18267296762677289569
+        - 585767800054725994
+        - 6344323251244072138
+        - 10884179544651589937
+        - 10910469308049830504
+        - 8896937182056023351
+        - 8446583823234714549
+        - 17919487566573860708
+        - 11581359171460588284
+        - 11922704628387596217
+        - 10467086124216561452
+        - 9567017074690907661
+        - 9319896430388579199
+        - 13108726356478377660
+        - 1939532828742708183
+        - 6040693030586929172
+        - 276294356897492076
+        - 10703306772755535202
+        - 15468069411793715623
+        - 655995719355908370
+        - 4146204036034150384
+    RigidbodyComponent:
+      Type: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: true
+    CapsuleColliderComponent:
+      Radius: 1.4
+      Height: 1
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+    ScriptComponent:
+      ClassName: RXNScriptApp.Enemy
+  - Entity: 18099224266103788785
+    TagComponent:
+      Tag: Cube
+    TransformComponent:
+      Translation: [0.08897483, 5.053075, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.088000014, 0.088000014, 0.088000014]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 15039476630361445800
+        - 17728822345890249079
+    RigidbodyComponent:
+      Type: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 16566059294053494310
+    TagComponent:
+      Tag: Plane.015_62
+    TransformComponent:
+      Translation: [0, 0.11775037, 0.22460477]
+      Rotation: [0, -0, 0]
+      Scale: [1.5582641, 1.5582641, 3.1165283]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 74
+  - Entity: 3798023924905655708
+    TagComponent:
+      Tag: Circle.014_61
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 73
+  - Entity: 14779263420634184348
+    TagComponent:
+      Tag: Circle.013_60
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 72
+  - Entity: 3981430838485640107
+    TagComponent:
+      Tag: Circle.011_59
+    TransformComponent:
+      Translation: [1.4618496, 0.11775131, 2.5975873]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 71
+  - Entity: 8596756465101681038
+    TagComponent:
+      Tag: Circle.008_58
+    TransformComponent:
+      Translation: [0, 0.7287954, -2.8418794]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 70
+  - Entity: 16933370758717708413
+    TagComponent:
+      Tag: Circle.005_57
+    TransformComponent:
+      Translation: [0, 0.72488505, 3.2555313]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 69
+  - Entity: 178227394912827205
+    TagComponent:
+      Tag: Circle.004_56
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 68
+  - Entity: 13669243609566513265
+    TagComponent:
+      Tag: Circle.017_55
+    TransformComponent:
+      Translation: [-1.4618484, 0.11775131, 2.5975873]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 67
+  - Entity: 11876151023869025892
+    TagComponent:
+      Tag: Circle.007_54
+    TransformComponent:
+      Translation: [0, 0.5600228, -1.7061452]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 66
+  - Entity: 14788500037112967091
+    TagComponent:
+      Tag: Plane.005_53
+    TransformComponent:
+      Translation: [-0.001991468, 1.2847961, 0.5422732]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 65
+  - Entity: 7041735908682279196
+    TagComponent:
+      Tag: Circle.048_52
+    TransformComponent:
+      Translation: [0.82606316, 0.45268118, 1.6031353]
+      Rotation: [0.49839324, -0.323284, 4.4562948e-10]
+      Scale: [0.8124501, 0.81245005, 0.81245005]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 64
+  - Entity: 3953884370044326943
+    TagComponent:
+      Tag: Circle.050_51
+    TransformComponent:
+      Translation: [0.9435937, 0.45269546, -0.98188823]
+      Rotation: [0.48065823, -0, 0]
+      Scale: [0.71918213, 0.7602254, 0.7602254]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 63
+  - Entity: 1088512734857128310
+    TagComponent:
+      Tag: Circle.050_51
+    TransformComponent:
+      Translation: [0.9435937, 0.45269546, -0.98188823]
+      Rotation: [0.48065823, -0, 0]
+      Scale: [0.71918213, 0.7602254, 0.7602254]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 62
+  - Entity: 3061395818263758818
+    TagComponent:
+      Tag: Cube.006_50
+    TransformComponent:
+      Translation: [0.8794536, 0.98673624, 0.7594516]
+      Rotation: [0, -0, -0.06109075]
+      Scale: [0.7578313, 0.7578313, 0.7578312]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 61
+  - Entity: 6842088858543949815
+    TagComponent:
+      Tag: Circle.001_49
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 60
+  - Entity: 1327486859421852156
+    TagComponent:
+      Tag: Circle.009_48
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 59
+  - Entity: 7802023195884728180
+    TagComponent:
+      Tag: Circle.010_47
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 58
+  - Entity: 16393162367606735045
+    TagComponent:
+      Tag: Circle.020_46
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 57
+  - Entity: 17690775802030753760
+    TagComponent:
+      Tag: Circle.026_45
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 56
+  - Entity: 14136013093648628204
+    TagComponent:
+      Tag: Circle.027_44
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8127007, 0.8127007, 0.8127007]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 55
+  - Entity: 13487629814118230669
+    TagComponent:
+      Tag: Circle.030_43
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 54
+  - Entity: 2353235543731373720
+    TagComponent:
+      Tag: Circle.033_42
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 53
+  - Entity: 16672749000860045090
+    TagComponent:
+      Tag: Circle.035_41
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 52
+  - Entity: 15073910313021764866
+    TagComponent:
+      Tag: Circle.036_40
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 51
+  - Entity: 6697755087398390799
+    TagComponent:
+      Tag: Plane_39
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 50
+  - Entity: 3279065227869929173
+    TagComponent:
+      Tag: Circle.024_38
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 49
+  - Entity: 5377004428475693565
+    TagComponent:
+      Tag: Circle.051_37
+    TransformComponent:
+      Translation: [0.82606316, 0.45268118, 1.6031353]
+      Rotation: [0.49839324, -0.323284, 4.4562948e-10]
+      Scale: [0.8124501, 0.81245005, 0.81245005]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 48
+  - Entity: 7619976209740821669
+    TagComponent:
+      Tag: Circle.051_37
+    TransformComponent:
+      Translation: [0.82606316, 0.45268118, 1.6031353]
+      Rotation: [0.49839324, -0.323284, 4.4562948e-10]
+      Scale: [0.8124501, 0.81245005, 0.81245005]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 47
+  - Entity: 7977245398676575775
+    TagComponent:
+      Tag: Plane.004_36
+    TransformComponent:
+      Translation: [0, 0.8522008, 1.1224734]
+      Rotation: [-0.005948055, -0.047979016, 0.15450267]
+      Scale: [0.58308315, 0.6644566, 0.6644566]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 46
+  - Entity: 17048373297953069101
+    TagComponent:
+      Tag: Plane.009_35
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-0.005948055, -0.047979016, 0.15450267]
+      Scale: [0.58308315, 0.6644566, 0.6644566]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 45
+  - Entity: 3219978886554996103
+    TagComponent:
+      Tag: Circle.040_34
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 44
+  - Entity: 18061614379604771926
+    TagComponent:
+      Tag: Plane.003_33
+    TransformComponent:
+      Translation: [0, 0.5551333, -2.129796]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.7798849, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 43
+  - Entity: 9393550261919343073
+    TagComponent:
+      Tag: Plane.003_33
+    TransformComponent:
+      Translation: [0, 0.5551333, -2.129796]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.7798849, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 42
+  - Entity: 9057183804001119526
+    TagComponent:
+      Tag: Plane.003_33
+    TransformComponent:
+      Translation: [0, 0.5551333, -2.129796]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.7798849, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 41
+  - Entity: 16287340142077274983
+    TagComponent:
+      Tag: Cylinder.002_32
+    TransformComponent:
+      Translation: [0.25910434, 1.1303879, -1.486531]
+      Rotation: [-0.55338556, -0.8093852, 0.28519565]
+      Scale: [0.010665064, 0.010862063, 0.010862061]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 40
+  - Entity: 3467507632183062594
+    TagComponent:
+      Tag: Plane.001_31
+    TransformComponent:
+      Translation: [0.54671955, 1.1040676, 0.9009565]
+      Rotation: [0.7988162, -0.8540957, -0.9025953]
+      Scale: [0.16334593, 0.10418813, 0.14754817]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 39
+  - Entity: 7233376843963457413
+    TagComponent:
+      Tag: Plane.002_30
+    TransformComponent:
+      Translation: [0.5114696, 1.2574054, -1.0495577]
+      Rotation: [-0.35673684, 0.0031987475, -0.107710764]
+      Scale: [0.16334592, 0.10418814, 0.15283616]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 38
+  - Entity: 9977789356231525211
+    TagComponent:
+      Tag: Plane.007_28
+    TransformComponent:
+      Translation: [0.19127105, 1.1226285, 0.9602968]
+      Rotation: [1.340287, -0.9367808, -1.3379599]
+      Scale: [0.16334955, 0.1041882, 0.14755164]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 37
+  - Entity: 18167157279363103040
+    TagComponent:
+      Tag: Cylinder.003_29
+    TransformComponent:
+      Translation: [-0.20547317, 1.0770302, 1.0762608]
+      Rotation: [0.60351884, 0.27332428, 0.17501472]
+      Scale: [0.011079234, 0.011283884, 0.011283884]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 36
+  - Entity: 16505599751320704050
+    TagComponent:
+      Tag: Cube_27
+    TransformComponent:
+      Translation: [0.011422436, 1.354729, 0.5301428]
+      Rotation: [0, -0, 0]
+      Scale: [0.046748154, 0.046748154, 0.046748154]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 35
+  - Entity: 18281466872012947616
+    TagComponent:
+      Tag: Plane.010_26
+    TransformComponent:
+      Translation: [0, 0.7075642, 2.3695652]
+      Rotation: [0.46444312, -0, 0]
+      Scale: [0.025564225, 0.02556423, 0.02556423]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 34
+  - Entity: 738386593384683781
+    TagComponent:
+      Tag: Plane.010_26
+    TransformComponent:
+      Translation: [0, 0.7075642, 2.3695652]
+      Rotation: [0.46444312, -0, 0]
+      Scale: [0.025564225, 0.02556423, 0.02556423]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 33
+  - Entity: 17542154849558249107
+    TagComponent:
+      Tag: Plane.011_25
+    TransformComponent:
+      Translation: [-0.0038365787, 0.7973339, -2.0221863]
+      Rotation: [-2.322736, 7.65395e-07, -3.1415923]
+      Scale: [0.017921772, 0.01792177, 0.01792177]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 32
+  - Entity: 15922764965419679947
+    TagComponent:
+      Tag: Cylinder.009_24
+    TransformComponent:
+      Translation: [0.64267766, 0.39486656, -1.9328852]
+      Rotation: [-1.794111, -0.44765896, 0.11218748]
+      Scale: [5.1299524, 5.129953, 5.1299534]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 31
+  - Entity: 17093497239494890400
+    TagComponent:
+      Tag: Cylinder.009_24
+    TransformComponent:
+      Translation: [0.64267766, 0.39486656, -1.9328852]
+      Rotation: [-1.794111, -0.44765896, 0.11218748]
+      Scale: [5.1299524, 5.129953, 5.1299534]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 30
+  - Entity: 10958867626876669762
+    TagComponent:
+      Tag: Cube.004_23
+    TransformComponent:
+      Translation: [0.011422436, 1.354729, 0.5301428]
+      Rotation: [0, -0, 0]
+      Scale: [0.046748154, 0.046748154, 0.046748154]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 29
+  - Entity: 8326273662239788494
+    TagComponent:
+      Tag: Cube.004_23
+    TransformComponent:
+      Translation: [0.011422436, 1.354729, 0.5301428]
+      Rotation: [0, -0, 0]
+      Scale: [0.046748154, 0.046748154, 0.046748154]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 28
+  - Entity: 8398868108156222578
+    TagComponent:
+      Tag: Circle.056_22
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 27
+  - Entity: 11269949912052467097
+    TagComponent:
+      Tag: Circle.060_21
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 26
+  - Entity: 5885653495254045018
+    TagComponent:
+      Tag: Cylinder.006_20
+    TransformComponent:
+      Translation: [-0.8240725, 1.0256028, 1.2185119]
+      Rotation: [0.050064202, -0.0014641827, 0.045779094]
+      Scale: [0.007801355, 0.007801354, 0.0078013544]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 25
+  - Entity: 1975034240307028554
+    TagComponent:
+      Tag: Circle.041_19
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 24
+  - Entity: 6277819072254635842
+    TagComponent:
+      Tag: Cube.007_18
+    TransformComponent:
+      Translation: [0.5386513, 0.39302984, 2.5266137]
+      Rotation: [0.1637257, 0.102400534, 1.0377212e-10]
+      Scale: [0.7359887, 0.73598856, 0.7359886]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 23
+  - Entity: 3309161211827727420
+    TagComponent:
+      Tag: Cube.007_18
+    TransformComponent:
+      Translation: [0.5386513, 0.39302984, 2.5266137]
+      Rotation: [0.1637257, 0.102400534, 1.0377212e-10]
+      Scale: [0.7359887, 0.73598856, 0.7359886]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 22
+  - Entity: 4166875193854679622
+    TagComponent:
+      Tag: Cube.009_17
+    TransformComponent:
+      Translation: [0.5702633, 0.41801244, -2.0568986]
+      Rotation: [0.042682346, -0.21491152, 0.0008190624]
+      Scale: [0.19713463, 0.19713461, 0.19713466]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 21
+  - Entity: 2362246203391010556
+    TagComponent:
+      Tag: Cube.010_16
+    TransformComponent:
+      Translation: [0.5702633, 0.41801244, -2.0568986]
+      Rotation: [0.042682346, -0.21491152, 0.0008190624]
+      Scale: [0.19713463, 0.19713461, 0.19713466]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 20
+  - Entity: 1059428699463346259
+    TagComponent:
+      Tag: Circle.061_15
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 19
+  - Entity: 17705741481375189036
+    TagComponent:
+      Tag: Circle.018_14
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 18
+  - Entity: 9918981126069130319
+    TagComponent:
+      Tag: Cylinder.000_13
+    TransformComponent:
+      Translation: [0.20395097, 1.0777557, 1.0766507]
+      Rotation: [0.6305023, 0.41172963, 0.17767386]
+      Scale: [0.011079234, 0.011283885, 0.011283884]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 17
+  - Entity: 11178872671220011248
+    TagComponent:
+      Tag: Circle.000_12
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 16
+  - Entity: 16298283468991300900
+    TagComponent:
+      Tag: Circle.002_11
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 15
+  - Entity: 10615546523572742323
+    TagComponent:
+      Tag: Circle.003_10
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 14
+  - Entity: 13137416030288936219
+    TagComponent:
+      Tag: Circle.012_9
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 13
+  - Entity: 17323243471430220088
+    TagComponent:
+      Tag: Circle.006_8
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 12
+  - Entity: 7337435931392498992
+    TagComponent:
+      Tag: Circle.025_7
+    TransformComponent:
+      Translation: [0, 0.5600228, -1.7061452]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 11
+  - Entity: 18417587807887796814
+    TagComponent:
+      Tag: Cube.003_6
+    TransformComponent:
+      Translation: [0.5702633, 0.41801244, -2.0568986]
+      Rotation: [0.042682346, -0.21491152, 0.0008190624]
+      Scale: [0.19713463, 0.19713461, 0.19713466]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 10
+  - Entity: 12041828526243297238
+    TagComponent:
+      Tag: Circle.016_5
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 9
+  - Entity: 5540750664703012040
+    TagComponent:
+      Tag: Circle.031_4
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 8
+  - Entity: 5201983896891254625
+    TagComponent:
+      Tag: Circle.034_3
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 7
+  - Entity: 3085956774660115290
+    TagComponent:
+      Tag: Circle.037_2
+    TransformComponent:
+      Translation: [-0.8260653, 0.45267698, 1.6031435]
+      Rotation: [0.48065817, -0.323284, 3.5984912e-10]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 6
+  - Entity: 15097526715012267934
+    TagComponent:
+      Tag: Circle.037_2
+    TransformComponent:
+      Translation: [-0.8260653, 0.45267698, 1.6031435]
+      Rotation: [0.48065817, -0.323284, 3.5984912e-10]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 5
+  - Entity: 12794014329831494862
+    TagComponent:
+      Tag: Circle.038_1
+    TransformComponent:
+      Translation: [-0.9435958, 0.45269546, -0.98188823]
+      Rotation: [0.47893667, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 4
+  - Entity: 8351282863422315045
+    TagComponent:
+      Tag: Circle.038_1
+    TransformComponent:
+      Translation: [-0.9435958, 0.45269546, -0.98188823]
+      Rotation: [0.47893667, -0, 0]
+      Scale: [0.8124501, 0.8124501, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 3
+  - Entity: 13428986380014461845
+    TagComponent:
+      Tag: Plane.013_0
+    TransformComponent:
+      Translation: [0, 0.37994042, 2.5363212]
+      Rotation: [2.8337307, 7.995738e-07, 3.1415925]
+      Scale: [0.8124501, 0.7798849, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 2
+  - Entity: 13600245767358562742
+    TagComponent:
+      Tag: Plane.013_0
+    TransformComponent:
+      Translation: [0, 0.37994042, 2.5363212]
+      Rotation: [2.8337307, 7.995738e-07, 3.1415925]
+      Scale: [0.8124501, 0.7798849, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 1
+  - Entity: 15976153107887863459
+    TagComponent:
+      Tag: Plane.013_0
+    TransformComponent:
+      Translation: [0, 0.37994042, 2.5363212]
+      Rotation: [2.8337307, 7.995738e-07, 3.1415925]
+      Scale: [0.8124501, 0.7798849, 0.8124501]
+    RelationshipComponent:
+      ParentHandle: 15220680879073863470
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/porsche/scene.gltf
+      SubmeshIndex: 0
+  - Entity: 15220680879073863470
+    TagComponent:
+      Tag: scene
+    TransformComponent:
+      Translation: [0, 2.0369668, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 15976153107887863459
+        - 13600245767358562742
+        - 13428986380014461845
+        - 8351282863422315045
+        - 12794014329831494862
+        - 15097526715012267934
+        - 3085956774660115290
+        - 5201983896891254625
+        - 5540750664703012040
+        - 12041828526243297238
+        - 18417587807887796814
+        - 7337435931392498992
+        - 17323243471430220088
+        - 13137416030288936219
+        - 10615546523572742323
+        - 16298283468991300900
+        - 11178872671220011248
+        - 9918981126069130319
+        - 17705741481375189036
+        - 1059428699463346259
+        - 2362246203391010556
+        - 4166875193854679622
+        - 3309161211827727420
+        - 6277819072254635842
+        - 1975034240307028554
+        - 5885653495254045018
+        - 11269949912052467097
+        - 8398868108156222578
+        - 8326273662239788494
+        - 10958867626876669762
+        - 17093497239494890400
+        - 15922764965419679947
+        - 17542154849558249107
+        - 738386593384683781
+        - 18281466872012947616
+        - 16505599751320704050
+        - 18167157279363103040
+        - 9977789356231525211
+        - 7233376843963457413
+        - 3467507632183062594
+        - 16287340142077274983
+        - 9057183804001119526
+        - 9393550261919343073
+        - 18061614379604771926
+        - 3219978886554996103
+        - 17048373297953069101
+        - 7977245398676575775
+        - 7619976209740821669
+        - 5377004428475693565
+        - 3279065227869929173
+        - 6697755087398390799
+        - 15073910313021764866
+        - 16672749000860045090
+        - 2353235543731373720
+        - 13487629814118230669
+        - 14136013093648628204
+        - 17690775802030753760
+        - 16393162367606735045
+        - 7802023195884728180
+        - 1327486859421852156
+        - 6842088858543949815
+        - 3061395818263758818
+        - 1088512734857128310
+        - 3953884370044326943
+        - 7041735908682279196
+        - 14788500037112967091
+        - 11876151023869025892
+        - 13669243609566513265
+        - 178227394912827205
+        - 16933370758717708413
+        - 8596756465101681038
+        - 3981430838485640107
+        - 14779263420634184348
+        - 3798023924905655708
+        - 16566059294053494310
+    RigidbodyComponent:
+      Type: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+    BoxColliderComponent:
+      HalfExtents: [1.1, 0.8, 2.5]
+      Offset: [0, 0.8, 0.3]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 9515878402757550907
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Translation: [0.017829701, 0.37404585, 0.02713108]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 7940647509221911386
+      Children:
+        []
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.7853982
+        PerspectiveNear: 0.01
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      FixedAspectRatio: false
+  - Entity: 8143408826906669679
+    TagComponent:
+      Tag: Floor
+    TransformComponent:
+      Translation: [0.11928436, -0.1897937, 0]
+      Rotation: [0, -0, 0]
+      Scale: [13.597857, 0.25465837, 18.303675]
+    RelationshipComponent:
+      ParentHandle: 11873200981400455789
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 17728822345890249079
+    TagComponent:
+      Tag: Cube (Clone)
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 18099224266103788785
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+  - Entity: 274291961609010476
+    TagComponent:
+      Tag: LeftWall
+    TransformComponent:
+      Translation: [-13.631534, 5.9325795, 0]
+      Rotation: [0, -0, 1.5707964]
+      Scale: [6.4147286, 0.2546177, 18.303675]
+    RelationshipComponent:
+      ParentHandle: 11873200981400455789
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 7532522321108319609
+    TagComponent:
+      Tag: BackWall
+    TransformComponent:
+      Translation: [0.020589821, 5.9325795, -18.487478]
+      Rotation: [-1.570796, -0, 1.5707964]
+      Scale: [6.4140086, 0.25457755, 13.726819]
+    RelationshipComponent:
+      ParentHandle: 11873200981400455789
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 7940647509221911386
+    TagComponent:
+      Tag: Player
+    TransformComponent:
+      Translation: [0, 2.0097811, 5.576628]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 9515878402757550907
+    RigidbodyComponent:
+      Type: 1
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: true
+    CapsuleColliderComponent:
+      Radius: 0.5
+      Height: 1
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+    ScriptComponent:
+      ClassName: Player
