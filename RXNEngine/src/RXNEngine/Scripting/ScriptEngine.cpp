@@ -39,10 +39,100 @@
 
 namespace RXNEngine {
 
-    hostfxr_initialize_for_runtime_config_fn init_fptr;
-    hostfxr_get_runtime_delegate_fn get_delegate_fptr;
-    hostfxr_close_fn close_fptr;
+#pragma region CoreCLR
+    namespace {
+        hostfxr_initialize_for_runtime_config_fn init_fptr;
+        hostfxr_get_runtime_delegate_fn get_delegate_fptr;
+        hostfxr_close_fn close_fptr;
 
+        static void* LoadLibraryOS(const char_t* path)
+        {
+            #ifdef RXN_PLATFORM_WINDOWS
+                return (void*)LoadLibraryW(path);
+            #else
+                return dlopen(path, RTLD_LAZY | RTLD_LOCAL);
+            #endif
+        }
+
+        static void* GetExportOS(void* module, const char* name)
+        {
+            #ifdef RXN_PLATFORM_WINDOWS
+                return (void*)GetProcAddress((HMODULE)module, name);
+            #else
+                return dlsym(module, name);
+            #endif
+        }
+
+        static STRING_TYPE GetLatestHostFxrPath()
+        {
+            std::filesystem::path fxrRoot = "C:\\Program Files\\dotnet\\host\\fxr";
+
+            if (!std::filesystem::exists(fxrRoot))
+                return STR("");
+
+            std::filesystem::path latestPath;
+            int maxMajor = -1, maxMinor = -1, maxPatch = -1;
+
+            for (const auto& entry : std::filesystem::directory_iterator(fxrRoot))
+            {
+                if (entry.is_directory())
+                {
+                    std::string folderName = entry.path().filename().string();
+                    int major = 0, minor = 0, patch = 0;
+
+                    if (std::sscanf(folderName.c_str(), "%d.%d.%d", &major, &minor, &patch) >= 2)
+                    {
+                        bool isNewer = false;
+                        if (major > maxMajor) isNewer = true;
+                        else if (major == maxMajor && minor > maxMinor) isNewer = true;
+                        else if (major == maxMajor && minor == maxMinor && patch > maxPatch) isNewer = true;
+
+                        if (isNewer)
+                        {
+                            maxMajor = major;
+                            maxMinor = minor;
+                            maxPatch = patch;
+                            latestPath = entry.path() / "hostfxr.dll";
+                        }
+                    }
+                }
+            }
+
+            #ifdef RXN_PLATFORM_WINDOWS
+                return latestPath.wstring();
+            #else
+                return latestPath.string();
+            #endif
+        }
+
+        static bool LoadHostFxr()
+        {
+            std::filesystem::path localPath = std::filesystem::current_path() / "dotnet" / "hostfxr.dll";
+            STRING_TYPE hostfxrPath = localPath.wstring();
+
+            void* lib = LoadLibraryOS(hostfxrPath.c_str());
+            if (!lib)
+            {
+                hostfxrPath = GetLatestHostFxrPath();
+                lib = LoadLibraryOS(hostfxrPath.c_str());
+            }
+
+            if (!lib)
+            {
+                RXN_CORE_CRITICAL("Failed to locate hostfxr.dll! Make sure the .NET SDK is installed.");
+                return false;
+            }
+
+            init_fptr = (hostfxr_initialize_for_runtime_config_fn)GetExportOS(lib, "hostfxr_initialize_for_runtime_config");
+            get_delegate_fptr = (hostfxr_get_runtime_delegate_fn)GetExportOS(lib, "hostfxr_get_runtime_delegate");
+            close_fptr = (hostfxr_close_fn)GetExportOS(lib, "hostfxr_close");
+
+            return (init_fptr && get_delegate_fptr && close_fptr);
+        }
+    }
+#pragma endregion
+
+#pragma region Engine Data State
     typedef void (CORECLR_DELEGATE_CALLTYPE* load_game_scripts_fn)(const char* corePath, const char* appPath);
     typedef void (CORECLR_DELEGATE_CALLTYPE* unload_game_scripts_fn)();
     typedef void (CORECLR_DELEGATE_CALLTYPE* register_internal_calls_fn)(void*);
@@ -58,99 +148,11 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* on_collision_fn)(uint64_t entityID, uint64_t otherEntityID);
 
 
-    static void* LoadLibraryOS(const char_t* path)
-    {
-#ifdef RXN_PLATFORM_WINDOWS
-        return (void*)LoadLibraryW(path);
-#else
-        return dlopen(path, RTLD_LAZY | RTLD_LOCAL);
-#endif
-    }
-
-    static void* GetExportOS(void* module, const char* name)
-    {
-#ifdef RXN_PLATFORM_WINDOWS
-        return (void*)GetProcAddress((HMODULE)module, name);
-#else
-        return dlsym(module, name);
-#endif
-    }
-
-    static STRING_TYPE GetLatestHostFxrPath()
-    {
-        std::filesystem::path fxrRoot = "C:\\Program Files\\dotnet\\host\\fxr";
-
-        if (!std::filesystem::exists(fxrRoot))
-            return STR("");
-
-        std::filesystem::path latestPath;
-        int maxMajor = -1, maxMinor = -1, maxPatch = -1;
-
-        for (const auto& entry : std::filesystem::directory_iterator(fxrRoot))
-        {
-            if (entry.is_directory())
-            {
-                std::string folderName = entry.path().filename().string();
-                int major = 0, minor = 0, patch = 0;
-
-                if (std::sscanf(folderName.c_str(), "%d.%d.%d", &major, &minor, &patch) >= 2)
-                {
-                    bool isNewer = false;
-                    if (major > maxMajor) isNewer = true;
-                    else if (major == maxMajor && minor > maxMinor) isNewer = true;
-                    else if (major == maxMajor && minor == maxMinor && patch > maxPatch) isNewer = true;
-
-                    if (isNewer)
-                    {
-                        maxMajor = major;
-                        maxMinor = minor;
-                        maxPatch = patch;
-                        latestPath = entry.path() / "hostfxr.dll";
-                    }
-                }
-            }
-        }
-
-#ifdef RXN_PLATFORM_WINDOWS
-        return latestPath.wstring();
-#else
-        return latestPath.string();
-#endif
-    }
-
-    static bool LoadHostFxr()
-    {
-        std::filesystem::path localPath = std::filesystem::current_path() / "dotnet" / "hostfxr.dll";
-        STRING_TYPE hostfxrPath = localPath.wstring();
-
-        void* lib = LoadLibraryOS(hostfxrPath.c_str());
-        if (!lib)
-        {
-            hostfxrPath = GetLatestHostFxrPath();
-            lib = LoadLibraryOS(hostfxrPath.c_str());
-        }
-
-        if (!lib)
-        {
-            RXN_CORE_CRITICAL("Failed to locate hostfxr.dll! Make sure the .NET SDK is installed.");
-            return false;
-        }
-
-        init_fptr = (hostfxr_initialize_for_runtime_config_fn)GetExportOS(lib, "hostfxr_initialize_for_runtime_config");
-        get_delegate_fptr = (hostfxr_get_runtime_delegate_fn)GetExportOS(lib, "hostfxr_get_runtime_delegate");
-        close_fptr = (hostfxr_close_fn)GetExportOS(lib, "hostfxr_close");
-
-        return (init_fptr && get_delegate_fptr && close_fptr);
-    }
-
-
     struct ScriptEngineData
     {
         load_assembly_and_get_function_pointer_fn LoadAssemblyAndGetFunctionPointer = nullptr;
-
         load_game_scripts_fn LoadGameScripts = nullptr;
         unload_game_scripts_fn UnloadGameScripts = nullptr;
-
         register_internal_calls_fn RegisterInternalCalls = nullptr;
 
         instantiate_script_fn InstantiateScript = nullptr;
@@ -160,7 +162,6 @@ namespace RXNEngine {
 		invoke_on_fixed_update_fn InvokeOnFixedUpdate = nullptr;
 
         entity_class_exists_fn CheckEntityClassExists = nullptr;
-
         reflect_class_fn ReflectClass = nullptr;
         get_field_value_fn GetFieldValue = nullptr;
         set_field_value_fn SetFieldValue = nullptr;
@@ -169,7 +170,6 @@ namespace RXNEngine {
         on_collision_fn OnCollisionExit = nullptr;
 
         Scene* SceneContext = nullptr;
-
         std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
         std::unordered_map<std::string, std::vector<ScriptField>> ScriptClassFields;
 
@@ -180,7 +180,9 @@ namespace RXNEngine {
     };
 
     static ScriptEngineData* s_Data = nullptr;
+#pragma endregion
 
+#pragma region Initialization & Shutdown
     void ScriptEngine::Init()
     {
         s_Data = new ScriptEngineData();
@@ -246,7 +248,9 @@ namespace RXNEngine {
 
         delete s_Data;
     }
+#pragma endregion
 
+#pragma region Assembly Loading & Hot Reloading
     void ScriptEngine::LoadAssembly(const std::string& appFilepath)
     {
         if (s_Data && s_Data->LoadGameScripts)
@@ -268,6 +272,40 @@ namespace RXNEngine {
         }
     }
 
+    void ScriptEngine::ReloadAssembly()
+    {
+        s_Data->ScriptClassFields.clear();
+
+        LoadAssembly("res/scripts/RXNScriptApp.dll");
+        RXN_CORE_INFO("ScriptEngine: Assembly Hot-Reloaded successfully!");
+    }
+
+    void ScriptEngine::ReloadIfModified(float deltaTime)
+    {
+        if (s_Data->ReloadPending)
+        {
+            s_Data->ReloadTimer -= deltaTime;
+            if (s_Data->ReloadTimer <= 0.0f)
+            {
+                s_Data->ReloadPending = false;
+                ReloadAssembly();
+            }
+            return;
+        }
+
+        std::error_code ec;
+        auto currentWriteTime = std::filesystem::last_write_time(s_Data->CoreAssemblyPath, ec);
+
+        if (!ec && currentWriteTime > s_Data->CoreAssemblyLastWriteTime)
+        {
+            s_Data->ReloadPending = true;
+            s_Data->ReloadTimer = 0.5f;
+            RXN_CORE_TRACE("ScriptEngine: Assembly modification detected. Waiting for compiler...");
+        }
+    }
+#pragma endregion
+
+#pragma region Runtime Context Management
     void ScriptEngine::OnRuntimeStart(Scene* scene)
     {
         s_Data->SceneContext = scene;
@@ -281,6 +319,13 @@ namespace RXNEngine {
         RXN_CORE_INFO("ScriptEngine: Runtime stopped, Scene context cleared.");
     }
 
+    Scene* ScriptEngine::GetSceneContext()
+    {
+        return s_Data->SceneContext;
+    }
+#pragma endregion
+
+#pragma region Entity Lifecycle
     void ScriptEngine::OnCreateEntity(Entity entity)
     {
         const auto& sc = entity.GetComponent<ScriptComponent>();
@@ -323,7 +368,9 @@ namespace RXNEngine {
         if (s_Data->EntityInstances.find(entityID) != s_Data->EntityInstances.end())
             s_Data->EntityInstances[entityID]->InvokeOnFixedUpdate(deltaTime);
     }
+#pragma endregion
 
+#pragma region Physics Events
     void ScriptEngine::OnCollisionEnter(uint64_t entityID, uint64_t otherID)
     {
         if (s_Data && s_Data->OnCollisionEnter)
@@ -335,52 +382,9 @@ namespace RXNEngine {
         if (s_Data && s_Data->OnCollisionExit)
             s_Data->OnCollisionExit(entityID, otherID);
     }
+#pragma endregion
 
-    Scene* ScriptEngine::GetSceneContext()
-    {
-        return s_Data->SceneContext;
-    }
-
-    Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID uuid)
-    {
-        if (s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end())
-            return s_Data->EntityInstances[uuid];
-        
-		return nullptr;
-    }
-
-    void ScriptEngine::ReloadAssembly()
-    {
-        s_Data->ScriptClassFields.clear();
-
-        LoadAssembly("res/scripts/RXNScriptApp.dll");
-        RXN_CORE_INFO("ScriptEngine: Assembly Hot-Reloaded successfully!");
-    }
-
-    void ScriptEngine::ReloadIfModified(float deltaTime)
-    {
-        if (s_Data->ReloadPending)
-        {
-            s_Data->ReloadTimer -= deltaTime;
-            if (s_Data->ReloadTimer <= 0.0f)
-            {
-                s_Data->ReloadPending = false;
-                ReloadAssembly();
-            }
-            return;
-        }
-
-        std::error_code ec;
-        auto currentWriteTime = std::filesystem::last_write_time(s_Data->CoreAssemblyPath, ec);
-
-        if (!ec && currentWriteTime > s_Data->CoreAssemblyLastWriteTime)
-        {
-            s_Data->ReloadPending = true;
-            s_Data->ReloadTimer = 0.5f;
-            RXN_CORE_TRACE("ScriptEngine: Assembly modification detected. Waiting for compiler...");
-        }
-    }
-
+#pragma region Reflection
     void ScriptEngine::RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type)
     {
         s_Data->ScriptClassFields[className].push_back({ type, fieldName });
@@ -403,9 +407,16 @@ namespace RXNEngine {
         return exists != 0;
     }
 
+    Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID uuid)
+    {
+        if (s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end())
+            return s_Data->EntityInstances[uuid];
 
+        return nullptr;
+    }
+#pragma endregion
 
-
+#pragma region ScriptInstance Implementation
     ScriptInstance::ScriptInstance(Entity entity, const std::string& className)
         : m_Entity(entity), m_ClassName(className)
     {
@@ -446,4 +457,6 @@ namespace RXNEngine {
         if (s_Data->SetFieldValue)
             s_Data->SetFieldValue(m_Entity.GetUUID(), name.c_str(), inBuffer);
     }
+#pragma endregion
+
 }

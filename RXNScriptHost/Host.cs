@@ -45,11 +45,12 @@ namespace RXNScriptHost
             if (type == typeof(uint)) return 11;
             if (type == typeof(ulong)) return 12;
 
-            if (type == s_CoreAssembly?.GetType("RXNEngine.Vector2")) return 13;
-            if (type == s_CoreAssembly?.GetType("RXNEngine.Vector3")) return 14;
-            if (type == s_CoreAssembly?.GetType("RXNEngine.Vector4")) return 15;
+            if (type.Name == "Vector2") return 13;
+            if (type.Name == "Vector3") return 14;
+            if (type.Name == "Vector4") return 15;
 
-            if (type == s_CoreAssembly?.GetType("RXNEngine.Entity")) return 16;
+            Type? entityBaseType = s_CoreAssembly?.GetType("RXNEngine.Entity");
+            if (entityBaseType != null && entityBaseType.IsAssignableFrom(type)) return 16;
 
             return 0;
         }

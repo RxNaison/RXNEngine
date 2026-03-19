@@ -13,6 +13,7 @@ public class Player : Entity
     public Vector3 SpawnOffset = new Vector3(0, 0.5f, 0);
     public Vector4 PlayerColor = new Vector4(0.2f, 0.8f, 0.3f, 1.0f);
     public Entity? BulletPrefab;
+    public Entity? HeadCamera;
 
     private bool m_JumpRequested = false;
     private int m_CurrentContacts = 0;
@@ -20,6 +21,8 @@ public class Player : Entity
     private Vector2 m_LastMousePos;
     private float m_Pitch = 0.0f;
     private float m_Yaw = 0.0f;
+
+    private bool m_IsLocked = true;
 
     public override void OnCreate()
     {
@@ -29,6 +32,8 @@ public class Player : Entity
         Vector3 currentRot = this.Rotation;
         m_Pitch = currentRot.X;
         m_Yaw = currentRot.Y;
+
+        HeadCamera = FindEntityByName("Camera");
     }
 
     public override void OnUpdate(float deltaTime)
@@ -42,7 +47,10 @@ public class Player : Entity
 
         m_Pitch = Math.Clamp(m_Pitch, -1.5f, 1.5f);
 
-        this.Rotation = new Vector3(m_Pitch, m_Yaw, 0.0f);
+        this.Rotation = new Vector3(0.0f, m_Yaw, 0.0f);
+
+        if (HeadCamera != null)
+            HeadCamera.Rotation = new Vector3(m_Pitch, 0.0f, 0.0f);
 
 
         Vector3 pos = Translation;
@@ -64,9 +72,9 @@ public class Player : Entity
         {
             Entity firedBullet = Entity.Instantiate(BulletPrefab);
 
-            firedBullet.Translation = pos + (forward * 1.5f) + SpawnOffset;
+            firedBullet.Translation = pos + (HeadCamera.Forward * 1.5f) + SpawnOffset;
 
-            firedBullet.ApplyLinearImpulse(forward * BulletForce);
+            firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
 
             Ammo--;
             Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
@@ -81,7 +89,16 @@ public class Player : Entity
 
         if (Input.IsKeyDown(KeyCode.Escape))
         {
-            Input.SetCursorMode(CursorMode.Normal);
+            if(m_IsLocked)
+            {
+                Input.SetCursorMode(CursorMode.Normal);
+                m_IsLocked = false;
+            }
+            else
+            {
+                Input.SetCursorMode(CursorMode.Locked);
+                m_IsLocked = true;
+            }
         }
 
         if (velocity.X != 0 || velocity.Y != 0 || velocity.Z != 0)

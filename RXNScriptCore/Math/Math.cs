@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RXNScriptCore.Math
+namespace RXNEngine
 {
-    public static class Math
+    public static class Mathf
     {
         public static float Clamp(float value, float min, float max)
         {

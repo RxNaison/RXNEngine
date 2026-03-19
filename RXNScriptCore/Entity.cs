@@ -7,91 +7,24 @@ namespace RXNEngine
     public class Entity
     {
         public ulong ID { get; internal set; }
+
         protected Entity() { ID = 0; }
+        internal Entity(ulong id) { ID = id; }
 
-        internal Entity(ulong id)
-        {
-            ID = id;
-        }
-
+        #region Lifecycle & Instantiation
         public static Entity Instantiate()
         {
-            unsafe
-            {
-                var create = (delegate* unmanaged<ulong>)Interop.NativeFunctions.Entity_Create;
-                ulong newID = create();
-                return new Entity() { ID = newID };
-            }
+            unsafe { return new Entity() { ID = ((delegate* unmanaged<ulong>)Interop.NativeFunctions.Entity_Create)() }; }
         }
+
         public static Entity Instantiate(Entity original)
         {
-            unsafe
-            {
-                var instantiate = (delegate* unmanaged<ulong, ulong>)Interop.NativeFunctions.Entity_InstantiatePrefab;
-                ulong newID = instantiate(original.ID);
-                return new Entity() { ID = newID };
-            }
+            unsafe { return new Entity() { ID = ((delegate* unmanaged<ulong, ulong>)Interop.NativeFunctions.Entity_InstantiatePrefab)(original.ID) }; }
         }
 
         public void Destroy()
         {
-            unsafe
-            {
-                var destroy = (delegate* unmanaged<ulong, void>)Interop.NativeFunctions.Entity_Destroy;
-                destroy(ID);
-            }
-        }
-
-        public virtual void OnCreate() { }
-        public virtual void OnDestroy() { }
-        public virtual void OnUpdate(float deltaTime) { }
-        public virtual void OnFixedUpdate(float deltaTime) { }
-
-        public virtual void OnCollisionEnter(Entity other) { }
-        public virtual void OnCollisionExit(Entity other) { }
-
-        public Vector3 Translation
-        {
-            get
-            {
-                Vector3 result;
-                unsafe
-                {
-                    var getTranslation = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetTranslation;
-                    getTranslation(ID, &result);
-                }
-                return result;
-            }
-            set
-            {
-                unsafe
-                {
-                    var setTranslation = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetTranslation;
-                    setTranslation(ID, &value);
-                }
-            }
-        }
-
-        public Vector3 Rotation
-        {
-            get
-            {
-                unsafe
-                {
-                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetRotation;
-                    Vector3 result;
-                    func(ID, &result);
-                    return result;
-                }
-            }
-            set
-            {
-                unsafe
-                {
-                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetRotation;
-                    func(ID, &value);
-                }
-            }
+            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.Entity_Destroy)(ID); }
         }
 
         public static Entity? FindEntityByName(string name)
@@ -99,66 +32,59 @@ namespace RXNEngine
             unsafe
             {
                 IntPtr namePtr = Marshal.StringToHGlobalAnsi(name);
-                var find = (delegate* unmanaged<IntPtr, ulong>)Interop.NativeFunctions.Entity_FindByName;
-                ulong id = find(namePtr);
+                ulong id = ((delegate* unmanaged<IntPtr, ulong>)Interop.NativeFunctions.Entity_FindByName)(namePtr);
                 Marshal.FreeHGlobal(namePtr);
-
-                if (id == 0) return null;
-                return new Entity() { ID = id };
+                return id == 0 ? null : new Entity(id);
             }
         }
+        #endregion
 
+        #region Virtual Callbacks
+        public virtual void OnCreate() { }
+        public virtual void OnDestroy() { }
+        public virtual void OnUpdate(float deltaTime) { }
+        public virtual void OnFixedUpdate(float deltaTime) { }
+        public virtual void OnCollisionEnter(Entity other) { }
+        public virtual void OnCollisionExit(Entity other) { }
+        #endregion
+
+        #region Transform Properties
+        public Vector3 Translation
+        {
+            get { unsafe { Vector3 res; ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetTranslation)(ID, &res); return res; } }
+            set { unsafe { ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetTranslation)(ID, &value); } }
+        }
+
+        public Vector3 Rotation
+        {
+            get { unsafe { Vector3 res; ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetRotation)(ID, &res); return res; } }
+            set { unsafe { ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetRotation)(ID, &value); } }
+        }
+
+        public Vector3 Forward => GetDirection(Interop.NativeFunctions.Entity_GetForward);
+        public Vector3 Right => GetDirection(Interop.NativeFunctions.Entity_GetRight);
+        public Vector3 Up => GetDirection(Interop.NativeFunctions.Entity_GetUp);
+
+        private Vector3 GetDirection(IntPtr funcPtr)
+        {
+            unsafe
+            {
+                Vector3 result;
+                ((delegate* unmanaged<ulong, Vector3*, void>)funcPtr)(ID, &result);
+                return result;
+            }
+        }
+        #endregion
+
+        #region Physics Interop
         public void ApplyLinearImpulse(Vector3 impulse, bool wakeUp = true)
         {
             unsafe
             {
-                var applyImpulse = (delegate* unmanaged<ulong, Vector3*, byte, void>)Interop.NativeFunctions.Rigidbody_ApplyLinearImpulse;
                 byte wakeFlag = (byte)(wakeUp ? 1 : 0);
-
-                applyImpulse(ID, &impulse, wakeFlag);
+                ((delegate* unmanaged<ulong, Vector3*, byte, void>)Interop.NativeFunctions.Rigidbody_ApplyLinearImpulse)(ID, &impulse, wakeFlag);
             }
         }
-
-        public Vector3 Forward
-        {
-            get
-            {
-                unsafe
-                {
-                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetForward;
-                    Vector3 result;
-                    func(ID, &result);
-                    return result;
-                }
-            }
-        }
-
-        public Vector3 Right
-        {
-            get
-            {
-                unsafe
-                {
-                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetRight;
-                    Vector3 result;
-                    func(ID, &result);
-                    return result;
-                }
-            }
-        }
-
-        public Vector3 Up
-        {
-            get
-            {
-                unsafe
-                {
-                    var func = (delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetUp;
-                    Vector3 result;
-                    func(ID, &result);
-                    return result;
-                }
-            }
-        }
+        #endregion
     }
 }
