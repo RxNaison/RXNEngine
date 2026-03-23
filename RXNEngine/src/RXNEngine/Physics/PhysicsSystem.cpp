@@ -12,6 +12,7 @@ namespace RXNEngine {
     {
         pairFlags = physx::PxPairFlag::eCONTACT_DEFAULT;
         pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
+        pairFlags |= physx::PxPairFlag::eDETECT_CCD_CONTACT;
         return physx::PxFilterFlag::eDEFAULT;
     }
 
@@ -71,6 +72,8 @@ namespace RXNEngine {
         sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
         sceneDesc.filterShader = ContactReportFilterShader;
         sceneDesc.simulationEventCallback = &s_ContactListener;
+
+        sceneDesc.flags |= physx::PxSceneFlag::eENABLE_CCD;
 
         s_Scene = s_Physics->createScene(sceneDesc);
 

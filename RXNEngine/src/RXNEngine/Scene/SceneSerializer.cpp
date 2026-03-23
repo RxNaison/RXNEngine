@@ -270,6 +270,9 @@ namespace RXNEngine {
 
 			out << YAML::Key << "FixedRotation" << YAML::Value << rb.FixedRotation;
 
+			out << YAML::Key << "UseCCD" << YAML::Value << rb.UseCCD;
+			out << YAML::Key << "CCDVelocityThreshold" << YAML::Value << rb.CCDVelocityThreshold;
+
 			out << YAML::EndMap; // RigidbodyComponent
 		}
 
@@ -524,6 +527,9 @@ namespace RXNEngine {
 					rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
 
 					rb.FixedRotation = rigidbodyComponent["FixedRotation"].as<bool>();
+
+					rb.UseCCD = rigidbodyComponent["UseCCD"].as<bool>();
+					rb.CCDVelocityThreshold = rigidbodyComponent["CCDVelocityThreshold"].as<float>();
 				}
 
 				auto boxColliderComponent = entity["BoxColliderComponent"];

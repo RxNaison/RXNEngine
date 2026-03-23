@@ -245,7 +245,7 @@ namespace RXNEditor {
     {
         uint64_t id = entity.GetComponent<IDComponent>().ID;
 
-        ImGui::Text(std::to_string(id).c_str());
+        ImGui::TextDisabled(std::to_string(id).c_str());
 
         if (entity.HasComponent<TagComponent>())
         {
@@ -586,6 +586,14 @@ namespace RXNEditor {
 				ImGui::DragFloat("Angular Drag", &component.AngularDrag, 0.01f, 0.0f, 1.0f);
 
                 ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+
+                ImGui::Checkbox("CCD", &component.UseCCD);
+                if (component.UseCCD)
+                {
+                    ImGui::Indent();
+                    ImGui::DragFloat("Velocity Threshold", &component.CCDVelocityThreshold, 1.0f, 0.0f, 1000.0f);
+                    ImGui::Unindent();
+                }
             });
 
         DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
@@ -645,10 +653,6 @@ namespace RXNEditor {
                             const auto& fields = ScriptEngine::GetClassFields(component.ClassName);
                             for (const auto& field : fields)
                             {
-                                // Optional: You can use ImGui Tables or Columns here to make it look like Unreal Engine!
-                                // ImGui::Text("%s", field.Name.c_str());
-                                // ImGui::SameLine();
-
                                 switch (field.Type)
                                 {
                                 case ScriptFieldType::Float:

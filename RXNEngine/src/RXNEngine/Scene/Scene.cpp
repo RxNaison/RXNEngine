@@ -234,7 +234,24 @@ namespace RXNEngine {
             }
         }
 
+        auto rbView = m_Registry.view<RigidbodyComponent>();
+        for (auto e : rbView)
+        {
+            auto& rb = rbView.get<RigidbodyComponent>(e);
+
+            if (rb.Type != RigidbodyComponent::BodyType::Static && rb.RuntimeActor && rb.UseCCD)
+            {
+                physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)rb.RuntimeActor;
+
+                float sqrVelocity = actor->getLinearVelocity().magnitudeSquared();
+                float sqrThreshold = rb.CCDVelocityThreshold * rb.CCDVelocityThreshold;
+
+                actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, sqrVelocity > sqrThreshold);
+            }
+        }
+
         PhysicsSystem::Update(deltaTime);
+
         auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
         for (auto e : view)
         {

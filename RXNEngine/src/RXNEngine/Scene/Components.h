@@ -78,6 +78,15 @@ namespace RXNEngine {
 		StaticMeshComponent(const StaticMeshComponent&) = default;
 	};
 
+	struct CameraComponent
+	{
+		SceneCamera Camera;
+		bool FixedAspectRatio = false;
+
+		CameraComponent() = default;
+		CameraComponent(const CameraComponent&) = default;
+	};
+
 	struct DirectionalLightComponent
 	{
 		glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
@@ -90,15 +99,6 @@ namespace RXNEngine {
 		float Intensity = 1.0f;
 		float Radius = 10.0f;
 		float Falloff = 1.0f;
-	};
-
-	struct CameraComponent
-	{
-		SceneCamera Camera;
-		bool FixedAspectRatio = false;
-
-		CameraComponent() = default;
-		CameraComponent(const CameraComponent&) = default;
 	};
 
 	class ScriptableEntity;
@@ -136,6 +136,9 @@ namespace RXNEngine {
 		float AngularDrag = 0.05f;
 
 		bool FixedRotation = false;
+
+		bool UseCCD = false;
+		float CCDVelocityThreshold = 50.0f;
 
 		void* RuntimeActor = nullptr;
 
