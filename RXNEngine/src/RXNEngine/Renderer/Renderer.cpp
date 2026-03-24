@@ -55,6 +55,7 @@ namespace RXNEngine {
         Ref<RenderTarget> CurrentRenderTarget = nullptr;
         std::vector<RenderCommandPacket> OpaqueQueue;
         std::vector<RenderCommandPacket> TransparentQueue;
+        std::vector<RenderCommandPacket> ShadowQueue;
         glm::mat4 ViewProjectionMatrix;
         glm::mat4 ViewMatrix;
         glm::vec3 CameraPosition;
@@ -350,12 +351,15 @@ namespace RXNEngine {
 
         s_Data.OpaqueQueue.clear();
         s_Data.TransparentQueue.clear();
+        s_Data.ShadowQueue.clear();
 
         // reset state at start of frame? 
         s_Data.CurrentShaderID = 0;
         s_Data.CurrentVertexArrayID = 0;
         std::fill(s_Data.TextureSlots.begin(), s_Data.TextureSlots.end(), 0);
         s_Data.LineVertices.clear();
+
+        CalculateShadowMapMatrices(s_Data.ViewMatrix, s_Data.LightBufferLocal.DirLightDirection);
     }
 
     void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID)
@@ -365,21 +369,12 @@ namespace RXNEngine {
         const auto& submeshes = mesh->GetSubmeshes();
         if (submeshIndex >= submeshes.size()) return;
 
-        const auto& submesh = submeshes[submeshIndex];
-
-        AABB worldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, transform);
-        if (!s_Data.CameraFrustum.IsBoxVisible(worldAABB.Min, worldAABB.Max))
-            return;
-
         RenderCommandPacket packet;
         packet.Mesh = mesh;
         packet.SubmeshIndex = submeshIndex;
         packet.Material = material;
         packet.Transform = transform;
         packet.EntityID = entityID;
-
-        float dist = glm::distance(s_Data.CameraPosition, (worldAABB.Min + worldAABB.Max) * 0.5f);
-        packet.DistanceToCamera = dist * dist;
 
         uint64_t shaderID = material->GetShader()->GetRendererID();
         uint64_t vaoID = mesh->GetVertexArray()->GetRendererID();
@@ -576,8 +571,6 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
-        CalculateShadowMapMatrices(s_Data.ViewMatrix, s_Data.LightBufferLocal.DirLightDirection);
-
         FlushShadows();
 
         if (s_Data.CurrentRenderTarget) s_Data.CurrentRenderTarget->Bind();
@@ -708,9 +701,9 @@ namespace RXNEngine {
             s_Data.ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrices[" + std::to_string(i) + "]", matrices[i]);
         }
 
-        if (!s_Data.OpaqueQueue.empty())
+        if (!s_Data.ShadowQueue.empty())
         {
-            auto batchStart = s_Data.OpaqueQueue.begin();
+            auto batchStart = s_Data.ShadowQueue.begin();
             static InstanceData batchData[MaxInstances];
             uint32_t transformCount = 0;
 
@@ -718,7 +711,7 @@ namespace RXNEngine {
             batchData[transformCount].EntityID = batchStart->EntityID;
             transformCount++;
 
-            for (auto it = s_Data.OpaqueQueue.begin() + 1; it != s_Data.OpaqueQueue.end(); ++it)
+            for (auto it = s_Data.ShadowQueue.begin() + 1; it != s_Data.ShadowQueue.end(); ++it)
             {
                 bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
 
@@ -825,5 +818,35 @@ namespace RXNEngine {
 
         drawQueue(s_Data.OpaqueQueue);
         drawQueue(s_Data.TransparentQueue);
+    }
+
+    bool Renderer::IsSphereVisibleToShadows(const glm::vec3& center, float radius)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            glm::vec4 centerNDC = s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i] * glm::vec4(center, 1.0f);
+
+            float rX = radius * glm::abs(s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i][0][0]);
+            float rY = radius * glm::abs(s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i][1][1]);
+            float rZ = radius * glm::abs(s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i][2][2]);
+
+            if (glm::abs(centerNDC.x) <= 1.0f + rX && glm::abs(centerNDC.y) <= 1.0f + rY &&
+                centerNDC.z >= -1.0f - rZ && centerNDC.z <= 1.0f + rZ)
+            {
+                return true; 
+            }
+        }
+        return false;
+    }
+
+    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID)
+    {
+        RenderCommandPacket packet;
+        packet.Mesh = mesh;
+        packet.SubmeshIndex = submeshIndex;
+        packet.Transform = transform;
+        packet.EntityID = entityID;
+
+        s_Data.ShadowQueue.push_back(packet);
     }
 }

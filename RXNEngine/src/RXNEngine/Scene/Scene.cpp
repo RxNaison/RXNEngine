@@ -25,6 +25,57 @@ namespace RXNEngine {
         }
     }
 
+    struct ViewFrustum
+    {
+        glm::vec4 Planes[6];
+
+        void Extract(const glm::mat4& viewProj)
+        {
+            for (int i = 0; i < 4; ++i)
+                Planes[0][i] = viewProj[i][3] + viewProj[i][0]; // Left
+
+            for (int i = 0; i < 4; ++i)
+                Planes[1][i] = viewProj[i][3] - viewProj[i][0]; // Right
+
+            for (int i = 0; i < 4; ++i)
+                Planes[2][i] = viewProj[i][3] + viewProj[i][1]; // Bottom
+
+            for (int i = 0; i < 4; ++i)
+                Planes[3][i] = viewProj[i][3] - viewProj[i][1]; // Top
+
+            for (int i = 0; i < 4; ++i)
+                Planes[4][i] = viewProj[i][3] + viewProj[i][2]; // Near
+
+            for (int i = 0; i < 4; ++i)
+                Planes[5][i] = viewProj[i][3] - viewProj[i][2]; // Far
+
+            for (int i = 0; i < 6; ++i) {
+                float length = glm::length(glm::vec3(Planes[i]));
+                Planes[i] /= length;
+            }
+        }
+
+        bool IsSphereVisible(const glm::vec3& center, float radius) const
+        {
+            for (int i = 0; i < 6; ++i) {
+                if (glm::dot(glm::vec3(Planes[i]), center) + Planes[i].w < -radius)
+                    return false;
+            }
+            return true;
+        }
+    };
+
+    struct RenderCommandData
+    {
+        Ref<StaticMesh> Mesh;
+        uint32_t SubmeshIndex;
+        Ref<Material> Material;
+        glm::mat4 Transform;
+        int EntityID;
+        bool IsVisibleToCamera;
+        bool IsVisibleToShadows;
+    };
+
     template<typename T>
     static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
     {
@@ -114,6 +165,8 @@ namespace RXNEngine {
         auto& tag = entity.AddComponent<TagComponent>();
         tag.Tag = name.empty() ? "Entity" : name;
 
+        m_EntityMap[uuid] = (entt::entity)entity;
+
         return entity;
     }
 
@@ -153,6 +206,7 @@ namespace RXNEngine {
             }
         }
 
+        m_EntityMap.erase(entity.GetUUID());
         m_Registry.destroy(entity);
     }
 
@@ -205,20 +259,81 @@ namespace RXNEngine {
         return IsDescendantOf(parent, potentialAscendant);
     }
 
-    glm::mat4 Scene::GetWorldTransform(Entity entity)
+    void Scene::UpdateWorldTransforms()
     {
         OPTICK_EVENT();
 
-        glm::mat4 transform = entity.GetComponent<TransformComponent>().GetTransform();
-        auto& rc = entity.GetComponent<RelationshipComponent>();
+        std::vector<std::vector<entt::entity>> generations;
+        generations.push_back({});
 
-        if (rc.ParentHandle != 0)
+        auto view = m_Registry.view<TransformComponent, RelationshipComponent>();
+        for (auto e : view)
         {
-            Entity parent = GetEntityByUUID(rc.ParentHandle);
-            if (parent)
-                transform = GetWorldTransform(parent) * transform;
+            if (view.get<RelationshipComponent>(e).ParentHandle == 0)
+                generations[0].push_back(e);
         }
-        return transform;
+
+        int currentGen = 0;
+        while (!generations[currentGen].empty())
+        {
+            std::vector<entt::entity> nextGen;
+
+            for (auto e : generations[currentGen])
+            {
+                auto& rc = m_Registry.get<RelationshipComponent>(e);
+                for (UUID childID : rc.Children)
+                {
+                    Entity child = GetEntityByUUID(childID);
+                    if (child) nextGen.push_back((entt::entity)child);
+                }
+            }
+
+            if (!nextGen.empty())
+            {
+                generations.push_back(nextGen);
+                currentGen++;
+            }
+            else
+            {
+                break;
+            }
+
+        }
+
+        uint32_t threadCount = JobSystem::GetThreadCount();
+
+        for (size_t i = 0; i < generations.size(); i++)
+        {
+            auto& gen = generations[i];
+            uint32_t groupSize = (uint32_t)gen.size() / threadCount;
+            if (groupSize == 0) groupSize = 1;
+
+            JobSystem::Dispatch(gen.size(), groupSize, [this, &gen, i](JobDispatchArgs args)
+                {
+                    entt::entity e = gen[args.JobIndex];
+                    auto& tc = m_Registry.get<TransformComponent>(e);
+
+                    if (i == 0)
+                    {
+                        tc.WorldTransform = tc.GetTransform();
+                    }
+                    else
+                    {
+                        auto& rc = m_Registry.get<RelationshipComponent>(e);
+                        Entity parent = GetEntityByUUID(rc.ParentHandle);
+
+                        auto& parentTc = parent.GetComponent<TransformComponent>();
+                        tc.WorldTransform = parentTc.WorldTransform * tc.GetTransform();
+                    }
+                });
+
+            JobSystem::Wait();
+        }
+    }
+
+    glm::mat4 Scene::GetWorldTransform(Entity entity)
+    {
+        return entity.GetComponent<TransformComponent>().WorldTransform;
     }
 
     void Scene::OnUpdateSimulation(float deltaTime)
@@ -245,6 +360,8 @@ namespace RXNEngine {
 
                 JobSystem::Wait();
             }
+
+            UpdateWorldTransforms();
 
             PhysicsSystem::LockWrite();
 
@@ -368,21 +485,70 @@ namespace RXNEngine {
 
         Renderer::BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
 
-        auto view = m_Registry.view<StaticMeshComponent>();
-        for (auto entity : view)
+        glm::mat4 viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
+        ViewFrustum frustum;
+        frustum.Extract(viewProj);
+
+        std::vector<RenderCommandData> renderQueue;
+        std::mutex queueMutex;
+
+        auto view = m_Registry.view<StaticMeshComponent, TransformComponent>();
+        std::vector<entt::entity> entities(view.begin(), view.end());
+
+        if (!entities.empty())
         {
-            auto mc = view.get<StaticMeshComponent>(entity);
+            uint32_t threadCount = JobSystem::GetThreadCount();
+            uint32_t groupSize = (uint32_t)entities.size() / threadCount;
+            if (groupSize == 0) groupSize = 1;
 
-            if (mc.Mesh)
-            {
-                uint32_t materialIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
+            JobSystem::Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
+                {
+                    entt::entity e = entities[args.JobIndex];
+                    auto [mc, tc] = view.get<StaticMeshComponent, TransformComponent>(e);
 
-                Ref<Material> material = mc.MaterialTableOverride ?
-                    mc.MaterialTableOverride :
-                    mc.Mesh->GetMaterials()[materialIndex];
+                    if (!mc.Mesh) return;
 
-                Renderer::Submit(mc.Mesh, mc.SubmeshIndex, material, GetWorldTransform({ entity, this }));
-            }
+                    glm::mat4 transform = tc.WorldTransform;
+
+                    const auto& submesh = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex];
+                    AABB worldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, transform);
+
+                    glm::vec3 center = (worldAABB.Min + worldAABB.Max) * 0.5f;
+                    float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
+
+                    bool isVisible = frustum.IsSphereVisible(center, radius);
+                    bool isVisibleToShadows = Renderer::IsSphereVisibleToShadows(center, radius);
+
+                    if (!isVisible && !isVisibleToShadows)
+                        return;
+
+                    RenderCommandData cmd;
+                    cmd.Mesh = mc.Mesh;
+                    cmd.SubmeshIndex = mc.SubmeshIndex;
+                    uint32_t matIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
+                    cmd.Material = mc.MaterialTableOverride ? mc.MaterialTableOverride : mc.Mesh->GetMaterials()[matIndex];
+                    cmd.Transform = transform;
+                    cmd.EntityID = (int)(uint32_t)e;
+
+                    cmd.IsVisibleToCamera = isVisible;
+                    cmd.IsVisibleToShadows = isVisibleToShadows;
+
+                    {
+                        std::lock_guard<std::mutex> lock(queueMutex);
+                        renderQueue.push_back(cmd);
+                    }
+                });
+
+            JobSystem::Wait();
+        }
+
+        for (const auto& cmd : renderQueue)
+        {
+            if (cmd.IsVisibleToCamera)
+                Renderer::Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
+
+            if (cmd.IsVisibleToShadows)
+                Renderer::SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
         }
 
         if (showColliders)
@@ -412,6 +578,8 @@ namespace RXNEngine {
     void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
         OPTICK_EVENT();
+
+        UpdateWorldTransforms();
 
         LightEnvironment lightEnv;
         {
@@ -446,21 +614,71 @@ namespace RXNEngine {
 
         Renderer::BeginScene(camera, lightEnv, m_Skybox, renderTarget);
 
-        auto view = m_Registry.view<StaticMeshComponent>();
-        for (auto entity : view)
+        glm::mat4 viewProj = camera.GetViewProjection();
+        ViewFrustum frustum;
+        frustum.Extract(viewProj);
+
+        std::vector<RenderCommandData> renderQueue;
+        std::mutex queueMutex;
+
+        auto view = m_Registry.view<StaticMeshComponent, TransformComponent>();
+        std::vector<entt::entity> entities(view.begin(), view.end());
+
+        if (!entities.empty())
         {
-            auto mc = view.get<StaticMeshComponent>(entity);
+            uint32_t threadCount = JobSystem::GetThreadCount();
+            uint32_t groupSize = (uint32_t)entities.size() / threadCount;
+            if (groupSize == 0) groupSize = 1;
 
-            if (mc.Mesh)
-            {
-                uint32_t materialIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
+            JobSystem::Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
+                {
+                    entt::entity e = entities[args.JobIndex];
+                    auto [mc, tc] = view.get<StaticMeshComponent, TransformComponent>(e);
 
-                Ref<Material> material = mc.MaterialTableOverride ?
-                    mc.MaterialTableOverride :
-                    mc.Mesh->GetMaterials()[materialIndex];
+                    if (!mc.Mesh) return;
 
-                Renderer::Submit(mc.Mesh, mc.SubmeshIndex, material, GetWorldTransform({ entity, this }), (int)(uint32_t)entity);
-            }
+                    glm::mat4 transform = tc.WorldTransform;
+                    glm::vec3 worldPos = glm::vec3(transform[3]);
+
+                    const auto& submesh = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex];
+                    AABB worldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, transform);
+
+                    glm::vec3 center = (worldAABB.Min + worldAABB.Max) * 0.5f;
+                    float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
+
+                    bool isVisible = frustum.IsSphereVisible(center, radius);
+                    bool isVisibleToShadows = Renderer::IsSphereVisibleToShadows(center, radius);
+                    
+                    if (!isVisible && !isVisibleToShadows)
+                        return;
+
+                    RenderCommandData cmd;
+                    cmd.Mesh = mc.Mesh;
+                    cmd.SubmeshIndex = mc.SubmeshIndex;
+                    uint32_t matIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
+                    cmd.Material = mc.MaterialTableOverride ? mc.MaterialTableOverride : mc.Mesh->GetMaterials()[matIndex];
+                    cmd.Transform = transform;
+                    cmd.EntityID = (int)(uint32_t)e;
+
+                    cmd.IsVisibleToCamera = isVisible;
+                    cmd.IsVisibleToShadows = isVisibleToShadows;
+
+                    {
+                        std::lock_guard<std::mutex> lock(queueMutex);
+                        renderQueue.push_back(cmd);
+                    }
+                });
+
+            JobSystem::Wait();
+        }
+
+        for (const auto& cmd : renderQueue)
+        {
+            if (cmd.IsVisibleToCamera)
+                Renderer::Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
+
+            if (cmd.IsVisibleToShadows)
+                Renderer::SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
         }
 
         if (m_Skybox)
@@ -562,11 +780,24 @@ namespace RXNEngine {
                 nsc.Instance->OnUpdate(deltaTime);
             });
 
-        auto view = m_Registry.view<ScriptComponent>();
-        for (auto e : view)
+
+        auto scriptView = m_Registry.view<ScriptComponent>();
+        std::vector<entt::entity> entities(scriptView.begin(), scriptView.end());
+
+        if (!entities.empty())
         {
-            Entity entity = { e, this };
-            ScriptEngine::OnUpdateEntity(entity, deltaTime);
+            uint32_t threadCount = JobSystem::GetThreadCount();
+            uint32_t groupSize = (uint32_t)entities.size() / threadCount;
+            if (groupSize == 0) groupSize = 1;
+
+            JobSystem::Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
+                {
+                    OPTICK_EVENT("Run C# Update");
+                    Entity entity = { entities[args.JobIndex], this };
+                    ScriptEngine::OnUpdateEntity(entity, deltaTime);
+                });
+
+            JobSystem::Wait();
         }
 
         for (auto& entity : m_EntitiesToDestroy)
@@ -574,6 +805,8 @@ namespace RXNEngine {
             RemoveEntity(entity);
         }
         m_EntitiesToDestroy.clear();
+
+        UpdateWorldTransforms();
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -594,13 +827,9 @@ namespace RXNEngine {
 
     Entity Scene::GetEntityByUUID(UUID uuid)
     {
-        auto view = m_Registry.view<IDComponent>();
-        for (auto entity : view)
-        {
-            const auto& id = view.get<IDComponent>(entity);
-            if (id.ID == uuid)
-                return { entity, this };
-        }
+        if (m_EntityMap.find(uuid) != m_EntityMap.end())
+            return { m_EntityMap.at(uuid), this };
+
         return {};
     }
 

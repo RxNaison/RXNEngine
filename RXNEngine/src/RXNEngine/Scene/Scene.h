@@ -58,6 +58,7 @@ namespace RXNEngine {
 		bool IsSimulating() { return m_IsSimulating; }
 
 	private:
+		void UpdateWorldTransforms();
 		void OnCameraComponentAdded(entt::registry& registry, entt::entity entity);
 		void RemoveEntity(Entity entity);
 		void CreatePhysicsBody(Entity entity);
@@ -73,6 +74,8 @@ namespace RXNEngine {
 
 		bool m_IsRunning = false;
 		bool m_IsSimulating = false;
+
+		std::unordered_map<UUID, entt::entity> m_EntityMap;
 
 		std::vector<Entity> m_EntitiesToDestroy;
 

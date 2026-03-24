@@ -176,8 +176,14 @@ float ShadowCalculation(vec3 fragPosWorld)
 
     vec3 normal = normalize(v_Normal);
     vec3 lightDir = normalize(-u_DirLightDirection.xyz);
-    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
     
+    float minBias = 0.00005;
+    float maxBias = 0.0005;
+
+    float cascadeMultiplier = float(layer + 1) * 0.5;
+
+    float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias) * cascadeMultiplier;
+
     // PCF
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));

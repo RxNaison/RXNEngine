@@ -70,6 +70,9 @@ namespace RXNEngine {
 
         static void ExecutePickingPass(const Ref<Shader>& pickingShader);
 
+        static bool IsSphereVisibleToShadows(const glm::vec3& center, float radius);
+        static void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID);
+
         static RendererStatistics GetStats();
         static void ResetStats();
 
