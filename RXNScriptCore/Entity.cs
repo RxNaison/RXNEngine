@@ -100,5 +100,31 @@ namespace RXNEngine
             }
         }
         #endregion
+
+        #region Component Accessors
+        public bool HasComponent<T>() where T : Component
+        {
+            unsafe
+            {
+                IntPtr typeName = Marshal.StringToHGlobalAnsi(typeof(T).Name);
+
+                var func = (delegate* unmanaged<ulong, IntPtr, byte>)Interop.NativeFunctions.Entity_HasComponent;
+                byte hasIt = func(ID, typeName);
+
+                Marshal.FreeHGlobal(typeName);
+                return hasIt != 0;
+            }
+        }
+
+        public T? GetComponent<T>() where T : Component, new()
+        {
+            if (!HasComponent<T>())
+                return null;
+
+            T component = new T();
+            component.EntityHandle = this;
+            return component;
+        }
+        #endregion
     }
 }

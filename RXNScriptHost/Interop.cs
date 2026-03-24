@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace RXNScriptHost
@@ -34,6 +35,43 @@ namespace RXNScriptHost
         //Physics Interop
         public IntPtr Rigidbody_ApplyLinearImpulse;
         public IntPtr Physics_Raycast;
+
+        //Component Accessors
+        public IntPtr Entity_HasComponent;
+
+        public IntPtr Entity_Tag_Get;
+        public IntPtr Entity_Tag_Set;
+
+        public IntPtr Entity_Transform_Get;
+        public IntPtr Entity_Transform_Set;
+
+        public IntPtr Entity_Relationship_GetParent;
+        public IntPtr Entity_Relationship_SetParent;
+
+        public IntPtr Entity_StaticMesh_GetAssetPath;
+        public IntPtr Entity_StaticMesh_SetAssetPath;
+
+        //CameraComponent
+        public IntPtr DirLight_Get;
+        public IntPtr DirLight_Set;
+
+        public IntPtr PointLight_Get;
+        public IntPtr PointLight_Set;
+
+        public IntPtr Entity_Script_Get;
+        public IntPtr Entity_Script_Set;
+
+        public IntPtr Entity_Rigidbody_Get;
+        public IntPtr Entity_Rigidbody_Set;
+
+        public IntPtr Entity_BoxCollider_Get;
+        public IntPtr Entity_BoxCollider_Set;
+
+        public IntPtr Entity_SphereCollider_Get;
+        public IntPtr Entity_SphereCollider_Set;
+
+        public IntPtr Entity_CapsuleCollider_Get;
+        public IntPtr Entity_CapsuleCollider_Set;
     }
 
     public static class Interop

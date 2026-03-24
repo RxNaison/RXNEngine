@@ -272,6 +272,215 @@ namespace RXNEngine {
 
 #pragma endregion
 
+#pragma region Component Accessors
+    extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeEntity_HasComponent(uint64_t entityID, const char* componentType)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return 0;
+
+        std::string_view type(componentType);
+
+        if (type == "IDComponent") return entity.HasComponent<IDComponent>() ? 1 : 0;
+        if (type == "TagComponent") return entity.HasComponent<TagComponent>() ? 1 : 0;
+        if (type == "TransformComponent") return entity.HasComponent<TransformComponent>() ? 1 : 0;
+        if (type == "RelationshipComponent") return entity.HasComponent<RelationshipComponent>() ? 1 : 0;
+        if (type == "StaticMeshComponent") return entity.HasComponent<StaticMeshComponent>() ? 1 : 0;
+        if (type == "CameraComponent") return entity.HasComponent<CameraComponent>() ? 1 : 0;
+        if (type == "DirectionalLightComponent") return entity.HasComponent<DirectionalLightComponent>() ? 1 : 0;
+        if (type == "PointLightComponent") return entity.HasComponent<PointLightComponent>() ? 1 : 0;
+        if (type == "ScriptComponent") return entity.HasComponent<ScriptComponent>() ? 1 : 0;
+        if (type == "RigidbodyComponent") return entity.HasComponent<RigidbodyComponent>() ? 1 : 0;
+        if (type == "BoxColliderComponent") return entity.HasComponent<BoxColliderComponent>() ? 1 : 0;
+        if (type == "SphereColliderComponent") return entity.HasComponent<SphereColliderComponent>() ? 1 : 0;
+        if (type == "CapsuleColliderComponent") return entity.HasComponent<CapsuleColliderComponent>() ? 1 : 0;
+
+        return 0;
+    }
+
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTag_Get(uint64_t entityID, char* outBuffer, uint32_t maxLength)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        std::string tag = entity.GetComponent<TagComponent>().Tag;
+
+        strncpy_s(outBuffer, maxLength, tag.c_str(), _TRUNCATE);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTag_Set(uint64_t entityID, const char* inTag)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        entity.GetComponent<TagComponent>().Tag = inTag;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Get(uint64_t entityID, TransformComponent* outData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outData = entity.GetComponent<TransformComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Set(uint64_t entityID, TransformComponent* inData)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+
+        entity.GetComponent<TransformComponent>() = *inData;
+
+        if (entity.HasComponent<RigidbodyComponent>())
+            scene->SyncTransformToPhysics(entity);
+    }
+
+    extern "C" uint64_t CORECLR_DELEGATE_CALLTYPE NativeRelationship_GetParent(uint64_t entityID)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        return entity.GetComponent<RelationshipComponent>().ParentHandle;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRelationship_SetParent(uint64_t entityID, uint64_t parentID)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        entity.GetComponent<RelationshipComponent>().ParentHandle = parentID;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeStaticMesh_GetAssetPath(uint64_t entityID, char* outBuffer, uint32_t maxLength)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        std::string tag = entity.GetComponent<StaticMeshComponent>().AssetPath;
+
+        strncpy_s(outBuffer, maxLength, tag.c_str(), _TRUNCATE);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeStaticMesh_SetAssetPath(uint64_t entityID, const char* inTag)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        entity.GetComponent<StaticMeshComponent>().AssetPath = inTag;
+    }
+     
+    //CameraComponent
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Get(uint64_t entityID, DirectionalLightComponent* outComponent)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outComponent = entity.GetComponent<DirectionalLightComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Set(uint64_t entityID, DirectionalLightComponent* inComponent)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        entity.GetComponent<DirectionalLightComponent>() = *inComponent;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Get(uint64_t entityID, PointLightComponent* outComponent)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outComponent = entity.GetComponent<PointLightComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Set(uint64_t entityID, PointLightComponent* inComponent)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        entity.GetComponent<PointLightComponent>() = *inComponent;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Get(uint64_t entityID, char* outBuffer, uint32_t maxLength)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        std::string scriptPath = entity.GetComponent<ScriptComponent>().ClassName;
+
+        strncpy_s(outBuffer, maxLength, scriptPath.c_str(), _TRUNCATE);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Set(uint64_t entityID, const char* inTag)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        entity.GetComponent<ScriptComponent>().ClassName = inTag;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Get(uint64_t entityID, RigidbodyComponent* outData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outData = entity.GetComponent<RigidbodyComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Set(uint64_t entityID, RigidbodyComponent* inData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        auto& rb = entity.GetComponent<RigidbodyComponent>();
+
+        void* tempActor = rb.RuntimeActor;
+        rb = *inData;
+        rb.RuntimeActor = tempActor;
+
+        if (rb.RuntimeActor && rb.Type != RigidbodyComponent::BodyType::Static)
+        {
+            physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)rb.RuntimeActor;
+            actor->setMass(rb.Mass);
+            actor->setLinearDamping(rb.LinearDrag);
+            actor->setAngularDamping(rb.AngularDrag);
+        }
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Get(uint64_t entityID, BoxColliderComponent* outData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outData = entity.GetComponent<BoxColliderComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Set(uint64_t entityID, BoxColliderComponent* inData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        auto& bc = entity.GetComponent<BoxColliderComponent>();
+
+        void* tempShape = bc.RuntimeShape;
+        void* tempMat = bc.RuntimeMaterial;
+
+        bc = *inData;
+
+        bc.RuntimeShape = tempShape;
+        bc.RuntimeMaterial = tempMat;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Get(uint64_t entityID, SphereColliderComponent* outData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outData = entity.GetComponent<SphereColliderComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Set(uint64_t entityID, SphereColliderComponent* inData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        auto& bc = entity.GetComponent<SphereColliderComponent>();
+
+        void* tempShape = bc.RuntimeShape;
+        void* tempMat = bc.RuntimeMaterial;
+
+        bc = *inData;
+
+        bc.RuntimeShape = tempShape;
+        bc.RuntimeMaterial = tempMat;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Get(uint64_t entityID, CapsuleColliderComponent* outData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        *outData = entity.GetComponent<CapsuleColliderComponent>();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Set(uint64_t entityID, CapsuleColliderComponent* inData)
+    {
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        auto& bc = entity.GetComponent<CapsuleColliderComponent>();
+
+        void* tempShape = bc.RuntimeShape;
+        void* tempMat = bc.RuntimeMaterial;
+
+        bc = *inData;
+
+        bc.RuntimeShape = tempShape;
+        bc.RuntimeMaterial = tempMat;
+    }
+#pragma endregion
+
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
     {
         RXN_CORE_ASSERT(outCalls, "InternalCalls struct is null!");
@@ -304,6 +513,45 @@ namespace RXNEngine {
         //Physics Interop
 		outCalls->NativeRigidbody_ApplyLinearImpulse = (void*)NativeRigidbody_ApplyLinearImpulse;
         outCalls->Physics_Raycast = (void*)NativePhysics_Raycast;
+
+        //Component Accessors
+        outCalls->NativeEntity_HasComponent = (void*)NativeEntity_HasComponent;
+
+        outCalls->NativeTag_Get = (void*)NativeTag_Get;
+        outCalls->NativeTag_Set = (void*)NativeTag_Set;
+
+        outCalls->NativeTransform_Get = (void*)NativeTransform_Get;
+        outCalls->NativeTransform_Set = (void*)NativeTransform_Set;
+
+        outCalls->NativeRelationship_GetParent = (void*)NativeRelationship_GetParent;
+        outCalls->NativeRelationship_SetParent = (void*)NativeRelationship_SetParent;
+         
+        outCalls->NativeStaticMesh_GetAssetPath = (void*)NativeStaticMesh_GetAssetPath;
+        outCalls->NativeStaticMesh_SetAssetPath = (void*)NativeStaticMesh_SetAssetPath;
+         
+        //CameraComponent
+
+        outCalls->NativeDirLight_Get = (void*)NativeDirLight_Get;
+        outCalls->NativeDirLight_Set = (void*)NativeDirLight_Set;
+
+        outCalls->NativePointLight_Get = (void*)NativePointLight_Get;
+        outCalls->NativePointLight_Set = (void*)NativePointLight_Set;
+
+        outCalls->NativeScript_Get = (void*)NativeScript_Get;
+        outCalls->NativeScript_Set = (void*)NativeScript_Set;
+
+        outCalls->NativeRigidbody_Get = (void*)NativeRigidbody_Get;
+        outCalls->NativeRigidbody_Set = (void*)NativeRigidbody_Set;
+
+        outCalls->NativeBoxCollider_Get = (void*)NativeBoxCollider_Get;
+        outCalls->NativeBoxCollider_Set = (void*)NativeBoxCollider_Set;
+
+        outCalls->NativeSphereCollider_Get = (void*)NativeSphereCollider_Get;
+        outCalls->NativeSphereCollider_Set = (void*)NativeSphereCollider_Set;
+
+        outCalls->NativeCapsuleCollider_Get = (void*)NativeCapsuleCollider_Get;
+        outCalls->NativeCapsuleCollider_Set = (void*)NativeCapsuleCollider_Set;
+
     }
 
 }

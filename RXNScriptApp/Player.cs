@@ -1,5 +1,5 @@
-﻿using System;
-using RXNEngine;
+﻿using RXNEngine;
+using System;
 
 
 public class Player : Entity
@@ -14,6 +14,7 @@ public class Player : Entity
     public Vector4 PlayerColor = new Vector4(0.2f, 0.8f, 0.3f, 1.0f);
     public Entity? BulletPrefab;
     public Entity? HeadCamera;
+    public Entity? SunEntity;
 
     private bool m_JumpRequested = false;
     private int m_CurrentContacts = 0;
@@ -34,6 +35,47 @@ public class Player : Entity
         m_Yaw = currentRot.Y;
 
         HeadCamera = FindEntityByName("Camera");
+
+        Console.WriteLine("\n=== RXN ENGINE: COMPONENT BRIDGE TEST ===");
+
+        if (this.HasComponent<TagComponent>())
+        {
+            var tagComp = this.GetComponent<TagComponent>();
+            Console.WriteLine($"[Tag Test] Original Name: {tagComp!.Tag}");
+
+            tagComp.Tag = "DoomSlayer";
+            Console.WriteLine($"[Tag Test] Renamed to: {tagComp.Tag}");
+        }
+
+        if (this.HasComponent<ScriptComponent>())
+        {
+            var scriptComp = this.GetComponent<ScriptComponent>();
+            Console.WriteLine($"[Script Test] Running Class: {scriptComp!.ScriptPath}");
+        }
+
+        if (this.HasComponent<RelationshipComponent>())
+        {
+            var relComp = this.GetComponent<RelationshipComponent>();
+            Entity? myParent = relComp!.Parent;
+
+            if (myParent != null)
+                Console.WriteLine($"[Hierarchy Test] My Parent's ID is: {myParent.ID}");
+            else
+                Console.WriteLine("[Hierarchy Test] I am an orphan (No Parent).");
+        }
+
+        //Entity? someMeshEntity = Entity.FindEntityByName("Cube");
+        //if (someMeshEntity != null && someMeshEntity.HasComponent<StaticMeshComponent>())
+        //{
+        //    var meshComp = someMeshEntity.GetComponent<StaticMeshComponent>();
+        //    Console.WriteLine($"[Mesh Test] Found 'Cube'. Asset Path: {meshComp!.AssetPath}");
+        //
+        //    meshComp.AssetPath = "res/models/DamagedCube.obj";
+        //    Console.WriteLine($"[Mesh Test] Changed Path to: {meshComp.AssetPath}");
+        //}
+
+        Console.WriteLine("=========================================\n");
+
     }
 
     public override void OnUpdate(float deltaTime)
@@ -70,7 +112,7 @@ public class Player : Entity
 
         if (Input.IsKeyDown(KeyCode.F) && Ammo > 0)
         {
-            /*
+
              if(BulletPrefab != null)
              {
                 Entity firedBullet = Entity.Instantiate(BulletPrefab);
@@ -82,8 +124,9 @@ public class Player : Entity
                 Ammo--;
                 Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
              }
-            */
 
+
+            /*
             Vector3 origin = HeadCamera != null ? HeadCamera.WorldPosition : this.WorldPosition;
             Vector3 dir = HeadCamera != null ? HeadCamera.Forward : forward;
 
@@ -102,6 +145,7 @@ public class Player : Entity
             {
                 Console.WriteLine("[Hitscan] Missed! Shot went into the void.");
             }
+            */
         }
 
         if (Input.IsKeyDown(KeyCode.X))
@@ -129,6 +173,21 @@ public class Player : Entity
         {
             pos += velocity * Speed * deltaTime;
             Translation = pos;
+        }
+
+        if (SunEntity != null)
+        {
+            var light = SunEntity.GetComponent<DirectionalLightComponent>();
+            if (light != null)
+            {
+                var data = light.Data;
+
+                data.Color = new Vector3(1, 0, 0);
+                data.Intensity = 50.0f;
+
+                light.Data = data;
+
+            }
         }
     }
 
