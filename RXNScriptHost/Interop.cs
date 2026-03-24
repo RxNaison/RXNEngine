@@ -24,10 +24,6 @@ namespace RXNScriptHost
 
         //Transform Math
         public IntPtr Entity_GetWorldPosition;
-        public IntPtr Entity_GetTranslation;
-        public IntPtr Entity_SetTranslation;
-        public IntPtr Entity_GetRotation;
-        public IntPtr Entity_SetRotation;
         public IntPtr Entity_GetForward;
         public IntPtr Entity_GetRight;
         public IntPtr Entity_GetUp;

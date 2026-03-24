@@ -75,6 +75,8 @@ namespace RXNEngine {
 
         sceneDesc.flags |= physx::PxSceneFlag::eENABLE_CCD;
 
+        sceneDesc.flags |= physx::PxSceneFlag::eREQUIRE_RW_LOCK;
+
         s_Scene = s_Physics->createScene(sceneDesc);
 
         s_Scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
@@ -109,5 +111,10 @@ namespace RXNEngine {
         s_Scene->simulate(dt);
         s_Scene->fetchResults(true);
     }
+
+    void PhysicsSystem::LockRead() { if (s_Scene) s_Scene->lockRead(); }
+    void PhysicsSystem::UnlockRead() { if (s_Scene) s_Scene->unlockRead(); }
+    void PhysicsSystem::LockWrite() { if (s_Scene) s_Scene->lockWrite(); }
+    void PhysicsSystem::UnlockWrite() { if (s_Scene) s_Scene->unlockWrite(); }
 
 }

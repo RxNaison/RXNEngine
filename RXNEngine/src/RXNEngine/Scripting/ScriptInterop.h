@@ -31,10 +31,6 @@ namespace RXNEngine {
 
         //Transform Math
         void* NativeEntity_GetWorldPosition = nullptr;
-        void* Entity_GetTranslation = nullptr;
-        void* Entity_SetTranslation = nullptr;
-        void* NativeEntity_GetRotation = nullptr;
-        void* NativeEntity_SetRotation = nullptr;
         void* NativeEntity_GetForward = nullptr;
         void* NativeEntity_GetRight = nullptr;
         void* NativeEntity_GetUp = nullptr;

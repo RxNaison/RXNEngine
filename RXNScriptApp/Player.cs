@@ -4,6 +4,7 @@ using System;
 
 public class Player : Entity
 {
+    public int BulletsShot = 0;
     public float Speed = 5.0f;
     public float MouseSensitivity = 0.002f;
     public float JumpForce = 1.0f;
@@ -27,7 +28,7 @@ public class Player : Entity
 
     public override void OnCreate()
     {
-        Input.SetCursorMode(CursorMode.Locked);
+        //Input.SetCursorMode(CursorMode.Locked);
         m_LastMousePos = Input.GetMousePosition();
 
         Vector3 currentRot = this.Rotation;
@@ -122,6 +123,7 @@ public class Player : Entity
                 firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
 
                 Ammo--;
+                BulletsShot++;
                 Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
              }
 

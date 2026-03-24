@@ -65,14 +65,38 @@ namespace RXNEngine
         }
         public Vector3 Translation
         {
-            get { unsafe { Vector3 res; ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetTranslation)(ID, &res); return res; } }
-            set { unsafe { ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetTranslation)(ID, &value); } }
+            get
+            {
+                return GetComponent<TransformComponent>()?.Data.Translation ?? new Vector3(0, 0, 0);
+            }
+            set
+            {
+                var tc = GetComponent<TransformComponent>();
+                if (tc != null)
+                {
+                    var data = tc.Data;
+                    data.Translation = value;
+                    tc.Data = data;
+                }
+            }
         }
 
         public Vector3 Rotation
         {
-            get { unsafe { Vector3 res; ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_GetRotation)(ID, &res); return res; } }
-            set { unsafe { ((delegate* unmanaged<ulong, Vector3*, void>)Interop.NativeFunctions.Entity_SetRotation)(ID, &value); } }
+            get
+            {
+                return GetComponent<TransformComponent>()?.Data.Rotation ?? new Vector3(0, 0, 0);
+            }
+            set
+            {
+                var tc = GetComponent<TransformComponent>();
+                if (tc != null)
+                {
+                    var data = tc.Data;
+                    data.Rotation = value;
+                    tc.Data = data;
+                }
+            }
         }
 
         public Vector3 Forward => GetDirection(Interop.NativeFunctions.Entity_GetForward);

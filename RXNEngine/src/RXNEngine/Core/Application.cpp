@@ -4,6 +4,7 @@
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
 #include "RXNEngine/Core/Time.h"
+#include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 
@@ -19,6 +20,7 @@ namespace RXNEngine {
 		m_Window = std::unique_ptr<Window>(Window::Create(props));
 		m_Window->SetEventCallback([this](Event& e) { OnEvent(e); });
 
+		JobSystem::Init();
 		Renderer::Init();
 		PhysicsSystem::Init();
 		ScriptEngine::Init();
@@ -31,6 +33,7 @@ namespace RXNEngine {
 	{
 		PhysicsSystem::Shutdown();
 		ScriptEngine::Shutdown();
+		JobSystem::Shutdown();
 	}
 
 	void Application::PushLayer(Layer* layer)

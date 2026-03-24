@@ -32,6 +32,12 @@ namespace RXNEngine {
                 return physx::PxQueryHitType::eBLOCK;
             }
         };
+
+        struct TransformDataInterop {
+            glm::vec3 Translation;
+            glm::vec3 Rotation;
+            glm::vec3 Scale;
+        };
     }
 
 #pragma region Logging & Core
@@ -121,60 +127,6 @@ namespace RXNEngine {
         *outPosition = glm::vec3(transform[3]);
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetTranslation(uint64_t entityID, glm::vec3* outTranslation)
-    {
-        Scene* scene = ScriptEngine::GetSceneContext();
-
-        RXN_CORE_ASSERT(scene, "No active scene!");
-        Entity entity = scene->GetEntityByUUID(entityID);
-
-        if (!entity)
-        {
-            RXN_CORE_ERROR("ScriptInterop: Tried to Get Translation of invalid Entity {0}!", entityID);
-            return;
-        }
-
-        *outTranslation = entity.GetComponent<TransformComponent>().Translation;
-    }
-
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_SetTranslation(uint64_t entityID, glm::vec3* inTranslation)
-    {
-        Scene* scene = ScriptEngine::GetSceneContext();
-
-        RXN_CORE_ASSERT(scene, "No active scene!");
-        Entity entity = scene->GetEntityByUUID(entityID);
-
-        if (!entity)
-        {
-            RXN_CORE_ERROR("ScriptInterop: Tried to Set Translation of invalid Entity {0}!", entityID);
-            return;
-        }
-
-        entity.GetComponent<TransformComponent>().Translation = *inTranslation;
-
-        if (entity.HasComponent<RigidbodyComponent>())
-            scene->SyncTransformToPhysics(entity);
-    }
-
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetRotation(uint64_t entityID, glm::vec3* outRotation)
-    {
-        Scene* scene = ScriptEngine::GetSceneContext();
-        Entity entity = scene->GetEntityByUUID(entityID);
-        if (!entity) return;
-
-        *outRotation = entity.GetComponent<TransformComponent>().Rotation;
-    }
-
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_SetRotation(uint64_t entityID, glm::vec3* inRotation)
-    {
-        Scene* scene = ScriptEngine::GetSceneContext();
-        Entity entity = scene->GetEntityByUUID(entityID);
-        if (!entity) return;
-
-        entity.GetComponent<TransformComponent>().Rotation = *inRotation;
-
-        scene->SyncTransformToPhysics(entity);
-    }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetForward(uint64_t entityID, glm::vec3* outForward)
     {
@@ -223,11 +175,9 @@ namespace RXNEngine {
             physx::PxRigidDynamic* dynamicActor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor)->is<physx::PxRigidDynamic>();
             if (dynamicActor)
             {
-                dynamicActor->addForce(
-                    physx::PxVec3(impulse->x, impulse->y, impulse->z),
-                    physx::PxForceMode::eIMPULSE,
-                    wakeUp != 0
-                );
+                PhysicsSystem::LockWrite();
+                dynamicActor->addForce(physx::PxVec3(impulse->x, impulse->y, impulse->z), physx::PxForceMode::eIMPULSE, wakeUp != 0);
+                PhysicsSystem::UnlockWrite();
             }
         }
     }
@@ -250,7 +200,9 @@ namespace RXNEngine {
         physx::PxQueryFilterData filterData;
         filterData.flags |= physx::PxQueryFlag::ePREFILTER;
 
+        PhysicsSystem::LockRead();
         bool hit = pxScene->raycast(pxOrigin, pxDir, maxDistance, hitInfo, physx::PxHitFlags(physx::PxHitFlag::eDEFAULT), filterData, &filter);
+        PhysicsSystem::UnlockRead();
 
         if (hit && hitInfo.hasBlock)
         {
@@ -313,21 +265,26 @@ namespace RXNEngine {
         entity.GetComponent<TagComponent>().Tag = inTag;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Get(uint64_t entityID, TransformComponent* outData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Get(uint64_t entityID, TransformDataInterop* outData)
     {
         Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
-        *outData = entity.GetComponent<TransformComponent>();
+        auto& tc = entity.GetComponent<TransformComponent>();
+
+        outData->Translation = tc.Translation;
+        outData->Rotation = tc.Rotation;
+        outData->Scale = tc.Scale;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Set(uint64_t entityID, TransformComponent* inData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Set(uint64_t entityID, TransformDataInterop* inData)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
-        Entity entity = scene->GetEntityByUUID(entityID);
+        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        auto& tc = entity.GetComponent<TransformComponent>();
 
-        entity.GetComponent<TransformComponent>() = *inData;
+        tc.Translation = inData->Translation;
+        tc.Rotation = inData->Rotation;
+        tc.Scale = inData->Scale;
 
-        if (entity.HasComponent<RigidbodyComponent>())
-            scene->SyncTransformToPhysics(entity);
+        tc.IsDirty = true;
     }
 
     extern "C" uint64_t CORECLR_DELEGATE_CALLTYPE NativeRelationship_GetParent(uint64_t entityID)
@@ -502,10 +459,6 @@ namespace RXNEngine {
 
         //Transform Math
         outCalls->NativeEntity_GetWorldPosition = (void*)NativeEntity_GetWorldPosition;
-        outCalls->Entity_GetTranslation = (void*)NativeEntity_GetTranslation;
-        outCalls->Entity_SetTranslation = (void*)NativeEntity_SetTranslation;
-		outCalls->NativeEntity_GetRotation = (void*)NativeEntity_GetRotation;
-		outCalls->NativeEntity_SetRotation = (void*)NativeEntity_SetRotation;
 		outCalls->NativeEntity_GetForward = (void*)NativeEntity_GetForward;
 		outCalls->NativeEntity_GetRight = (void*)NativeEntity_GetRight;
 		outCalls->NativeEntity_GetUp = (void*)NativeEntity_GetUp;

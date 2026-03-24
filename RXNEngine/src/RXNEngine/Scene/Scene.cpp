@@ -5,6 +5,7 @@
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
+#include "RXNEngine/Core/JobSystem.h"
 
 namespace RXNEngine {
 
@@ -227,11 +228,43 @@ namespace RXNEngine {
         if (m_IsRunning)
         {
             auto scriptView = m_Registry.view<ScriptComponent>();
-            for (auto e : scriptView)
+            std::vector<entt::entity> entities(scriptView.begin(), scriptView.end());
+
+            if (!entities.empty())
             {
-                Entity entity = { e, this };
-                ScriptEngine::OnFixedUpdateEntity(entity, deltaTime);
+                uint32_t threadCount = JobSystem::GetThreadCount();
+                uint32_t groupSize = (uint32_t)entities.size() / threadCount;
+                if (groupSize == 0) groupSize = 1;
+
+                JobSystem::Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
+                    {
+                        OPTICK_EVENT("Run C# Fixed Update");
+                        Entity entity = { entities[args.JobIndex], this };
+                        ScriptEngine::OnFixedUpdateEntity(entity, deltaTime);
+                    });
+
+                JobSystem::Wait();
             }
+
+            PhysicsSystem::LockWrite();
+
+            auto transformView = m_Registry.view<TransformComponent>();
+            for (auto e : transformView)
+            {
+                auto& tc = transformView.get<TransformComponent>(e);
+
+                if (tc.IsDirty)
+                {
+                    Entity entity = { e, this };
+                    if (entity.HasComponent<RigidbodyComponent>())
+                    {
+                        SyncTransformToPhysics(entity);
+                    }
+                    tc.IsDirty = false;
+                }
+            }
+
+            PhysicsSystem::UnlockWrite();
         }
 
         auto rbView = m_Registry.view<RigidbodyComponent>();

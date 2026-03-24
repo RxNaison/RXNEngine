@@ -20,6 +20,11 @@ namespace RXNEngine {
         static void DestroyScene();
         static void Update(float dt);
 
+        static void LockRead();
+        static void UnlockRead();
+        static void LockWrite();
+        static void UnlockWrite();
+
     private:
         static physx::PxFoundation* s_Foundation;
         static physx::PxPhysics* s_Physics;

@@ -103,7 +103,7 @@ namespace RXNEngine
                 unsafe
                 {
                     IntPtr buffer = Marshal.AllocHGlobal(256);
-                    ((delegate* unmanaged<ulong, IntPtr, uint, void>)Interop.NativeFunctions.Entity_Tag_Get)(EntityHandle.ID, buffer, 256);
+                    ((delegate* unmanaged<ulong, IntPtr, uint, void>)Interop.NativeFunctions.Entity_StaticMesh_GetAssetPath)(EntityHandle.ID, buffer, 256);
 
                     string result = Marshal.PtrToStringAnsi(buffer) ?? "";
                     Marshal.FreeHGlobal(buffer);
@@ -115,7 +115,7 @@ namespace RXNEngine
                 unsafe
                 {
                     IntPtr tagPtr = Marshal.StringToHGlobalAnsi(value);
-                    ((delegate* unmanaged<ulong, IntPtr, void>)Interop.NativeFunctions.Entity_Tag_Set)(EntityHandle.ID, tagPtr);
+                    ((delegate* unmanaged<ulong, IntPtr, void>)Interop.NativeFunctions.Entity_StaticMesh_SetAssetPath)(EntityHandle.ID, tagPtr);
                     Marshal.FreeHGlobal(tagPtr);
                 }
             }
