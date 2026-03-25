@@ -17,6 +17,7 @@ namespace RXNEngine {
         //Logging & Core
         void* LogMessage = nullptr;
         void* ScriptField_Register = nullptr;
+        void* NativeAssetManager_LoadMeshAsync = nullptr;
 
         //Input
         void* Input_IsKeyDown = nullptr;
@@ -41,6 +42,7 @@ namespace RXNEngine {
 
         //Component Accessors
         void* NativeEntity_HasComponent = nullptr;
+        void* NativeEntity_AddComponent = nullptr;
 
         void* NativeTag_Get = nullptr;
         void* NativeTag_Set = nullptr;

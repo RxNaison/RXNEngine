@@ -83,6 +83,23 @@ namespace RXNEngine {
 		return nullptr;
 	}
 
+	static std::string GetMaterialTexturePath(aiMaterial* mat, const std::vector<aiTextureType>& types, const aiScene* scene, const std::string& directory)
+	{
+		for (auto type : types)
+		{
+			if (mat->GetTextureCount(type) > 0)
+			{
+				aiString str;
+				mat->GetTexture(type, 0, &str);
+
+				std::string filename = std::string(str.C_Str());
+				std::replace(filename.begin(), filename.end(), '\\', '/');
+				return directory + "/" + filename;
+			}
+		}
+		return "";
+	}
+
 	Ref<StaticMesh> ModelImporter::ImportAsset(const std::string& filepath, const ModelImportSettings& settings)
 	{
 		std::string cachePath = filepath + ".rxn";
@@ -97,115 +114,12 @@ namespace RXNEngine {
 
 		RXN_CORE_INFO("Importing raw model: {0}", filepath);
 
-		uint32_t importFlags = aiProcess_Triangulate;
-		if (settings.GenerateNormals)
-			importFlags |= aiProcess_GenSmoothNormals;
-		if (settings.CalculateTangents)
-			importFlags |= aiProcess_CalcTangentSpace;
-		if (settings.JoinIdenticalVertices)
-			importFlags |= aiProcess_JoinIdenticalVertices;
-		if (settings.FlipUVs)
-			importFlags |= aiProcess_FlipUVs;
-		if (settings.OptimizeGraph)
-			importFlags |= aiProcess_OptimizeGraph;
-		if (settings.OptimizeMeshes)
-			importFlags |= aiProcess_OptimizeMeshes;
-
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(filepath, importFlags);
-
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-		{
-			RXN_CORE_ERROR("ERROR::ASSIMP:: {0}", importer.GetErrorString());
-			return nullptr;
-		}
-
-		std::string directory = filepath.substr(0, filepath.find_last_of('/'));
-		if (directory == filepath)
-			directory = filepath.substr(0, filepath.find_last_of('\\'));
-
 		ImporterData data;
-		Ref<Shader> defaultPBR = AssetManager::GetShader("res/shaders/pbr.glsl");
+		if (!LoadModelData(filepath, data, settings))
+			return nullptr;
 
-		for (uint32_t i = 0; i < scene->mNumMaterials; i++)
-		{
-			aiMaterial* aiMat = scene->mMaterials[i];
-			Ref<Material> rxnMat = Material::CreateDefault(defaultPBR);
+		Ref<StaticMesh> mesh = BuildMeshFromData(data);
 
-			Ref<Texture2D> albedoMap = LoadTextureWithFallback(aiMat, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, scene, directory, filepath);
-			if (albedoMap)
-				rxnMat->SetAlbedoMap(albedoMap);
-
-			Ref<Texture2D> normalMap = LoadTextureWithFallback(aiMat, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, scene, directory, filepath);
-			if (normalMap)
-				rxnMat->SetNormalMap(normalMap);
-
-			Ref<Texture2D> metalRoughMap = LoadTextureWithFallback(aiMat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS }, scene, directory, filepath);
-			if (!metalRoughMap)
-				metalRoughMap = LoadTextureWithFallback(aiMat, { aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory, filepath);
-
-			if (metalRoughMap)
-				rxnMat->SetMetalnessRoughnessMap(metalRoughMap);
-
-			Ref<Texture2D> aoMap = LoadTextureWithFallback(aiMat, { aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP, aiTextureType_AMBIENT }, scene, directory, filepath);
-			if (aoMap)
-				rxnMat->SetAOMap(aoMap);
-
-			Ref<Texture2D> emissiveMap = LoadTextureWithFallback(aiMat, { aiTextureType_EMISSIVE }, scene, directory, filepath);
-			if (emissiveMap)
-				rxnMat->SetEmissiveMap(emissiveMap);
-
-			aiColor4D color(1.0f, 1.0f, 1.0f, 1.0f);
-			if (aiMat->Get(AI_MATKEY_BASE_COLOR, color) != AI_SUCCESS)
-				aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-			rxnMat->SetAlbedoColor(glm::vec4(color.r, color.g, color.b, color.a));
-
-			aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
-			if (aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
-				rxnMat->SetEmissiveColor(glm::vec3(emissiveColor.r, emissiveColor.g, emissiveColor.b));
-
-			float roughness = 0.5f;
-			float metalness = 0.0f;
-			if (metalRoughMap) metalness = 1.0f;
-
-			if (aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != AI_SUCCESS)
-			{
-				float shininess;
-				if (aiMat->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS)
-					roughness = 1.0f - (glm::sqrt(shininess) / 10.0f);
-			}
-			rxnMat->SetRoughness(roughness);
-
-			if (aiMat->Get(AI_MATKEY_METALLIC_FACTOR, metalness) != AI_SUCCESS)
-				metalness = 0.0f;
-			rxnMat->SetMetalness(metalness);
-
-			float opacity = 1.0f;
-			if (aiMat->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
-			{
-				if (opacity < 1.0f || color.a < 1.0f)
-					rxnMat->SetTransparent(true);
-			}
-
-			aiString alphaMode;
-			if (aiMat->Get("$mat.gltf.alphaMode", 0, 0, alphaMode) == AI_SUCCESS)
-			{
-				std::string mode = alphaMode.C_Str();
-				if (mode == "BLEND" || mode == "MASK")
-					rxnMat->SetTransparent(true);
-			}
-			else
-			{
-				if (opacity < 1.0f || color.a < 1.0f)
-					rxnMat->SetTransparent(true);
-			}
-
-			data.Materials.push_back(rxnMat);
-		}
-
-		ProcessNode(scene->mRootNode, scene, data, glm::mat4(1.0f), "Root");
-
-		Ref<StaticMesh> mesh = CreateRef<StaticMesh>(data.Vertices, data.Indices, data.Submeshes, data.Materials);
 		ModelSerializer::Serialize(cachePath, mesh);
 
 		return mesh;
@@ -309,5 +223,132 @@ namespace RXNEngine {
 		}
 
 		return rootEntity;
+	}
+
+	bool ModelImporter::LoadModelData(const std::string& filepath, ImporterData& outData, const ModelImportSettings& settings)
+	{
+		OPTICK_EVENT();
+
+		uint32_t importFlags = aiProcess_Triangulate;
+		if (settings.GenerateNormals)
+			importFlags |= aiProcess_GenSmoothNormals;
+		if (settings.CalculateTangents)
+			importFlags |= aiProcess_CalcTangentSpace;
+		if (settings.JoinIdenticalVertices)
+			importFlags |= aiProcess_JoinIdenticalVertices;
+		if (settings.FlipUVs)
+			importFlags |= aiProcess_FlipUVs;
+		if (settings.OptimizeGraph)
+			importFlags |= aiProcess_OptimizeGraph;
+		if (settings.OptimizeMeshes)
+			importFlags |= aiProcess_OptimizeMeshes;
+
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(filepath, importFlags);
+
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+			return false;
+
+		std::string directory = filepath.substr(0, filepath.find_last_of('/'));
+		if (directory == filepath) directory = filepath.substr(0, filepath.find_last_of('\\'));
+
+		for (uint32_t i = 0; i < scene->mNumMaterials; i++)
+		{
+			aiMaterial* aiMat = scene->mMaterials[i];
+			MaterialDesc desc;
+
+			desc.AlbedoPath = GetMaterialTexturePath(aiMat, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, scene, directory);
+			desc.NormalPath = GetMaterialTexturePath(aiMat, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, scene, directory);
+			desc.MetalRoughPath = GetMaterialTexturePath(aiMat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory);
+			desc.AOPath = GetMaterialTexturePath(aiMat, { aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP, aiTextureType_AMBIENT }, scene, directory);
+			desc.EmissivePath = GetMaterialTexturePath(aiMat, { aiTextureType_EMISSIVE }, scene, directory);
+
+			aiColor4D color(1.0f, 1.0f, 1.0f, 1.0f);
+			if (aiMat->Get(AI_MATKEY_BASE_COLOR, color) != AI_SUCCESS)
+				aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+			desc.AlbedoColor = { color.r, color.g, color.b, color.a };
+
+			aiColor4D emissiveColor(0.0f, 0.0f, 0.0f, 1.0f);
+			if (aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+				desc.EmissiveColor = { emissiveColor.r, emissiveColor.g, emissiveColor.b };
+
+			float roughness = 0.5f;
+			float metalness = 0.0f;
+			if (!desc.MetalRoughPath.empty()) metalness = 1.0f;
+
+			if (aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != AI_SUCCESS)
+			{
+				float shininess;
+				if (aiMat->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS)
+					roughness = 1.0f - (glm::sqrt(shininess) / 10.0f);
+			}
+			desc.Roughness = roughness;
+
+			if (aiMat->Get(AI_MATKEY_METALLIC_FACTOR, metalness) != AI_SUCCESS)
+				metalness = 0.0f;
+			desc.Metalness = metalness;
+
+			float opacity = 1.0f;
+			if (aiMat->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
+			{
+				if (opacity < 1.0f || color.a < 1.0f)
+					desc.Transparent = true;
+			}
+
+			aiString alphaMode;
+			if (aiMat->Get("$mat.gltf.alphaMode", 0, 0, alphaMode) == AI_SUCCESS)
+			{
+				std::string mode = alphaMode.C_Str();
+				if (mode == "BLEND" || mode == "MASK")
+					desc.Transparent = true;
+			}
+			else
+			{
+				if (opacity < 1.0f || color.a < 1.0f)
+					desc.Transparent = true;
+			}
+
+			outData.Materials.push_back(desc);
+		}
+
+		ProcessNode(scene->mRootNode, scene, outData, glm::mat4(1.0f), "Root");
+		return true;
+	}
+
+	Ref<StaticMesh> ModelImporter::BuildMeshFromData(const ImporterData& data)
+	{
+		OPTICK_EVENT("ModelImporter::BuildMeshFromData (GPU)");
+		Ref<Shader> defaultPBR = AssetManager::GetShader("res/shaders/pbr.glsl");
+		std::vector<Ref<Material>> finalMaterials;
+
+		for (const auto& desc : data.Materials)
+		{
+			Ref<Material> rxnMat = Material::CreateDefault(defaultPBR);
+
+			if (!desc.AlbedoPath.empty())
+				rxnMat->SetAlbedoMap(AssetManager::GetTexture(desc.AlbedoPath));
+
+			if (!desc.NormalPath.empty())
+				rxnMat->SetNormalMap(AssetManager::GetTexture(desc.NormalPath));
+
+			if (!desc.MetalRoughPath.empty())
+				rxnMat->SetMetalnessRoughnessMap(AssetManager::GetTexture(desc.MetalRoughPath));
+
+			if (!desc.AOPath.empty())
+				rxnMat->SetAOMap(AssetManager::GetTexture(desc.AOPath));
+
+			if (!desc.EmissivePath.empty())
+				rxnMat->SetEmissiveMap(AssetManager::GetTexture(desc.EmissivePath));
+
+			rxnMat->SetAlbedoColor(desc.AlbedoColor);
+			rxnMat->SetEmissiveColor(desc.EmissiveColor);
+			rxnMat->SetRoughness(desc.Roughness);
+			rxnMat->SetMetalness(desc.Metalness);
+			rxnMat->SetTransparent(desc.Transparent);
+
+			finalMaterials.push_back(rxnMat);
+		}
+
+		return CreateRef<StaticMesh>(data.Vertices, data.Indices, data.Submeshes, finalMaterials);
 	}
 }

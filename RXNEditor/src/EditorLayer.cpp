@@ -47,6 +47,7 @@ namespace RXNEditor {
         OPTICK_EVENT();
 
         Renderer::ResetStats();
+        AssetManager::Update();
 
         switch (m_SceneState)
         {

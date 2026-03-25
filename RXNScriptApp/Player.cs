@@ -150,6 +150,14 @@ public class Player : Entity
             */
         }
 
+        if (Input.IsKeyDown(KeyCode.M))
+        {
+            Entity newProp = Entity.Instantiate();
+            newProp.Translation = this.Translation + (this.Forward * 5.0f);
+
+            AssetManager.LoadMeshOntoEntityAsync("assets/models/porsche/scene.gltf", newProp);
+        }
+
         if (Input.IsKeyDown(KeyCode.X))
         {
             Console.WriteLine("[Player] X pressed. Initiating Self-Destruct...");

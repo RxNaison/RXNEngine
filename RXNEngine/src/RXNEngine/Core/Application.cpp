@@ -89,7 +89,6 @@ namespace RXNEngine {
 			m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
-			
 		}
 	}
 

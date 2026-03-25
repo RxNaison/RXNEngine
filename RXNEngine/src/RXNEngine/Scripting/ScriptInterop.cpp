@@ -6,6 +6,7 @@
 #include "RXNEngine/Core/KeyCodes.h"
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
+#include "RXNEngine/Core/AssetManager.h"
 
 #include <coreclr_delegates.h>
 #include <PxPhysicsAPI.h>
@@ -49,6 +50,11 @@ namespace RXNEngine {
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScriptField_Register(const char* className, const char* fieldName, uint32_t type)
     {
         ScriptEngine::RegisterField(className, fieldName, (ScriptFieldType)type);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeAssetManager_LoadMeshAsync(const char* filepath, uint64_t entityID)
+    {
+        AssetManager::LoadMeshAsync(filepath, entityID);
     }
 #pragma endregion
 
@@ -250,6 +256,29 @@ namespace RXNEngine {
         return 0;
     }
 
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_AddComponent(uint64_t entityID, const char* componentType)
+    {
+        Scene* scene = ScriptEngine::GetSceneContext();
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity) return;
+
+        std::string_view type(componentType);
+
+        if (type == "StaticMeshComponent") entity.AddComponent<StaticMeshComponent>();
+        else if (type == "CameraComponent") entity.AddComponent<CameraComponent>();
+        else if (type == "DirectionalLightComponent") entity.AddComponent<DirectionalLightComponent>();
+        else if (type == "PointLightComponent") entity.AddComponent<PointLightComponent>();
+        else if (type == "ScriptComponent") entity.AddComponent<ScriptComponent>();
+        else if (type == "RigidbodyComponent") entity.AddComponent<RigidbodyComponent>();
+        else if (type == "BoxColliderComponent") entity.AddComponent<BoxColliderComponent>();
+        else if (type == "SphereColliderComponent") entity.AddComponent<SphereColliderComponent>();
+        else if (type == "CapsuleColliderComponent") entity.AddComponent<CapsuleColliderComponent>();
+        else
+        {
+            RXN_CORE_WARN("ScriptInterop: Attempted to add unknown component type '{0}'!", type);
+        }
+    }
+
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTag_Get(uint64_t entityID, char* outBuffer, uint32_t maxLength)
     {
@@ -445,6 +474,7 @@ namespace RXNEngine {
         //Logging & Core
         outCalls->LogMessage = (void*)NativeLogMessage;
         outCalls->ScriptField_Register = (void*)NativeScriptField_Register;
+        outCalls->NativeAssetManager_LoadMeshAsync = (void*)NativeAssetManager_LoadMeshAsync;
 
         //Input
         outCalls->Input_IsKeyDown = (void*)NativeInput_IsKeyDown;
@@ -469,6 +499,7 @@ namespace RXNEngine {
 
         //Component Accessors
         outCalls->NativeEntity_HasComponent = (void*)NativeEntity_HasComponent;
+        outCalls->NativeEntity_AddComponent = (void*)NativeEntity_AddComponent;
 
         outCalls->NativeTag_Get = (void*)NativeTag_Get;
         outCalls->NativeTag_Set = (void*)NativeTag_Set;

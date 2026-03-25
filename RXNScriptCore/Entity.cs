@@ -140,6 +140,23 @@ namespace RXNEngine
             }
         }
 
+        public T AddComponent<T>() where T : Component, new()
+        {
+            if (HasComponent<T>())
+                return GetComponent<T>()!;
+
+            unsafe
+            {
+                IntPtr typeName = Marshal.StringToHGlobalAnsi(typeof(T).Name);
+                ((delegate* unmanaged<ulong, IntPtr, void>)Interop.NativeFunctions.Entity_AddComponent)(ID, typeName);
+                Marshal.FreeHGlobal(typeName);
+            }
+
+            T component = new T();
+            component.EntityHandle = this;
+            return component;
+        }
+
         public T? GetComponent<T>() where T : Component, new()
         {
             if (!HasComponent<T>())

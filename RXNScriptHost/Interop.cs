@@ -10,6 +10,7 @@ namespace RXNScriptHost
         //Logging & Core
         public IntPtr LogMessage;
         public IntPtr ScriptField_Register;
+        public IntPtr AssetManager_LoadMeshAsync;
 
         //Input
         public IntPtr Input_IsKeyDown;
@@ -34,6 +35,7 @@ namespace RXNScriptHost
 
         //Component Accessors
         public IntPtr Entity_HasComponent;
+        public IntPtr Entity_AddComponent;
 
         public IntPtr Entity_Tag_Get;
         public IntPtr Entity_Tag_Set;

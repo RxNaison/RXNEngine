@@ -500,6 +500,8 @@ namespace RXNEditor {
 
                             component.MaterialTableOverride = Material::CreateDefault(defaultMat->GetShader());
 
+                            component.MaterialTableOverride->SetTransparent(defaultMat->IsTransparent());
+
                             auto params = defaultMat->GetParameters();
                             component.MaterialTableOverride->SetAlbedoColor(params.AlbedoColor);
                             component.MaterialTableOverride->SetRoughness(params.Roughness);
@@ -523,12 +525,16 @@ namespace RXNEditor {
                         component.MaterialTableOverride :
                         component.Mesh->GetMaterials()[activeMatIndex];
 
-                    if (!hasOverride) ImGui::BeginDisabled();
+                    if (!hasOverride)
+                        ImGui::BeginDisabled();
 
                     auto params = activeMaterial->GetParameters();
 
                     if (ImGui::ColorEdit4("Albedo", glm::value_ptr(params.AlbedoColor)))
+                    {
                         activeMaterial->SetAlbedoColor(params.AlbedoColor);
+                        activeMaterial->SetTransparent(params.AlbedoColor.a < 1.0f);
+                    }
 
                     if (ImGui::SliderFloat("Roughness", &params.Roughness, 0.0f, 1.0f))
                         activeMaterial->SetRoughness(params.Roughness);

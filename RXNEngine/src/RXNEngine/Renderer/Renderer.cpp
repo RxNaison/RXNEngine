@@ -59,6 +59,7 @@ namespace RXNEngine {
         glm::mat4 ViewProjectionMatrix;
         glm::mat4 ViewMatrix;
         glm::vec3 CameraPosition;
+        glm::vec3 CameraForward;
         Frustum CameraFrustum;
         float CameraFOV = 45.0f;
 
@@ -333,6 +334,7 @@ namespace RXNEngine {
         s_Data.ViewProjectionMatrix = viewProjection;
         s_Data.ViewMatrix = viewMatrix;
         s_Data.CameraPosition = cameraPosition;
+        s_Data.CameraForward = -glm::normalize(glm::vec3(glm::inverse(viewMatrix)[2]));
         s_Data.CameraFrustum.Define(viewProjection);
 
         s_Data.LightBufferLocal.DirLightDirection = glm::vec4(lights.DirLight.Direction, lights.DirLight.Intensity);
@@ -375,6 +377,10 @@ namespace RXNEngine {
         packet.Material = material;
         packet.Transform = transform;
         packet.EntityID = entityID;
+
+        glm::vec3 position = glm::vec3(transform[3]);
+        glm::vec3 directionToPosition = position - s_Data.CameraPosition;
+        packet.DistanceToCamera = glm::dot(s_Data.CameraForward, directionToPosition);
 
         uint64_t shaderID = material->GetShader()->GetRendererID();
         uint64_t vaoID = mesh->GetVertexArray()->GetRendererID();
@@ -582,6 +588,9 @@ namespace RXNEngine {
 
         s_Data.ShadowData.ShadowTarget->BindRead(8);
 
+        RenderCommand::SetDepthMask(true);
+        RenderCommand::SetBlend(false);
+
         std::sort(s_Data.OpaqueQueue.begin(), s_Data.OpaqueQueue.end(),
             [](const RenderCommandPacket& a, const RenderCommandPacket& b)
             {
@@ -593,13 +602,24 @@ namespace RXNEngine {
 
         ExecuteQueue(s_Data.OpaqueQueue);
 
+        RenderCommand::SetDepthMask(false);
+        RenderCommand::SetBlend(true);
+
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
+
         std::sort(s_Data.TransparentQueue.begin(), s_Data.TransparentQueue.end(),
             [](const RenderCommandPacket& a, const RenderCommandPacket& b)
             {
+                if (glm::abs(a.DistanceToCamera - b.DistanceToCamera) < 0.001f)
+                    return a.EntityID < b.EntityID;
+
                 return a.DistanceToCamera > b.DistanceToCamera;
             });
 
         ExecuteQueue(s_Data.TransparentQueue);
+
+        RenderCommand::SetDepthMask(true); 
+        RenderCommand::SetBlend(false);
 
         if (!s_Data.LineVertices.empty())
         {
@@ -631,7 +651,7 @@ namespace RXNEngine {
         for (auto it = queue.begin() + 1; it != queue.end(); ++it)
         {
             bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
-            bool isSameMaterial = (it->Material->GetShader() == batchStart->Material->GetShader());
+            bool isSameMaterial = (it->Material == batchStart->Material);
 
             if (isSameMesh && isSameMaterial && transformCount < MaxInstances)
             {
