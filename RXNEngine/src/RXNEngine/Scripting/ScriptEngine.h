@@ -65,6 +65,8 @@ namespace RXNEngine {
 		static void OnRuntimeStart(Scene* scene);
 		static void OnRuntimeStop();
 
+		static void SetEngineTime(float deltaTime);
+
 		static void OnCreateEntity(Entity entity);
 		static void OnDestroyEntity(Entity entity);
 

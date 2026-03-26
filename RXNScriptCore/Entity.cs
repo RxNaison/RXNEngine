@@ -1,6 +1,7 @@
-﻿using System;
+﻿using RXNScriptHost;
+using System;
+using System.Collections;
 using System.Runtime.InteropServices;
-using RXNScriptHost;
 
 namespace RXNEngine
 {
@@ -10,6 +11,8 @@ namespace RXNEngine
 
         protected Entity() { ID = 0; }
         internal Entity(ulong id) { ID = id; }
+
+        private CoroutineRunner _coroutineRunner = new CoroutineRunner();
 
         #region Lifecycle & Instantiation
         public static Entity Instantiate()
@@ -36,6 +39,17 @@ namespace RXNEngine
                 Marshal.FreeHGlobal(namePtr);
                 return id == 0 ? null : new Entity(id);
             }
+        }
+
+        protected void StartCoroutine(IEnumerator routine)
+        {
+            _coroutineRunner.StartCoroutine(routine);
+        }
+
+        internal void InternalUpdate()
+        {
+            _coroutineRunner.Update();
+            OnUpdate(Time.DeltaTime);
         }
         #endregion
 

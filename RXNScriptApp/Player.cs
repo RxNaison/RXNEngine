@@ -177,7 +177,7 @@ public class Player : Entity
                 Input.SetCursorMode(CursorMode.Locked);
                 m_IsLocked = true;
             }
-            Thread.Sleep(10);
+            Thread.Sleep(50);
         }
 
         if (velocity.X != 0 || velocity.Y != 0 || velocity.Z != 0)

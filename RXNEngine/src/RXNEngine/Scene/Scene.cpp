@@ -765,6 +765,8 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
+        ScriptEngine::SetEngineTime(deltaTime);
+
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
             {
                 if (!nsc.Instance)

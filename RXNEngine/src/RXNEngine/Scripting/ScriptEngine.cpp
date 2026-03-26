@@ -133,6 +133,7 @@ namespace RXNEngine {
 #pragma endregion
 
 #pragma region Engine Data State
+    typedef void (CORECLR_DELEGATE_CALLTYPE* set_engine_time_fn)(float deltaTime);
     typedef void (CORECLR_DELEGATE_CALLTYPE* load_game_scripts_fn)(const char* corePath, const char* appPath);
     typedef void (CORECLR_DELEGATE_CALLTYPE* unload_game_scripts_fn)();
     typedef void (CORECLR_DELEGATE_CALLTYPE* register_internal_calls_fn)(void*);
@@ -150,6 +151,8 @@ namespace RXNEngine {
 
     struct ScriptEngineData
     {
+        set_engine_time_fn SetEngineTime = nullptr;
+
         load_assembly_and_get_function_pointer_fn LoadAssemblyAndGetFunctionPointer = nullptr;
         load_game_scripts_fn LoadGameScripts = nullptr;
         unload_game_scripts_fn UnloadGameScripts = nullptr;
@@ -217,6 +220,7 @@ namespace RXNEngine {
         s_Data->LoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
         close_fptr(cxt);
 
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetEngineTime, s_Data->SetEngineTime);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", LoadGameScripts, s_Data->LoadGameScripts);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", UnloadGameScripts, s_Data->UnloadGameScripts);
         LOAD_MANAGED_METHOD("RXNScriptHost.Interop, RXNScriptHost", RegisterInternalCalls, s_Data->RegisterInternalCalls);
@@ -323,6 +327,12 @@ namespace RXNEngine {
         s_Data->EntityInstances.clear();
         RXN_CORE_INFO("ScriptEngine: Runtime stopped, Scene context cleared.");
     }
+
+    void ScriptEngine::SetEngineTime(float deltaTime)
+    {
+		s_Data->SetEngineTime(deltaTime);
+    }
+
 
     Scene* ScriptEngine::GetSceneContext()
     {

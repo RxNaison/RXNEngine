@@ -1,8 +1,9 @@
-﻿using System;
+﻿using RXNEngine;
+using System;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using System.IO;
 
 namespace RXNScriptHost
 {
@@ -53,6 +54,13 @@ namespace RXNScriptHost
             if (entityBaseType != null && entityBaseType.IsAssignableFrom(type)) return 16;
 
             return 0;
+        }
+
+        [UnmanagedCallersOnly]
+        public static void SetEngineTime(float deltaTime)
+        {
+            Time.DeltaTime = deltaTime * Time.TimeScale;
+            Time.TimeSinceStartup += Time.DeltaTime;
         }
 
         [UnmanagedCallersOnly]
@@ -156,8 +164,8 @@ namespace RXNScriptHost
         {
             if (s_EntityInstances.TryGetValue(entityID, out object? instance))
             {
-                MethodInfo? onUpdate = instance.GetType().GetMethod("OnUpdate");
-                onUpdate?.Invoke(instance, new object[] { deltaTime });
+                MethodInfo? internalUpdate = instance.GetType().GetMethod("InternalUpdate", BindingFlags.Instance | BindingFlags.NonPublic);
+                internalUpdate?.Invoke(instance, null);
             }
         }
 
