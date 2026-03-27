@@ -8,7 +8,7 @@ workspace "RXNEngine"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 IncludeDir = {}
-IncludeDir["GLFW"] = "RXNEngine/vendor/GLFW/include"
+IncludeDir["SDL"] = "RXNEngine/vendor/SDL/include"
 IncludeDir["Glad"] = "RXNEngine/vendor/Glad/include"
 IncludeDir["Imgui"] = "RXNEngine/vendor/imgui"
 IncludeDir["glm"] = "RXNEngine/vendor/glm"
@@ -25,7 +25,6 @@ IncludeDir["CoreCLR"] = "RXNEngine/vendor/coreclr/include"
 PhysXBinDir = "RXNEngine/vendor/PhysX/physx/bin/win.x86_64.vc143.md"
 
 group "Dependencies"
-    include "RXNEngine/vendor/GLFW"
     include "RXNEngine/vendor/Glad"
     include "RXNEngine/vendor/imgui"
 
@@ -72,7 +71,7 @@ project "RXNEngine"
     { 
         "%{prj.name}/src",
         "%{prj.name}/vendor/spdlog/include",
-        "%{IncludeDir.GLFW}",
+        "%{IncludeDir.SDL}",
         "%{IncludeDir.Glad}",
         "%{IncludeDir.Imgui}",
         "%{IncludeDir.glm}",
@@ -88,7 +87,7 @@ project "RXNEngine"
         "%{IncludeDir.CoreCLR}"
     }
 
-    links { "GLFW", "Glad", "Imgui", "opengl32.lib" }
+    links { "Glad", "Imgui", "opengl32.lib" }
 
     removefiles
     {
@@ -116,6 +115,7 @@ project "RXNEngine"
       defines { "RXN_ENABLE_ASSERTS", "USE_OPTICK=1" }
       links 
       { 
+          "RXNEngine/vendor/SDL/build/Debug/SDL3.lib",
           "RXNEngine/vendor/assimp/build/lib/Debug/assimp-vc143-mtd.lib",
           "RXNEngine/vendor/assimp/build/contrib/zlib/Debug/zlibstaticd.lib",
           "RXNEngine/vendor/yaml-cpp/build/Debug/yaml-cppd.lib",
@@ -132,6 +132,7 @@ project "RXNEngine"
       optimize "on"
       links 
       { 
+          "RXNEngine/vendor/SDL/build/Release/SDL3.lib",
           "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
           "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib",
           "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cpp.lib",
@@ -148,6 +149,7 @@ project "RXNEngine"
       optimize "on"
       links 
       { 
+          "RXNEngine/vendor/SDL/build/Release/SDL3.lib",
           "RXNEngine/vendor/assimp/build/lib/Release/assimp-vc143-mt.lib",
           "RXNEngine/vendor/assimp/build/contrib/zlib/Release/zlibstatic.lib",
           "RXNEngine/vendor/yaml-cpp/build/Release/yaml-cpp.lib",
@@ -216,7 +218,8 @@ project "RXNEditor"
 
        postbuildcommands
        {
-           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/debug/*.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/debug/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Debug/*.dll\" \"%{cfg.targetdir}\""
        }
 
     filter "configurations:Release"
@@ -232,7 +235,8 @@ project "RXNEditor"
 
        postbuildcommands
        {
-           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\""
        }
 
     filter "configurations:Dist"
@@ -248,7 +252,8 @@ project "RXNEditor"
 
        postbuildcommands
        {
-           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\""
        }
 
 group "Scripting"

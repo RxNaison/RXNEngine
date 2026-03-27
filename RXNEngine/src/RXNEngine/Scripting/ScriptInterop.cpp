@@ -75,6 +75,31 @@ namespace RXNEngine {
     {
         Application::Get().GetWindow().SetCursorMode((CursorMode)mode);
     }
+
+    extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeInput_IsGamepadButtonDown(int gamepadID, int button)
+    {
+        return Input::IsGamepadButtonPressed(gamepadID, (GamepadButton)button);
+    }
+
+    extern "C" float CORECLR_DELEGATE_CALLTYPE NativeInput_GetGamepadAxis(int gamepadID, int axis)
+    {
+        return Input::GetGamepadAxis(gamepadID, (GamepadAxis)axis);
+    }
+
+    extern "C" float CORECLR_DELEGATE_CALLTYPE NativeInput_GetGamepadDeadzone()
+    {
+        return Input::GetGamepadDeadzone();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_SetGamepadDeadzone(float deadzone)
+    {
+        Input::SetGamepadDeadzone(deadzone);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_SetGamepadVibration(int gamepadID, float leftMotor, float rightMotor)
+    {
+        Input::SetGamepadVibration(gamepadID, leftMotor, rightMotor);
+    }
 #pragma endregion
 
 #pragma region Entity Lifecycle
@@ -480,6 +505,12 @@ namespace RXNEngine {
         outCalls->Input_IsKeyDown = (void*)NativeInput_IsKeyDown;
 		outCalls->NativeInput_GetMousePosition = (void*)NativeInput_GetMousePosition;
 		outCalls->NativeInput_SetCursorMode = (void*)NativeInput_SetCursorMode;
+
+		outCalls->NativeInput_IsGamepadButtonDown = (void*)NativeInput_IsGamepadButtonDown;
+		outCalls->NativeInput_GetGamepadAxis = (void*)NativeInput_GetGamepadAxis;
+		outCalls->NativeInput_GetGamepadDeadzone = (void*)NativeInput_GetGamepadDeadzone;
+		outCalls->NativeInput_SetGamepadDeadzone = (void*)NativeInput_SetGamepadDeadzone;
+		outCalls->NativeInput_SetGamepadVibration = (void*)NativeInput_SetGamepadVibration;
 
         //Entity Lifecycle
         outCalls->Entity_Create = (void*)NativeEntity_Create;

@@ -1,16 +1,16 @@
 #include "rxnpch.h"
 #include "Time.h"
 
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 
 Time::Time()
 {
-    m_LastFrameTime = glfwGetTime();
+    m_LastFrameTime = (float)SDL_GetTicks() / 1000.0f;
 }
 
 void Time::OnFrameStart()
 {
-    float currentTime = glfwGetTime();
+    float currentTime = (float)SDL_GetTicks() / 1000.0f;
     m_DeltaTime = currentTime - m_LastFrameTime;
     m_LastFrameTime = currentTime;
 

@@ -24,6 +24,12 @@ namespace RXNEngine {
         void* NativeInput_GetMousePosition = nullptr;
         void* NativeInput_SetCursorMode = nullptr;
 
+        void* NativeInput_IsGamepadButtonDown = nullptr;
+        void* NativeInput_GetGamepadAxis = nullptr;
+        void* NativeInput_GetGamepadDeadzone = nullptr;
+        void* NativeInput_SetGamepadDeadzone = nullptr;
+        void* NativeInput_SetGamepadVibration = nullptr;
+
         //Entity Lifecycle
         void* Entity_Create = nullptr;
         void* Entity_Destroy = nullptr;

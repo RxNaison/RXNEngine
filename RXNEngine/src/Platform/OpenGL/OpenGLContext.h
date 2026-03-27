@@ -2,6 +2,8 @@
 
 #include "RXNEngine/Renderer/GraphicsContext.h"
 
+#include <SDL3/SDL.h>
+
 struct GLFWwindow;
 
 namespace RXNEngine {
@@ -9,12 +11,13 @@ namespace RXNEngine {
 	class OpenGLContext : public GraphicsContext
 	{
 	public:
-		OpenGLContext(GLFWwindow* windowHandle);
+		OpenGLContext(SDL_Window* windowHandle);
 
 		virtual void Init() override;
 		virtual void SwapBuffers() override;
 	private:
-		GLFWwindow* m_WindowHandle;
+		SDL_Window* m_WindowHandle;
+		SDL_GLContext m_Context;
 	};
 
 }

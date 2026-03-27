@@ -1,21 +1,23 @@
 #include "rxnpch.h"
 #include "OpenGLContext.h"
 
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-
 namespace RXNEngine {
-	OpenGLContext::OpenGLContext(GLFWwindow* windowHandle)
+
+	OpenGLContext::OpenGLContext(SDL_Window* windowHandle)
 		: m_WindowHandle(windowHandle)
 	{
-		RXN_CORE_ASSERT(windowHandle, "Window handle is null!")
+		RXN_CORE_ASSERT(windowHandle, "Window handle is null!");
 	}
 
 	void OpenGLContext::Init()
 	{
-		glfwMakeContextCurrent(m_WindowHandle);
-		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		m_Context = SDL_GL_CreateContext((SDL_Window*)m_WindowHandle);
+
+		RXN_CORE_ASSERT(m_Context, "Failed to create OpenGL context!");
+
+		int status = gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 		RXN_CORE_ASSERT(status, "Failed to initialize Glad!");
 
 		RXN_CORE_INFO("OpenGL Info:");
@@ -28,6 +30,6 @@ namespace RXNEngine {
 
 	void OpenGLContext::SwapBuffers()
 	{
-		glfwSwapBuffers(m_WindowHandle);
+		SDL_GL_SwapWindow((SDL_Window*)m_WindowHandle);
 	}
 }

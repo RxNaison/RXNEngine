@@ -1,156 +1,154 @@
 ﻿namespace RXNEngine
 {
-    public enum KeyCode
+    public enum KeyCode : uint
     {
-        // From glfw3.h
         Space = 32,
-        Apostrophe = 39, /* ' */
-        Comma = 44, /* , */
-        Minus = 45, /* - */
-        Period = 46, /* . */
-        Slash = 47, /* / */
+        Apostrophe = 39,
+        Comma = 44,
+        Minus = 45,
+        Period = 46,
+        Slash = 47,
 
-        D0 = 48, /* 0 */
-        D1 = 49, /* 1 */
-        D2 = 50, /* 2 */
-        D3 = 51, /* 3 */
-        D4 = 52, /* 4 */
-        D5 = 53, /* 5 */
-        D6 = 54, /* 6 */
-        D7 = 55, /* 7 */
-        D8 = 56, /* 8 */
-        D9 = 57, /* 9 */
+        D0 = 48, D1 = 49, D2 = 50, D3 = 51, D4 = 52,
+        D5 = 53, D6 = 54, D7 = 55, D8 = 56, D9 = 57,
 
-        Semicolon = 59, /* ; */
-        Equal = 61, /* = */
+        Semicolon = 59,
+        Equal = 61,
 
-        A = 65,
-        B = 66,
-        C = 67,
-        D = 68,
-        E = 69,
-        F = 70,
-        G = 71,
-        H = 72,
-        I = 73,
-        J = 74,
-        K = 75,
-        L = 76,
-        M = 77,
-        N = 78,
-        O = 79,
-        P = 80,
-        Q = 81,
-        R = 82,
-        S = 83,
-        T = 84,
-        U = 85,
-        V = 86,
-        W = 87,
-        X = 88,
-        Y = 89,
-        Z = 90,
+        A = 97, B = 98, C = 99, D = 100, E = 101, F = 102, G = 103, H = 104,
+        I = 105, J = 106, K = 107, L = 108, M = 109, N = 110, O = 111, P = 112,
+        Q = 113, R = 114, S = 115, T = 116, U = 117, V = 118, W = 119, X = 120,
+        Y = 121, Z = 122,
 
-        LeftBracket = 91,  /* [ */
-        Backslash = 92,  /* \ */
-        RightBracket = 93,  /* ] */
-        GraveAccent = 96,  /* ` */
+        LeftBracket = 91,
+        Backslash = 92,
+        RightBracket = 93,
+        GraveAccent = 96,
 
-        World1 = 161, /* non-US #1 */
-        World2 = 162, /* non-US #2 */
+        Backspace = 8,
+        Tab = 9,
+        Enter = 13,
+        Escape = 27,
+        Delete = 127,
 
-        /* Function keys */
-        Escape = 256,
-        Enter = 257,
-        Tab = 258,
-        Backspace = 259,
-        Insert = 260,
-        Delete = 261,
-        Right = 262,
-        Left = 263,
-        Down = 264,
-        Up = 265,
-        PageUp = 266,
-        PageDown = 267,
-        Home = 268,
-        End = 269,
-        CapsLock = 280,
-        ScrollLock = 281,
-        NumLock = 282,
-        PrintScreen = 283,
-        Pause = 284,
-        F1 = 290,
-        F2 = 291,
-        F3 = 292,
-        F4 = 293,
-        F5 = 294,
-        F6 = 295,
-        F7 = 296,
-        F8 = 297,
-        F9 = 298,
-        F10 = 299,
-        F11 = 300,
-        F12 = 301,
-        F13 = 302,
-        F14 = 303,
-        F15 = 304,
-        F16 = 305,
-        F17 = 306,
-        F18 = 307,
-        F19 = 308,
-        F20 = 309,
-        F21 = 310,
-        F22 = 311,
-        F23 = 312,
-        F24 = 313,
-        F25 = 314,
+        CapsLock = (1u << 30) | 57,
+        F1 = (1u << 30) | 58,
+        F2 = (1u << 30) | 59,
+        F3 = (1u << 30) | 60,
+        F4 = (1u << 30) | 61,
+        F5 = (1u << 30) | 62,
+        F6 = (1u << 30) | 63,
+        F7 = (1u << 30) | 64,
+        F8 = (1u << 30) | 65,
+        F9 = (1u << 30) | 66,
+        F10 = (1u << 30) | 67,
+        F11 = (1u << 30) | 68,
+        F12 = (1u << 30) | 69,
 
-        /* Keypad */
-        KP0 = 320,
-        KP1 = 321,
-        KP2 = 322,
-        KP3 = 323,
-        KP4 = 324,
-        KP5 = 325,
-        KP6 = 326,
-        KP7 = 327,
-        KP8 = 328,
-        KP9 = 329,
-        KPDecimal = 330,
-        KPDivide = 331,
-        KPMultiply = 332,
-        KPSubtract = 333,
-        KPAdd = 334,
-        KPEnter = 335,
-        KPEqual = 336,
+        PrintScreen = (1u << 30) | 70,
+        ScrollLock = (1u << 30) | 71,
+        Pause = (1u << 30) | 72,
+        Insert = (1u << 30) | 73,
+        Home = (1u << 30) | 74,
+        PageUp = (1u << 30) | 75,
+        End = (1u << 30) | 77,
+        PageDown = (1u << 30) | 78,
+        Right = (1u << 30) | 79,
+        Left = (1u << 30) | 80,
+        Down = (1u << 30) | 81,
+        Up = (1u << 30) | 82,
+        NumLock = (1u << 30) | 83,
 
-        LeftShift = 340,
-        LeftControl = 341,
-        LeftAlt = 342,
-        LeftSuper = 343,
-        RightShift = 344,
-        RightControl = 345,
-        RightAlt = 346,
-        RightSuper = 347,
-        Menu = 348
-    };
+        KPDivide = (1u << 30) | 84,
+        KPMultiply = (1u << 30) | 85,
+        KPSubtract = (1u << 30) | 86,
+        KPAdd = (1u << 30) | 87,
+        KPEnter = (1u << 30) | 88,
+        KP1 = (1u << 30) | 89,
+        KP2 = (1u << 30) | 90,
+        KP3 = (1u << 30) | 91,
+        KP4 = (1u << 30) | 92,
+        KP5 = (1u << 30) | 93,
+        KP6 = (1u << 30) | 94,
+        KP7 = (1u << 30) | 95,
+        KP8 = (1u << 30) | 96,
+        KP9 = (1u << 30) | 97,
+        KP0 = (1u << 30) | 98,
+        KPDecimal = (1u << 30) | 99,
+        KPEqual = (1u << 30) | 103,
 
-    public enum MouseCode
+        F13 = (1u << 30) | 104,
+        F14 = (1u << 30) | 105,
+        F15 = (1u << 30) | 106,
+        F16 = (1u << 30) | 107,
+        F17 = (1u << 30) | 108,
+        F18 = (1u << 30) | 109,
+        F19 = (1u << 30) | 110,
+        F20 = (1u << 30) | 111,
+        F21 = (1u << 30) | 112,
+        F22 = (1u << 30) | 113,
+        F23 = (1u << 30) | 114,
+        F24 = (1u << 30) | 115,
+
+        LeftControl = (1u << 30) | 224,
+        LeftShift = (1u << 30) | 225,
+        LeftAlt = (1u << 30) | 226,
+        LeftSuper = (1u << 30) | 227,
+        RightControl = (1u << 30) | 228,
+        RightShift = (1u << 30) | 229,
+        RightAlt = (1u << 30) | 230,
+        RightSuper = (1u << 30) | 231,
+        Menu = (1u << 30) | 101
+    }
+
+    public enum MouseCode : uint
     {
-        // From glfw3.h
-        Button0 = 0,
-        Button1 = 1,
+        ButtonLeft = 1,
+        ButtonMiddle = 2,
+        ButtonRight = 3,
+        ButtonX1 = 4,
+        ButtonX2 = 5,
+
+        Button0 = 1,
+        Button1 = 3,
         Button2 = 2,
-        Button3 = 3,
-        Button4 = 4,
-        Button5 = 5,
-        Button6 = 6,
-        Button7 = 7,
+        Button3 = 4,
+        Button4 = 5
+    }
 
-        ButtonLast = Button7,
-        ButtonLeft = Button0,
-        ButtonRight = Button1,
-        ButtonMiddle = Button2
-    };
+    public enum GamepadButton : uint
+    {
+        A = 0,
+        B = 1,
+        X = 2,
+        Y = 3,
 
+        Cross = 0,
+        Circle = 1,
+        Square = 2,
+        Triangle = 3,
+
+        Back = 4,
+        Guide = 5,
+        Start = 6,
+        LeftThumb = 7,
+        RightThumb = 8,
+        LeftBumper = 9,
+        RightBumper = 10,
+
+        DPadUp = 11,
+        DPadDown = 12,
+        DPadLeft = 13,
+        DPadRight = 14
+    }
+
+    public enum GamepadAxis : uint
+    {
+        LeftX = 0,
+        LeftY = 1,
+        RightX = 2,
+        RightY = 3,
+        LeftTrigger = 4,
+        RightTrigger = 5
+    }
 }

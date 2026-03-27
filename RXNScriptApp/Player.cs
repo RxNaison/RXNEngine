@@ -1,12 +1,15 @@
 ﻿using RXNEngine;
 using System;
-
+using System.Threading;
 
 public class Player : Entity
 {
     public int BulletsShot = 0;
     public float Speed = 5.0f;
+
     public float MouseSensitivity = 0.002f;
+    public float GamepadLookSensitivity = 2.5f;
+
     public float JumpForce = 1.0f;
     public float BulletForce = 0.1f;
     public int Ammo = 1000;
@@ -16,6 +19,8 @@ public class Player : Entity
     public Entity? BulletPrefab;
     public Entity? HeadCamera;
     public Entity? SunEntity;
+
+    private float m_FireCooldown = 0.0f;
 
     private bool m_JumpRequested = false;
     private int m_CurrentContacts = 0;
@@ -65,18 +70,7 @@ public class Player : Entity
                 Console.WriteLine("[Hierarchy Test] I am an orphan (No Parent).");
         }
 
-        //Entity? someMeshEntity = Entity.FindEntityByName("Cube");
-        //if (someMeshEntity != null && someMeshEntity.HasComponent<StaticMeshComponent>())
-        //{
-        //    var meshComp = someMeshEntity.GetComponent<StaticMeshComponent>();
-        //    Console.WriteLine($"[Mesh Test] Found 'Cube'. Asset Path: {meshComp!.AssetPath}");
-        //
-        //    meshComp.AssetPath = "res/models/DamagedCube.obj";
-        //    Console.WriteLine($"[Mesh Test] Changed Path to: {meshComp.AssetPath}");
-        //}
-
         Console.WriteLine("=========================================\n");
-
     }
 
     public override void OnUpdate(float deltaTime)
@@ -87,6 +81,12 @@ public class Player : Entity
 
         m_Yaw -= delta.X * MouseSensitivity;
         m_Pitch -= delta.Y * MouseSensitivity;
+
+        float rightX = Input.GetGamepadAxis(0, GamepadAxis.RightX);
+        float rightY = Input.GetGamepadAxis(0, GamepadAxis.RightY);
+
+        m_Yaw -= rightX * GamepadLookSensitivity * deltaTime;
+        m_Pitch -= rightY * GamepadLookSensitivity * deltaTime;
 
         m_Pitch = Math.Clamp(m_Pitch, -1.5f, 1.5f);
 
@@ -108,53 +108,40 @@ public class Player : Entity
         if (Input.IsKeyDown(KeyCode.D)) velocity += right;
         if (Input.IsKeyDown(KeyCode.A)) velocity -= right;
 
-        if (Input.IsKeyDown(KeyCode.Space))
+        float leftX = Input.GetGamepadAxis(0, GamepadAxis.LeftX);
+        float leftY = Input.GetGamepadAxis(0, GamepadAxis.LeftY);
+
+        velocity += right * leftX;
+        velocity -= forward * leftY;
+
+        if (velocity.X != 0 || velocity.Y != 0 || velocity.Z != 0)
+        {
+            pos += velocity * Speed * deltaTime;
+            Translation = pos;
+        }
+
+        if (Input.IsKeyDown(KeyCode.Space) || Input.IsGamepadButtonDown(0, GamepadButton.A))
             m_JumpRequested = true;
 
-        if (Input.IsKeyDown(KeyCode.F) && Ammo > 0)
+        bool rightTriggerPulled = Input.GetGamepadAxis(0, GamepadAxis.RightTrigger) > 0.5f;
+
+        bool fireIntent = Input.IsKeyDown(KeyCode.F) || rightTriggerPulled;
+
+        m_FireCooldown -= deltaTime;
+
+        if (fireIntent && Ammo > 0 && m_FireCooldown <= 0.0f)
         {
-
-             if(BulletPrefab != null)
-             {
-                Entity firedBullet = Entity.Instantiate(BulletPrefab);
-
-                firedBullet.Translation = pos + (HeadCamera.Forward * 1.5f) + SpawnOffset;
-
-                firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
-
-                Ammo--;
-                BulletsShot++;
-                Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
-             }
-
-
-            /*
-            Vector3 origin = HeadCamera != null ? HeadCamera.WorldPosition : this.WorldPosition;
-            Vector3 dir = HeadCamera != null ? HeadCamera.Forward : forward;
-
-            if (Physics.Raycast(origin, dir, 1000.0f, out RaycastHit hit, this))
+            if (BulletPrefab != null && HeadCamera != null)
             {
-                Console.WriteLine($"[Hitscan] POW! Hit Entity {hit.EntityID} at Distance: {hit.Distance}");
-                Console.WriteLine($"[Hitscan] Hit Coordinate: {hit.Position}");
-
-                Entity? target = Entity.FindEntityByName("Enemy");
-                if (target != null && target.ID == hit.EntityID)
-                {
-                    target.ApplyLinearImpulse(dir * 5.0f);
-                }
+                m_FireCooldown = 0.2f;
+                StartCoroutine(FireWeaponRoutine(pos));
             }
-            else
-            {
-                Console.WriteLine("[Hitscan] Missed! Shot went into the void.");
-            }
-            */
         }
 
         if (Input.IsKeyDown(KeyCode.M))
         {
             Entity newProp = Entity.Instantiate();
             newProp.Translation = this.Translation + (this.Forward * 5.0f);
-
             AssetManager.LoadMeshOntoEntityAsync("assets/models/porsche/scene.gltf", newProp);
         }
 
@@ -165,9 +152,9 @@ public class Player : Entity
             return;
         }
 
-        if (Input.IsKeyDown(KeyCode.Escape))
+        if (Input.IsKeyDown(KeyCode.Escape) || Input.IsGamepadButtonDown(0, GamepadButton.Start))
         {
-            if(m_IsLocked)
+            if (m_IsLocked)
             {
                 Input.SetCursorMode(CursorMode.Normal);
                 m_IsLocked = false;
@@ -180,24 +167,15 @@ public class Player : Entity
             Thread.Sleep(50);
         }
 
-        if (velocity.X != 0 || velocity.Y != 0 || velocity.Z != 0)
-        {
-            pos += velocity * Speed * deltaTime;
-            Translation = pos;
-        }
-
         if (SunEntity != null)
         {
             var light = SunEntity.GetComponent<DirectionalLightComponent>();
             if (light != null)
             {
                 var data = light.Data;
-
                 data.Color = new Vector3(1, 0, 0);
                 data.Intensity = 50.0f;
-
                 light.Data = data;
-
             }
         }
     }
@@ -217,6 +195,23 @@ public class Player : Entity
         }
     }
 
+    private System.Collections.IEnumerator FireWeaponRoutine(Vector3 startPos)
+    {
+        Entity firedBullet = Entity.Instantiate(BulletPrefab!);
+        firedBullet.Translation = startPos + (HeadCamera!.Forward * 1.5f) + SpawnOffset;
+        firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
+
+        Ammo--;
+        BulletsShot++;
+        Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
+
+        Input.SetGamepadVibration(0, 1.0f, 1.0f);
+
+        yield return new WaitForSeconds(0.15f);
+
+        Input.SetGamepadVibration(0, 0.0f, 0.0f);
+    }
+
     public override void OnCollisionEnter(Entity other)
     {
         m_CurrentContacts++;
@@ -231,7 +226,7 @@ public class Player : Entity
 
     public override void OnTriggerEnter(Entity other)
     {
-        var trigger = Entity.FindEntityByName("ReloadAmmoPlace");
+        var trigger = FindEntityByName("ReloadAmmoPlace");
 
         if (trigger != null && other.ID == trigger.ID)
             Ammo = 1000;

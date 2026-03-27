@@ -5,15 +5,14 @@
 #include <imgui_internal.h>
 
 
-#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_opengl3.h>
 
 #include <ImGuizmo.h>
 
 #include "RXNEngine/Core/Application.h"
 
-// TEMPORARY
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 #include <glad/glad.h>
 
 namespace RXNEngine {
@@ -49,16 +48,16 @@ namespace RXNEngine {
 		SetDarkThemeColors();
 
 		Application& app = Application::Get();
-		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+		SDL_Window* window = static_cast<SDL_Window*>(app.GetWindow().GetNativeWindow());
 
-		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		ImGui_ImplSDL3_InitForOpenGL(window, SDL_GL_GetCurrentContext());
 		ImGui_ImplOpenGL3_Init("#version 410");
 	}
 
 	void ImGuiLayer::OnDetach()
 	{
 		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
+		ImGui_ImplSDL3_Shutdown();
 		ImGui::DestroyContext();
 	}
 
@@ -75,7 +74,7 @@ namespace RXNEngine {
 	void ImGuiLayer::Begin()
 	{
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 	}
@@ -92,10 +91,13 @@ namespace RXNEngine {
 
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+			SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
-			glfwMakeContextCurrent(backup_current_context);
+
+			SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
 		}
 	}
 

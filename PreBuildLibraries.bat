@@ -17,6 +17,14 @@ cmake --build . --config Release
 cmake --build . --config Debug
 cd ../..
 
+cd SDL
+mkdir build
+cd build
+cmake .. -DSDL_SHARED=ON -DSDL_STATIC=OFF 
+cmake --build . --config Release
+cmake --build . --config Debug
+cd ../..
+
 cd PhysX/physx
 
 set "PRESET_FILE=buildtools\presets\public\vc17win64-cpu-only.xml"

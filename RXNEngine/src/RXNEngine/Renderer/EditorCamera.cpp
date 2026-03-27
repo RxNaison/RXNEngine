@@ -4,8 +4,6 @@
 #include "RXNEngine/Core/Input.h"
 #include "RXNEngine/Core/KeyCodes.h"
 
-#include <glfw/glfw3.h>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 

@@ -17,6 +17,12 @@ namespace RXNScriptHost
         public IntPtr Input_GetMousePosition;
         public IntPtr Input_SetCursorMode;
 
+        public IntPtr Input_IsGamepadButtonDown;
+        public IntPtr Input_GetGamepadAxis;
+        public IntPtr Input_GetGamepadDeadzone;
+        public IntPtr Input_SetGamepadDeadzone;
+        public IntPtr Input_SetGamepadVibration;
+
         //Entity Lifecycle
         public IntPtr Entity_Create;
         public IntPtr Entity_Destroy;
