@@ -1,5 +1,6 @@
 #include "rxnpch.h"
 #include "SceneHierarchyPanel.h"
+#include "UI.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -9,49 +10,6 @@
 #include "RXNEngine/Scripting/ScriptEngine.h"
 
 namespace RXNEditor {
-
-    static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
-    {
-        ImGui::PushID(label.c_str());
-
-        ImGui::Columns(2);
-        ImGui::SetColumnWidth(0, columnWidth);
-        ImGui::Text(label.c_str());
-        ImGui::NextColumn();
-
-        ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-
-        float lineHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2.0f;
-        ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
-
-        if (ImGui::Button("X", buttonSize))
-            values.x = resetValue;
-
-        ImGui::SameLine();
-        ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-
-        if (ImGui::Button("Y", buttonSize))
-            values.y = resetValue;
-
-        ImGui::SameLine();
-        ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-
-        if (ImGui::Button("Z", buttonSize))
-            values.z = resetValue;
-
-        ImGui::SameLine();
-        ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
-        ImGui::PopItemWidth();
-
-        ImGui::PopStyleVar();
-        ImGui::Columns(1);
-        ImGui::PopID();
-    }
 
     SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context)
     {
@@ -347,18 +305,16 @@ namespace RXNEditor {
 
         DrawComponent<TransformComponent>("Transform", entity, [&](auto& component)
             {
-                DrawVec3Control("Translation", component.Translation);
+                UI::DrawVec3Control("Translation", component.Translation);
 
                 glm::vec3 rotation = glm::degrees(component.Rotation);
-                DrawVec3Control("Rotation", rotation);
+                UI::DrawVec3Control("Rotation", rotation);
                 component.Rotation = glm::radians(rotation);
 
-                DrawVec3Control("Scale", component.Scale, 1.0f);
+                UI::DrawVec3Control("Scale", component.Scale, 1.0f);
 
                 if (m_Context->IsSimulating())
-                {
                   m_Context->SyncTransformToPhysics(entity);
-                }
             });
 
 
@@ -369,11 +325,9 @@ namespace RXNEditor {
                 bool isPrimary = false;
 
                 if (primaryCamera)
-                {
                     isPrimary = (entity.GetUUID() == primaryCamera.GetUUID());
-                }
 
-                if (ImGui::Checkbox("Primary", &isPrimary))
+                if (UI::DrawCheckbox("Primary", isPrimary))
                 {
                     if (isPrimary)
                         m_Context->SetPrimaryCameraEntity(entity);
@@ -382,7 +336,7 @@ namespace RXNEditor {
                 const char* projectionTypeStrings[] = { "Perspective", "Orthographic" };
                 const char* currentProjectionTypeString = projectionTypeStrings[(int)camera.GetProjectionType()];
 
-                if (ImGui::BeginCombo("Projection", currentProjectionTypeString))
+                if (UI::DrawComboBox("Projection", currentProjectionTypeString))
                 {
                     for (int i = 0; i < 2; i++)
                     {
@@ -402,30 +356,30 @@ namespace RXNEditor {
                 if (camera.GetProjectionType() == SceneCamera::ProjectionMode::Perspective)
                 {
                     float Fov = glm::degrees(camera.GetPerspectiveFOV());
-                    if (ImGui::DragFloat("FOV", &Fov))
+                    if (UI::DrawFloatControl("FOV", Fov))
                         camera.SetPerspectiveFOV(glm::radians(Fov));
 
                     float orthoNear = camera.GetPerspectiveNearClip();
-                    if (ImGui::DragFloat("Near", &orthoNear))
+                    if (UI::DrawFloatControl("Near", orthoNear))
                         camera.SetPerspectiveNearClip(orthoNear);
 
                     float orthoFar = camera.GetPerspectiveFarClip();
-                    if (ImGui::DragFloat("Far", &orthoFar))
+                    if (UI::DrawFloatControl("Far", orthoFar))
                         camera.SetPerspectiveFarClip(orthoFar);
                 }
 
                 if (camera.GetProjectionType() == SceneCamera::ProjectionMode::Orthographic)
                 {
                     float orthoSize = camera.GetOrthographicSize();
-                    if (ImGui::DragFloat("Size", &orthoSize))
+                    if (UI::DrawFloatControl("Size", orthoSize))
                         camera.SetOrthographicSize(orthoSize);
 
                     float orthoNear = camera.GetOrthographicNearClip();
-                    if (ImGui::DragFloat("Near", &orthoNear))
+                    if (UI::DrawFloatControl("Near", orthoNear))
                         camera.SetOrthographicNearClip(orthoNear);
 
                     float orthoFar = camera.GetOrthographicFarClip();
-                    if (ImGui::DragFloat("Far", &orthoFar))
+                    if (UI::DrawFloatControl("Far", orthoFar))
                         camera.SetOrthographicFarClip(orthoFar);
                 }
             });
@@ -491,7 +445,7 @@ namespace RXNEditor {
                     ImGui::Text("Material Properties");
 
                     bool hasOverride = component.MaterialTableOverride != nullptr;
-                    if (ImGui::Checkbox("Override Default Material", &hasOverride))
+                    if (UI::DrawCheckbox("Override Default Material", hasOverride, 175.0f))
                     {
                         if (hasOverride)
                         {
@@ -530,22 +484,22 @@ namespace RXNEditor {
 
                     auto params = activeMaterial->GetParameters();
 
-                    if (ImGui::ColorEdit4("Albedo", glm::value_ptr(params.AlbedoColor)))
+                    if (UI::DrawColor4Control("Albedo", params.AlbedoColor))
                     {
                         activeMaterial->SetAlbedoColor(params.AlbedoColor);
                         activeMaterial->SetTransparent(params.AlbedoColor.a < 1.0f);
                     }
 
-                    if (ImGui::SliderFloat("Roughness", &params.Roughness, 0.0f, 1.0f))
+                    if (UI::DrawFloatControl("Roughness", params.Roughness, 0.0f, 1.0f))
                         activeMaterial->SetRoughness(params.Roughness);
 
-                    if (ImGui::SliderFloat("Metalness", &params.Metalness, 0.0f, 1.0f))
+                    if (UI::DrawFloatControl("Metalness", params.Metalness, 0.0f, 1.0f))
                         activeMaterial->SetMetalness(params.Metalness);
 
-                    if (ImGui::DragFloat("AO Strength", &params.AO, 0.01f, 0.0f, 1.0f))
+                    if (UI::DrawFloatControl("AO Strength", params.AO, 0.01f, 0.0f, 1.0f))
                         activeMaterial->SetAO(params.AO);
 
-                    if (ImGui::ColorEdit3("Emissive", glm::value_ptr(params.EmissiveColor)))
+                    if (UI::DrawColor3Control("Emissive", params.EmissiveColor))
                         activeMaterial->SetEmissiveColor(params.EmissiveColor);
 
                     if (!hasOverride) ImGui::EndDisabled();
@@ -555,24 +509,24 @@ namespace RXNEditor {
 
         DrawComponent<DirectionalLightComponent>("Directional Light", entity, [](auto& component)
             {
-                ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
-                ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 100.0f);
+                UI::DrawColor3Control("Color", component.Color);
+                UI::DrawFloatControl("Intensity", component.Intensity, 0.1f, 0.0f, 100.0f);
             });
 
 
         DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
             {
-                ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
-                ImGui::DragFloat("Intensity", &component.Intensity, 0.1f, 0.0f, 100.0f);
-                ImGui::DragFloat("Radius", &component.Radius, 0.1f, 0.0f, 1000.0f);
-                ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 1.0f);
+                UI::DrawColor3Control("Color", component.Color);
+                UI::DrawFloatControl("Intensity", component.Intensity, 0.1f, 0.0f, 100.0f);
+                UI::DrawFloatControl("Radius", component.Radius, 0.1f, 0.0f, 1000.0f);
+                UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
             });
 
         DrawComponent<RigidbodyComponent>("Rigidbody", entity, [](auto& component)
             {
                 const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
                 const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
-                if (ImGui::BeginCombo("Body Type", currentBodyTypeString))
+                if (UI::DrawComboBox("Body Type", currentBodyTypeString))
                 {
                     for (int i = 0; i < 3; i++)
                     {
@@ -587,49 +541,49 @@ namespace RXNEditor {
                     }
                     ImGui::EndCombo();
                 }
-                ImGui::DragFloat("Mass", &component.Mass, 0.1f, 0.0f, 1000.0f);
-                ImGui::DragFloat("Linear Drag", &component.LinearDrag, 0.01f, 0.0f, 1.0f);
-				ImGui::DragFloat("Angular Drag", &component.AngularDrag, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Mass", component.Mass, 0.1f, 0.0f, 1000.0f);
+                UI::DrawFloatControl("Linear Drag", component.LinearDrag, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Angular Drag", component.AngularDrag, 0.01f, 0.0f, 1.0f);
 
-                ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+                UI::DrawCheckbox("Fixed Rotation", component.FixedRotation);
 
-                ImGui::Checkbox("CCD", &component.UseCCD);
+                UI::DrawCheckbox("CCD", component.UseCCD);
                 if (component.UseCCD)
                 {
                     ImGui::Indent();
-                    ImGui::DragFloat("Velocity Threshold", &component.CCDVelocityThreshold, 1.0f, 0.0f, 1000.0f);
+                    UI::DrawFloatControl("Velocity Threshold", component.CCDVelocityThreshold, 1.0f, 0.0f, 1000.0f, 130.0f);
                     ImGui::Unindent();
                 }
             });
 
         DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
             {
-				DrawVec3Control("HalfExtents", component.HalfExtents, 0.5f);
-				DrawVec3Control("Offset", component.Offset);
-				ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
-				ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
-				ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
-                ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+                UI::DrawVec3Control("HalfExtents", component.HalfExtents, 0.5f);
+                UI::DrawVec3Control("Offset", component.Offset);
+                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
+                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
+                UI::DrawCheckbox("Is Trigger", component.IsTrigger);
             });
         DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
             {
-                ImGui::DragFloat("Radius", &component.Radius, 0.05f, 0.0f, 100.0f);
-                DrawVec3Control("Offset", component.Offset);
-                ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
-                ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
-                ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
-                ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+                UI::DrawFloatControl("Radius", component.Radius, 0.05f, 0.0f, 100.0f);
+                UI::DrawVec3Control("Offset", component.Offset);
+                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
+                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
+                UI::DrawCheckbox("Is Trigger", component.IsTrigger);
             });
 
         DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
             {
-                ImGui::DragFloat("Radius", &component.Radius, 0.05f, 0.0f, 100.0f);
-                ImGui::DragFloat("Height", &component.Height, 0.05f, 0.0f, 100.0f);
-                DrawVec3Control("Offset", component.Offset);
-                ImGui::DragFloat("Static Friction", &component.StaticFriction, 0.01f, 0.0f, 1.0f);
-                ImGui::DragFloat("Dynamic Friction", &component.DynamicFriction, 0.01f, 0.0f, 1.0f);
-                ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
-                ImGui::Checkbox("Is Trigger", &component.IsTrigger);
+                UI::DrawFloatControl("Radius", component.Radius, 0.05f, 0.0f, 100.0f);
+                UI::DrawFloatControl("Height", component.Height, 0.05f, 0.0f, 100.0f);
+                UI::DrawVec3Control("Offset", component.Offset);
+                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
+                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
+                UI::DrawCheckbox("Is Trigger", component.IsTrigger);
             });
 
         DrawComponent<ScriptComponent>("Script", entity, [&](auto& component)
@@ -638,10 +592,20 @@ namespace RXNEditor {
                 memset(buffer, 0, sizeof(buffer));
                 strncpy(buffer, component.ClassName.c_str(), sizeof(buffer));
 
-                if (ImGui::InputText("Class", buffer, sizeof(buffer)))
-                {
+                ImGui::PushID("Class");
+                ImGui::Columns(2);
+                ImGui::SetColumnWidth(0, 100.0f);
+                ImGui::Text("Class");
+                ImGui::NextColumn();
+
+                ImGui::PushItemWidth(-1);
+                if (ImGui::InputText("##Class", buffer, sizeof(buffer)))
                     component.ClassName = std::string(buffer);
-                }
+
+                ImGui::PopItemWidth();
+                ImGui::Columns(1);
+                ImGui::PopID();
+
 
                 bool classExists = ScriptEngine::EntityClassExists(component.ClassName);
                 if (!classExists && !component.ClassName.empty())
@@ -664,21 +628,21 @@ namespace RXNEditor {
                                 case ScriptFieldType::Float:
                                 {
                                     float data = instance->GetFieldValue<float>(field.Name);
-                                    if (ImGui::DragFloat(field.Name.c_str(), &data, 0.1f))
+                                    if (UI::DrawFloatControl(field.Name.c_str(), data, 0.1f))
                                         instance->SetFieldValue(field.Name, data);
                                     break;
                                 }
                                 case ScriptFieldType::Bool:
                                 {
                                     bool data = instance->GetFieldValue<bool>(field.Name);
-                                    if (ImGui::Checkbox(field.Name.c_str(), &data))
+                                    if (UI::DrawCheckbox(field.Name.c_str(), data))
                                         instance->SetFieldValue(field.Name, data);
                                     break;
                                 }
                                 case ScriptFieldType::Int:
                                 {
                                     int data = instance->GetFieldValue<int>(field.Name);
-                                    if (ImGui::DragInt(field.Name.c_str(), &data))
+                                    if (UI::DrawIntControl(field.Name.c_str(), data))
                                         instance->SetFieldValue(field.Name, data);
                                     break;
                                 }
@@ -692,14 +656,14 @@ namespace RXNEditor {
                                 case ScriptFieldType::Vector2:
                                 {
                                     glm::vec2 data = instance->GetFieldValue<glm::vec2>(field.Name);
-                                    if (ImGui::DragFloat2(field.Name.c_str(), glm::value_ptr(data), 0.1f))
+                                    if (UI::DrawVec2Control(field.Name.c_str(), data, 0.1f))
                                         instance->SetFieldValue(field.Name, data);
                                     break;
                                 }
                                 case ScriptFieldType::Vector3:
                                 {
                                     glm::vec3 data = instance->GetFieldValue<glm::vec3>(field.Name);
-                                    if (ImGui::DragFloat3(field.Name.c_str(), glm::value_ptr(data), 0.1f))
+                                    if (UI::DrawVec3Control(field.Name.c_str(), data, 0.1f))
                                         instance->SetFieldValue(field.Name, data);
                                     break;
                                 }
@@ -709,12 +673,12 @@ namespace RXNEditor {
 
                                     if (field.Name.find("Color") != std::string::npos)
                                     {
-                                        if (ImGui::ColorEdit4(field.Name.c_str(), glm::value_ptr(data)))
+                                        if (UI::DrawColor4Control(field.Name.c_str(), data))
                                             instance->SetFieldValue(field.Name, data);
                                     }
                                     else
                                     {
-                                        if (ImGui::DragFloat4(field.Name.c_str(), glm::value_ptr(data), 0.1f))
+                                        if (UI::DrawColor4Control(field.Name.c_str(), data, 0.1f))
                                             instance->SetFieldValue(field.Name, data);
                                     }
                                     break;

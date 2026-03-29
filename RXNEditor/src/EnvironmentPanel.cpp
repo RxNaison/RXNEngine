@@ -1,4 +1,5 @@
 #include "EnvironmentPanel.h"
+#include "UI.h"
 
 #include <imgui.h>
 
@@ -17,12 +18,12 @@ namespace RXNEditor {
 	void EnvironmentPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Settings");
-		ImGui::SliderFloat("Exposure", &m_Context->GetSettings().Exposure, 0, 100);
-		ImGui::SliderFloat("Gamma", &m_Context->GetSettings().Gamma, 0, 100);
+		RXNEngine::UI::DrawFloatControl("Exposure", m_Context->GetSettings().Exposure, 0.1, 0.0f, 100.0f);
+		RXNEngine::UI::DrawFloatControl("Gamma", m_Context->GetSettings().Gamma, 0.1, 0.0f, 100.0f);
 
-		ImGui::SliderFloat("Bloom Intensity", &m_Context->GetSettings().BloomIntensity, 0, 1);
+		RXNEngine::UI::DrawFloatControl("Bloom Intensity", m_Context->GetSettings().BloomIntensity, 0.1f, 0.0f, 100.0f, 110.0f);
 
-		ImGui::Checkbox("Show Colliders", &m_Context->GetSettings().ShowColliders);
+		RXNEngine::UI::DrawCheckbox("Show Colliders", m_Context->GetSettings().ShowColliders);
 		ImGui::End();
 	}
 }
