@@ -7,7 +7,6 @@
 #include "RXNEngine/Asset/AssetManager.h"
 
 #include <fstream>
-
 #include <yaml-cpp/yaml.h>
 
 namespace YAML {
@@ -356,11 +355,11 @@ namespace RXNEngine {
 		{
 			out << YAML::Key << "Skybox";
 			out << YAML::BeginMap;
-						
+
 			out << YAML::Key << "TexturePath" << YAML::Value << GetRelativePath(m_Scene->m_Skybox->GetPath());
-			
+
 			out << YAML::Key << "Intensity" << YAML::Value << m_Scene->m_SkyboxIntensity;
-			
+
 			out << YAML::EndMap;
 		}
 
@@ -382,7 +381,6 @@ namespace RXNEngine {
 
 	void SceneSerializer::SerializeRuntime(const std::string& filepath)
 	{
-		// Not implemented
 		RXN_CORE_ASSERT(false);
 	}
 
@@ -410,12 +408,11 @@ namespace RXNEngine {
 			primaryCameraID = data["PrimaryCameraID"].as<UUID>();
 
 		auto skyboxData = data["Skybox"];
-
 		if (skyboxData)
 		{
 			if (skyboxData["TexturePath"])
 				m_Scene->m_Skybox = Cubemap::Create(skyboxData["TexturePath"].as<std::string>());
-	
+
 			if (skyboxData["Intensity"])
 				m_Scene->m_SkyboxIntensity = skyboxData["Intensity"].as<float>();
 		}
@@ -425,40 +422,45 @@ namespace RXNEngine {
 		{
 			for (auto entity : entities)
 			{
+				// Hard requirement: An entity block must have an ID to be valid
+				if (!entity["Entity"]) continue;
 				uint64_t uuid = entity["Entity"].as<uint64_t>();
 
 				std::string name;
 				auto tagComponent = entity["TagComponent"];
-				if (tagComponent)
+				if (tagComponent && tagComponent["Tag"])
 					name = tagComponent["Tag"].as<std::string>();
 
 				RXN_CORE_TRACE("Deserialized entity with ID = {0}, name = {1}", uuid, name);
-
 				Entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name);
 
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{
-					// Entities always have transforms
 					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
-					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
-					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-					tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+
+					if (transformComponent["Translation"])
+						tc.Translation = transformComponent["Translation"].as<glm::vec3>();
+
+					if (transformComponent["Rotation"])
+						tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
+
+					if (transformComponent["Scale"])
+						tc.Scale = transformComponent["Scale"].as<glm::vec3>();
 				}
 
 				auto relationshipComponent = entity["RelationshipComponent"];
 				if (relationshipComponent)
 				{
 					auto& rc = deserializedEntity.GetComponent<RelationshipComponent>();
-					rc.ParentHandle = relationshipComponent["ParentHandle"].as<uint64_t>();
 
-					auto children = relationshipComponent["Children"];
-					if (children)
+					if (relationshipComponent["ParentHandle"])
+						rc.ParentHandle = relationshipComponent["ParentHandle"].as<uint64_t>();
+
+					if (auto children = relationshipComponent["Children"])
 					{
 						for (auto child : children)
-						{
 							rc.Children.push_back(child.as<uint64_t>());
-						}
 					}
 				}
 
@@ -467,18 +469,26 @@ namespace RXNEngine {
 				{
 					auto& cc = deserializedEntity.AddComponent<CameraComponent>();
 
-					auto cameraProps = cameraComponent["Camera"];
-					cc.Camera.SetProjectionType((SceneCamera::ProjectionMode)cameraProps["ProjectionType"].as<int>());
+					if (auto cameraProps = cameraComponent["Camera"])
+					{
+						if (cameraProps["ProjectionType"])
+							cc.Camera.SetProjectionType((SceneCamera::ProjectionMode)cameraProps["ProjectionType"].as<int>());
+						if (cameraProps["PerspectiveFOV"])
+							cc.Camera.SetPerspectiveFOV(cameraProps["PerspectiveFOV"].as<float>());
+						if (cameraProps["PerspectiveNear"])
+							cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
+						if (cameraProps["PerspectiveFar"])
+							cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
 
-					cc.Camera.SetPerspectiveFOV(cameraProps["PerspectiveFOV"].as<float>());
-					cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-					cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
+						if (cameraProps["OrthographicSize"])
+							cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
+						if (cameraProps["OrthographicNear"])
+							cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
+						if (cameraProps["OrthographicFar"])
+							cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
+					}
 
-					cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
-					cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
-					cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
-
-					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+					if (cameraComponent["FixedAspectRatio"]) cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}
 
 				auto staticMeshComponent = entity["StaticMeshComponent"];
@@ -486,15 +496,15 @@ namespace RXNEngine {
 				{
 					auto& mc = deserializedEntity.AddComponent<StaticMeshComponent>();
 
-					std::string assetPath = staticMeshComponent["AssetPath"].as<std::string>();
-					mc.AssetPath = assetPath;
-
-					mc.Mesh = AssetManager::GetMesh(assetPath);
+					if (staticMeshComponent["AssetPath"])
+					{
+						std::string assetPath = staticMeshComponent["AssetPath"].as<std::string>();
+						mc.AssetPath = assetPath;
+						mc.Mesh = AssetManager::GetMesh(assetPath);
+					}
 
 					if (staticMeshComponent["SubmeshIndex"])
 						mc.SubmeshIndex = staticMeshComponent["SubmeshIndex"].as<uint32_t>();
-					else
-						mc.SubmeshIndex = 0;
 				}
 
 				auto directionalLightComponent = entity["DirectionalLightComponent"];
@@ -502,8 +512,10 @@ namespace RXNEngine {
 				{
 					auto& dlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
 
-					dlc.Color = directionalLightComponent["Color"].as<glm::vec3>();
-					dlc.Intensity = directionalLightComponent["Intensity"].as<float>();
+					if (directionalLightComponent["Color"])
+						dlc.Color = directionalLightComponent["Color"].as<glm::vec3>();
+					if (directionalLightComponent["Intensity"])
+						dlc.Intensity = directionalLightComponent["Intensity"].as<float>();
 				}
 
 				auto pointLightComponent = entity["PointLightComponent"];
@@ -511,75 +523,101 @@ namespace RXNEngine {
 				{
 					auto& plc = deserializedEntity.AddComponent<PointLightComponent>();
 
-					plc.Color = pointLightComponent["Color"].as<glm::vec3>();
-					plc.Intensity = pointLightComponent["Intensity"].as<float>();
-					plc.Radius = pointLightComponent["Radius"].as<float>();
-					plc.Falloff = pointLightComponent["Falloff"].as<float>();
+					if (pointLightComponent["Color"])
+						plc.Color = pointLightComponent["Color"].as<glm::vec3>();
+					if (pointLightComponent["Intensity"])
+						plc.Intensity = pointLightComponent["Intensity"].as<float>();
+					if (pointLightComponent["Radius"])
+						plc.Radius = pointLightComponent["Radius"].as<float>();
+					if (pointLightComponent["Falloff"])
+						plc.Falloff = pointLightComponent["Falloff"].as<float>();
 				}
 
 				auto rigidbodyComponent = entity["RigidbodyComponent"];
 				if (rigidbodyComponent)
 				{
 					auto& rb = deserializedEntity.AddComponent<RigidbodyComponent>();
-					rb.Type = (RigidbodyComponent::BodyType)rigidbodyComponent["Type"].as<int>();
-					rb.Mass = rigidbodyComponent["Mass"].as<float>();
-					rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
-					rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
 
-					rb.FixedRotation = rigidbodyComponent["FixedRotation"].as<bool>();
-
-					rb.UseCCD = rigidbodyComponent["UseCCD"].as<bool>();
-					rb.CCDVelocityThreshold = rigidbodyComponent["CCDVelocityThreshold"].as<float>();
+					if (rigidbodyComponent["Type"])
+						rb.Type = (RigidbodyComponent::BodyType)rigidbodyComponent["Type"].as<int>();
+					if (rigidbodyComponent["Mass"])
+						rb.Mass = rigidbodyComponent["Mass"].as<float>();
+					if (rigidbodyComponent["LinearDrag"])
+						rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
+					if (rigidbodyComponent["AngularDrag"])
+						rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
+					if (rigidbodyComponent["FixedRotation"])
+						rb.FixedRotation = rigidbodyComponent["FixedRotation"].as<bool>();
+					if (rigidbodyComponent["UseCCD"])
+						rb.UseCCD = rigidbodyComponent["UseCCD"].as<bool>();
+					if (rigidbodyComponent["CCDVelocityThreshold"])
+						rb.CCDVelocityThreshold = rigidbodyComponent["CCDVelocityThreshold"].as<float>();
 				}
 
 				auto boxColliderComponent = entity["BoxColliderComponent"];
 				if (boxColliderComponent)
 				{
 					auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
-					bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
-					bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
 
-					bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
-					bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
-					bc.Restitution = boxColliderComponent["Restitution"].as<float>();
-
-					bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
+					if (boxColliderComponent["HalfExtents"])
+						bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
+					if (boxColliderComponent["Offset"])
+						bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+					if (boxColliderComponent["StaticFriction"])
+						bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
+					if (boxColliderComponent["DynamicFriction"])
+						bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
+					if (boxColliderComponent["Restitution"])
+						bc.Restitution = boxColliderComponent["Restitution"].as<float>();
+					if (boxColliderComponent["IsTrigger"])
+						bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto sphereColliderComponent = entity["SphereColliderComponent"];
 				if (sphereColliderComponent)
 				{
 					auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
-					sc.Radius = sphereColliderComponent["Radius"].as<float>();
-					sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
 
-					sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
-					sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
-					sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
-
-					sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
+					if (sphereColliderComponent["Radius"])
+						sc.Radius = sphereColliderComponent["Radius"].as<float>();
+					if (sphereColliderComponent["Offset"])
+						sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
+					if (sphereColliderComponent["StaticFriction"])
+						sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
+					if (sphereColliderComponent["DynamicFriction"])
+						sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
+					if (sphereColliderComponent["Restitution"])
+						sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
+					if (sphereColliderComponent["IsTrigger"])
+						sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
 				if (capsuleColliderComponent)
 				{
 					auto& cc = deserializedEntity.AddComponent<CapsuleColliderComponent>();
-					cc.Radius = capsuleColliderComponent["Radius"].as<float>();
-					cc.Height = capsuleColliderComponent["Height"].as<float>();
-					cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
 
-					cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
-					cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
-					cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
-
-					cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
+					if (capsuleColliderComponent["Radius"])
+						cc.Radius = capsuleColliderComponent["Radius"].as<float>();
+					if (capsuleColliderComponent["Height"])
+						cc.Height = capsuleColliderComponent["Height"].as<float>();
+					if (capsuleColliderComponent["Offset"])
+						cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
+					if (capsuleColliderComponent["StaticFriction"])
+						cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
+					if (capsuleColliderComponent["DynamicFriction"])
+						cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
+					if (capsuleColliderComponent["Restitution"])
+						cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
+					if (capsuleColliderComponent["IsTrigger"])
+						cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto scriptComponent = entity["ScriptComponent"];
 				if (scriptComponent)
 				{
 					auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
-					sc.ClassName = scriptComponent["ClassName"].as<std::string>();
+					if (scriptComponent["ClassName"]) sc.ClassName = scriptComponent["ClassName"].as<std::string>();
 				}
 
 				if (primaryCameraID != UUID::Null && uuid == (uint64_t)primaryCameraID)
@@ -594,7 +632,6 @@ namespace RXNEngine {
 
 	bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
 	{
-		// Not implemented
 		RXN_CORE_ASSERT(false);
 		return false;
 	}
