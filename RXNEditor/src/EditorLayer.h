@@ -4,7 +4,7 @@
 #include "SceneHierarchyPanel.h"
 #include "ContentBrowserPanel.h"
 #include "EnvironmentPanel.h"
-#include "RXNEngine/Renderer/ModelImporter.h"
+#include "RXNEngine/Asset/ModelImporter.h"
 
 using namespace RXNEngine;
 

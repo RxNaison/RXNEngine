@@ -1,11 +1,11 @@
 #pragma once
 
+#include "RenderTarget.h"
 #include "RXNEngine/Scene/Scene.h"
 #include "RXNEngine/Scene/Entity.h"
-#include "RenderTarget.h"
-#include "EditorCamera.h"
-#include "VertexArray.h"
-#include "Shader.h"
+#include "RXNEngine/Scene/EditorCamera.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VertexArray.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 
 namespace RXNEngine {
 

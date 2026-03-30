@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "RXNEngine/Renderer/Buffer.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Buffer.h"
 
 namespace RXNEngine {
 

@@ -1,6 +1,6 @@
 #include "rxnpch.h"
 #include "EditorLayer.h"
-#include "RXNEngine/Renderer/ModelImporter.h"
+#include "RXNEngine/Asset/ModelImporter.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 
 #include <imgui.h>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "RXNEngine/Renderer/VertexArray.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VertexArray.h"
 
 namespace RXNEngine {
 

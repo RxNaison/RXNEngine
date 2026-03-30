@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RXNEngine/Renderer/Camera.h"
+#include "RXNEngine/Scene/Camera.h"
 
 namespace RXNEngine {
 

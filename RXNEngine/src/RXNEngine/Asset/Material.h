@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Shader.h"
-#include "Texture.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Buffer.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 #include <glm/glm.hpp>
 
 namespace RXNEngine {

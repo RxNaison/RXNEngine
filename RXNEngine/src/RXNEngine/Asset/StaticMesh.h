@@ -1,8 +1,8 @@
 #pragma once
 
-#include "RXNEngine/Renderer/VertexArray.h"
-#include "RXNEngine/Renderer/Material.h"
-#include "RXNEngine/Core/Math.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VertexArray.h"
+#include "RXNEngine/Asset/Material.h"
+#include "RXNEngine/Math/Math.h"
 
 #include <vector>
 #include <string>

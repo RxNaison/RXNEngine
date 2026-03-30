@@ -1,8 +1,8 @@
 #pragma once
 
 #include "RXNEngine/Core/UUID.h"
-#include "RXNEngine/Renderer/Camera.h"
-#include "RXNEngine/Renderer/StaticMesh.h"
+#include "RXNEngine/Scene/Camera.h"
+#include "RXNEngine/Asset/StaticMesh.h"
 #include "RXNEngine/Renderer/Light.h"
 #include "SceneCamera.h"
 

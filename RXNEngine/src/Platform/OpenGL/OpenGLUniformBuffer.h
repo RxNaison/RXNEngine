@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RXNEngine/Renderer/UniformBuffer.h"
+#include "RXNEngine/Renderer/GraphicsAPI/UniformBuffer.h"
 
 namespace RXNEngine {
 

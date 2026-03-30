@@ -1,7 +1,7 @@
 #include "rxnpch.h"
 #include "Shader.h"
 
-#include "Renderer.h"
+#include "RXNEngine/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLShader.h"
 
 namespace RXNEngine {

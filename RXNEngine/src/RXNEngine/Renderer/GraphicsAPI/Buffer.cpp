@@ -1,7 +1,7 @@
 #include "rxnpch.h"
 #include "Buffer.h"
 
-#include "Renderer.h"
+#include "RXNEngine/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLBuffer.h"
 
 namespace RXNEngine {

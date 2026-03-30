@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene.h"
+#include "RXNEngine/Scene/Scene.h"
 
 namespace RXNEngine {
 

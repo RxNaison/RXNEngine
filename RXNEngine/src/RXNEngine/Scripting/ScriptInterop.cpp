@@ -6,7 +6,7 @@
 #include "RXNEngine/Core/KeyCodes.h"
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
-#include "RXNEngine/Core/AssetManager.h"
+#include "RXNEngine/Asset/AssetManager.h"
 
 #include <coreclr_delegates.h>
 #include <PxPhysicsAPI.h>

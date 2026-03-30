@@ -1,6 +1,6 @@
 #include "rxnpch.h"
 #include "OpenGLCubemap.h"
-#include "RXNEngine/Renderer/VertexArray.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VertexArray.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>

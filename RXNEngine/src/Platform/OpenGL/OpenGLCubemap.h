@@ -1,6 +1,6 @@
 #pragma once
-#include "RXNEngine/Renderer/Texture.h"
-#include "RXNEngine/Renderer/Shader.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 
 #include <vector>
 

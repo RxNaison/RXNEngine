@@ -1,6 +1,6 @@
 #pragma once
 
-#include "StaticMesh.h"
+#include "RXNEngine/Asset/StaticMesh.h"
 #include <string>
 
 namespace RXNEngine {

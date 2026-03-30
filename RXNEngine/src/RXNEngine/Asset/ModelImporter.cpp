@@ -1,11 +1,11 @@
 #include "rxnpch.h"
 #include "ModelImporter.h"
 
-#include "RXNEngine/Core/AssetManager.h"
+#include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Core/Log.h"
 #include "RXNEngine/Scene/Components.h"
 #include "RXNEngine/Scene/Entity.h"
-#include "ModelSerializer.h"
+#include "RXNEngine/Serialization/ModelSerializer.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>

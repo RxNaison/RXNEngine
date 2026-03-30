@@ -1,6 +1,6 @@
 #include "rxnpch.h"
 #include "ModelSerializer.h"
-#include "RXNEngine/Core/AssetManager.h"
+#include "RXNEngine/Asset/AssetManager.h"
 #include <fstream>
 
 namespace RXNEngine {

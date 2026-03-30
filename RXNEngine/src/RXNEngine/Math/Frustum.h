@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <array>
-#include "RXNEngine/Core/Math.h"
+#include "RXNEngine/Math/Math.h"
 
 namespace RXNEngine {
 

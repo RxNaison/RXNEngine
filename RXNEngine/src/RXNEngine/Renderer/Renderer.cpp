@@ -1,8 +1,8 @@
 #include "rxnpch.h"
 #include "Renderer.h"
-#include "RXNEngine/Core/Math.h"
-#include "Frustum.h"
-#include "UniformBuffer.h"
+#include "RXNEngine/Math/Math.h"
+#include "RXNEngine/Math/Frustum.h"
+#include "RXNEngine/Renderer/GraphicsAPI/UniformBuffer.h"
 #include "RenderCommand.h"
 #include "ShadowMap.h"
 

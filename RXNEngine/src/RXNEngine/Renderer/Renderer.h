@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Camera.h"
-#include "StaticMesh.h"
-#include "Material.h"
-#include "Light.h"
-#include "RenderTarget.h"
-#include "EditorCamera.h"
 #include "RendererAPI.h"
+#include "RenderTarget.h"
+#include "Light.h"
+#include "RXNEngine/Scene/Camera.h"
+#include "RXNEngine/Asset/StaticMesh.h"
+#include "RXNEngine/Asset/Material.h"
+#include "RXNEngine/Scene/EditorCamera.h"
 
 #include <vector>
 

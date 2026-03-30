@@ -1,10 +1,10 @@
 #pragma once
 
 #include "RXNEngine/Core/UUID.h"
-#include "RXNEngine/Renderer/EditorCamera.h"
+#include "RXNEngine/Scene/EditorCamera.h"
 #include "RXNEngine/Renderer/RenderTarget.h"
-#include "RXNEngine/Core/Math.h"
-#include "RXNEngine/Renderer/Texture.h"
+#include "RXNEngine/Math/Math.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
 
 #include <entt.hpp>
 

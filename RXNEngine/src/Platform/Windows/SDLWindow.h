@@ -1,6 +1,6 @@
 #pragma once
 #include "RXNEngine/Core/Window.h"
-#include "RXNEngine/Renderer/GraphicsContext.h"
+#include "RXNEngine/Renderer/GraphicsAPI/GraphicsContext.h"
 #include <SDL3/SDL.h>
 
 namespace RXNEngine {

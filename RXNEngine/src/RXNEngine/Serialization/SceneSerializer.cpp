@@ -1,10 +1,10 @@
 #include "rxnpch.h"
 #include "SceneSerializer.h"
 
-#include "Entity.h"
-#include "Components.h"
+#include "RXNEngine/Scene/Entity.h"
+#include "RXNEngine/Scene/Components.h"
 #include "RXNEngine/Core/UUID.h"
-#include "RXNEngine/Core/AssetManager.h"
+#include "RXNEngine/Asset/AssetManager.h"
 
 #include <fstream>
 

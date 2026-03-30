@@ -1,7 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <vector>
-#include "RXNEngine/Renderer/Texture.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
 
 namespace RXNEditor {
 

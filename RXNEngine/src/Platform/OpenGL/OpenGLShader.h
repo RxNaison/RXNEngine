@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RXNEngine/Renderer/Shader.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 #include "glad/glad.h"
 
 

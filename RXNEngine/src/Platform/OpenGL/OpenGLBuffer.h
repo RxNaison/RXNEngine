@@ -1,5 +1,5 @@
 #pragma once
-#include "RXNEngine/Renderer/Buffer.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Buffer.h"
 
 namespace RXNEngine {
 
