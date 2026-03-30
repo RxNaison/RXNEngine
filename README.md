@@ -7,6 +7,7 @@
 RXNEngine is a custom, high-performance 3D game engine built in C++. It features a modern Entity-Component-System (ECS) architecture, physically based rendering (PBR), and a deeply integrated C# scripting environment powered by CoreCLR
 
 ## Screenshots
+<img width="2560" height="1528" alt="image" src="https://github.com/user-attachments/assets/cf5eb282-add5-4022-a55b-80a16b95e060" />
 <img width="1280" height="764" alt="Editor Screenshot 1" src="https://github.com/user-attachments/assets/64b8a6bf-eb95-4c18-8308-30049892f1e2" />
 <img width="1280" height="764" alt="Editor Screenshot 2" src="https://github.com/user-attachments/assets/008f537b-f7b5-4ce8-91bb-275c7e463dc1" />
 
