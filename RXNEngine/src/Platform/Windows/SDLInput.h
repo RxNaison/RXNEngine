@@ -21,6 +21,7 @@ namespace RXNEngine {
         virtual std::pair<float, float> GetMousePositionImpl() override;
         virtual float GetMouseXImpl() override;
         virtual float GetMouseYImpl() override;
+        virtual std::pair<float, float> GetMouseDeltaImpl() override;
 
         virtual bool IsGamepadButtonPressedImpl(int gamepadID, GamepadButton button) override;
         virtual float GetGamepadAxisImpl(int gamepadID, GamepadAxis axis) override;
@@ -28,5 +29,7 @@ namespace RXNEngine {
 
     private:
         SDL_Gamepad* m_Gamepads[4] = { nullptr, nullptr, nullptr, nullptr };
+        float m_MouseDeltaX = 0.0f;
+        float m_MouseDeltaY = 0.0f;
     };
 }

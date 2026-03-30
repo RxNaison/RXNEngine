@@ -26,6 +26,16 @@ namespace RXNEngine
             }
         }
 
+        public static Vector2 GetMouseDelta()
+        {
+            unsafe
+            {
+                Vector2 delta;
+                ((delegate* unmanaged<Vector2*, void>)Interop.NativeFunctions.Input_GetMouseDelta)(&delta);
+                return delta;
+            }
+        }
+
         public static void SetCursorMode(CursorMode mode)
         {
             unsafe

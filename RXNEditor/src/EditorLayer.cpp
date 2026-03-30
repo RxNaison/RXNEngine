@@ -48,6 +48,7 @@ namespace RXNEditor {
 
         Renderer::ResetStats();
         AssetManager::Update();
+		Input::Update();
 
         switch (m_SceneState)
         {

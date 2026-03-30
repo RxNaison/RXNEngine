@@ -6,6 +6,7 @@
 #include "RXNEngine/Events/MouseEvent.h"
 
 #include <backends/imgui_impl_sdl3.h>
+#include <imgui.h>
 
 namespace RXNEngine {
 
@@ -165,17 +166,31 @@ namespace RXNEngine {
 
     void SDLWindow::SetCursorMode(CursorMode mode)
     {
+        ImGuiIO& io = ImGui::GetIO();
+
         switch (mode)
         {
             case CursorMode::Normal:
-                SDL_HideCursor();
+                SDL_SetWindowRelativeMouseMode(m_Window, false);
                 SDL_ShowCursor();
+
+                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
                 break;
+
             case CursorMode::Hidden:
+                SDL_SetWindowRelativeMouseMode(m_Window, false);
                 SDL_HideCursor();
+
+                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
                 break;
+
             case CursorMode::Locked:
                 SDL_SetWindowRelativeMouseMode(m_Window, true);
+
+                io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+                io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
                 break;
         }
     }

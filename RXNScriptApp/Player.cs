@@ -75,9 +75,7 @@ public class Player : Entity
 
     public override void OnUpdate(float deltaTime)
     {
-        Vector2 currentMousePos = Input.GetMousePosition();
-        Vector2 delta = currentMousePos - m_LastMousePos;
-        m_LastMousePos = currentMousePos;
+        Vector2 delta = Input.GetMouseDelta();
 
         m_Yaw -= delta.X * MouseSensitivity;
         m_Pitch -= delta.Y * MouseSensitivity;

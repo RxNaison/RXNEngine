@@ -22,6 +22,7 @@ namespace RXNEngine {
         //Input
         void* Input_IsKeyDown = nullptr;
         void* NativeInput_GetMousePosition = nullptr;
+        void* NativeInput_GetMouseDelta = nullptr;
         void* NativeInput_SetCursorMode = nullptr;
 
         void* NativeInput_IsGamepadButtonDown = nullptr;

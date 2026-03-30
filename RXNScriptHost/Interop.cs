@@ -15,6 +15,7 @@ namespace RXNScriptHost
         //Input
         public IntPtr Input_IsKeyDown;
         public IntPtr Input_GetMousePosition;
+        public IntPtr Input_GetMouseDelta;
         public IntPtr Input_SetCursorMode;
 
         public IntPtr Input_IsGamepadButtonDown;

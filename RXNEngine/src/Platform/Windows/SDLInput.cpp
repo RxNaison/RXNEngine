@@ -6,7 +6,13 @@ namespace RXNEngine {
     Input* Input::s_Instance = new SDLInput();
 
     void SDLInput::InitImpl() {}
-    void SDLInput::UpdateImpl() {}
+    void SDLInput::UpdateImpl()
+    {
+        float dx, dy;
+        SDL_GetRelativeMouseState(&dx, &dy);
+        m_MouseDeltaX = dx;
+        m_MouseDeltaY = dy;
+    }
     void SDLInput::ShutdownImpl()
     {
         for (int i = 0; i < 4; i++)
@@ -80,6 +86,11 @@ namespace RXNEngine {
 
     float SDLInput::GetMouseXImpl() { return GetMousePositionImpl().first; }
     float SDLInput::GetMouseYImpl() { return GetMousePositionImpl().second; }
+
+    std::pair<float, float> SDLInput::GetMouseDeltaImpl()
+    {
+        return { m_MouseDeltaX, m_MouseDeltaY };
+    }
 
     bool SDLInput::IsGamepadButtonPressedImpl(int gamepadID, GamepadButton button)
     {

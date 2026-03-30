@@ -71,6 +71,12 @@ namespace RXNEngine {
         *outPosition = glm::vec2(x, y);
     }
 
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_GetMouseDelta(glm::vec2* outDelta)
+    {
+        auto [x, y] = Input::GetMouseDelta();
+        *outDelta = glm::vec2(x, y);
+    }
+
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_SetCursorMode(int mode)
     {
         Application::Get().GetWindow().SetCursorMode((CursorMode)mode);
@@ -504,6 +510,7 @@ namespace RXNEngine {
         //Input
         outCalls->Input_IsKeyDown = (void*)NativeInput_IsKeyDown;
 		outCalls->NativeInput_GetMousePosition = (void*)NativeInput_GetMousePosition;
+		outCalls->NativeInput_GetMouseDelta = (void*)NativeInput_GetMouseDelta;
 		outCalls->NativeInput_SetCursorMode = (void*)NativeInput_SetCursorMode;
 
 		outCalls->NativeInput_IsGamepadButtonDown = (void*)NativeInput_IsGamepadButtonDown;

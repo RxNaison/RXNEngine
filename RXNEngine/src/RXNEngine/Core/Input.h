@@ -19,6 +19,7 @@ namespace RXNEngine {
 		inline static std::pair<float, float> GetMousePosition() { return s_Instance->GetMousePositionImpl(); }
 		inline static float GetMouseX() { return s_Instance->GetMouseXImpl(); }
 		inline static float GetMouseY() { return s_Instance->GetMouseYImpl(); }
+		inline static std::pair<float, float> GetMouseDelta() { return s_Instance->GetMouseDeltaImpl(); }
 
 		inline static bool IsGamepadButtonPressed(int gamepadID, GamepadButton button) { return s_Instance->IsGamepadButtonPressedImpl(gamepadID, button); }
 		inline static float GetGamepadAxis(int gamepadID, GamepadAxis axis) { return s_Instance->GetGamepadAxisImpl(gamepadID, axis); }
@@ -36,6 +37,7 @@ namespace RXNEngine {
 		virtual std::pair<float, float> GetMousePositionImpl() = 0;
 		virtual float GetMouseXImpl() = 0;
 		virtual float GetMouseYImpl() = 0;
+		virtual std::pair<float, float> GetMouseDeltaImpl() = 0;
 
 		virtual bool IsGamepadButtonPressedImpl(int gamepadID, GamepadButton button) = 0;
 		virtual float GetGamepadAxisImpl(int gamepadID, GamepadAxis axis) = 0;
