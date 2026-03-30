@@ -1,26 +1,46 @@
 #pragma once
-
-#include "RXNEngine/Renderer/Texture.h"
 #include <filesystem>
+#include <vector>
+#include "RXNEngine/Renderer/Texture.h"
 
 namespace RXNEditor {
 
-	class ContentBrowserPanel
-	{
-	public:
-		ContentBrowserPanel();
+    struct ContentItem
+    {
+        std::filesystem::path Path;
+        std::string Filename;
+        bool IsDirectory;
+    };
 
-		void OnImGuiRender();
+    class ContentBrowserPanel
+    {
+    public:
+        ContentBrowserPanel();
+        void OnImGuiRender();
 
-	private:
-		std::filesystem::path m_BaseDirectory;
+    private:
+        void DrawTopBar();
+        void DrawDirectoryTree(const std::filesystem::path& directoryPath);
+        void DrawContentGrid();
 
-		std::filesystem::path m_CurrentDirectory;
+        void Refresh();
+        void DeleteItem(const std::filesystem::path& path);
 
-		RXNEngine::Ref<RXNEngine::Texture2D> m_DirectoryIcon;
-		RXNEngine::Ref<RXNEngine::Texture2D> m_FileIcon;
+    private:
+        std::filesystem::path m_BaseDirectory;
+        std::filesystem::path m_CurrentDirectory;
 
-		bool m_SettingsWindow = false;
-	};
+        RXNEngine::Ref<RXNEngine::Texture2D> m_DirectoryIcon;
+        RXNEngine::Ref<RXNEngine::Texture2D> m_FileIcon;
 
+        std::vector<ContentItem> m_CachedItems;
+        float m_RefreshTimer = 0.0f;
+        float m_RefreshInterval = 0.5f;
+
+        char m_SearchBuffer[256] = "";
+
+        float m_ThumbnailSize = 96.0f;
+        float m_Padding = 16.0f;
+        bool m_SettingsWindow = false;
+    };
 }
