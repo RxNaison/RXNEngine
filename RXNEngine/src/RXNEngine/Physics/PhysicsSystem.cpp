@@ -1,6 +1,8 @@
 #include "rxnpch.h"
 #include "PhysicsSystem.h"
 
+#include <cooking/PxCooking.h>
+
 namespace RXNEngine {
 
     using namespace physx;
@@ -50,15 +52,21 @@ namespace RXNEngine {
     {
         DestroyScene();
 
-        if (s_Dispatcher) s_Dispatcher->release();
-        if (s_Physics)    s_Physics->release();
+        if (s_Dispatcher)
+            s_Dispatcher->release();
+
+        if (s_Physics)
+            s_Physics->release();
+
         if (s_Pvd)
         {
             PxPvdTransport* transport = s_Pvd->getTransport();
             s_Pvd->release();
             transport->release();
         }
-        if (s_Foundation) s_Foundation->release();
+
+        if (s_Foundation)
+            s_Foundation->release();
     }
 
     void PhysicsSystem::CreateScene()
@@ -116,5 +124,97 @@ namespace RXNEngine {
     void PhysicsSystem::UnlockRead() { if (s_Scene) s_Scene->unlockRead(); }
     void PhysicsSystem::LockWrite() { if (s_Scene) s_Scene->lockWrite(); }
     void PhysicsSystem::UnlockWrite() { if (s_Scene) s_Scene->unlockWrite(); }
+
+    physx::PxConvexMesh* PhysicsSystem::CreateConvexMesh(Ref<StaticMesh> mesh)
+    {
+        const auto& vertices = mesh->GetVertices();
+        if (vertices.empty())
+            return nullptr;
+
+        std::vector<physx::PxVec3> physicsVertices;
+        physicsVertices.resize(vertices.size());
+
+        for (const auto& submesh : mesh->GetSubmeshes())
+        {
+            for (uint32_t i = 0; i < submesh.VertexCount; i++)
+            {
+                uint32_t vIndex = submesh.BaseVertex + i;
+                if (vIndex >= vertices.size())
+                    continue;
+
+                glm::vec4 localPos = glm::vec4(vertices[vIndex].Position, 1.0f);
+                glm::vec4 worldPos = submesh.LocalTransform * localPos;
+
+                physicsVertices[vIndex] = physx::PxVec3(worldPos.x, worldPos.y, worldPos.z);
+            }
+        }
+
+        physx::PxConvexMeshDesc convexDesc;
+        convexDesc.points.count = (physx::PxU32)physicsVertices.size();
+        convexDesc.points.stride = sizeof(physx::PxVec3);
+        convexDesc.points.data = physicsVertices.data();
+        convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
+        physx::PxTolerancesScale scale;
+        physx::PxCookingParams params(scale);
+
+        physx::PxConvexMeshCookingResult::Enum result;
+        physx::PxConvexMesh* convexMesh = PxCreateConvexMesh(params, convexDesc, s_Physics->getPhysicsInsertionCallback(), &result);
+
+        if (!convexMesh)
+            RXN_CORE_ERROR("Failed to cook Convex Mesh!");
+
+        return convexMesh;
+    }
+
+    physx::PxTriangleMesh* PhysicsSystem::CreateTriangleMesh(Ref<StaticMesh> mesh)
+    {
+        const auto& vertices = mesh->GetVertices();
+        const auto& indices = mesh->GetIndices();
+
+        if (vertices.empty() || indices.empty())
+            return nullptr;
+
+        std::vector<physx::PxVec3> physicsVertices;
+        physicsVertices.resize(vertices.size());
+
+        for (const auto& submesh : mesh->GetSubmeshes())
+        {
+            for (uint32_t i = 0; i < submesh.VertexCount; i++)
+            {
+                uint32_t vIndex = submesh.BaseVertex + i;
+                if (vIndex >= vertices.size())
+                    continue;
+
+                glm::vec4 localPos = glm::vec4(vertices[vIndex].Position, 1.0f);
+                glm::vec4 worldPos = submesh.LocalTransform * localPos;
+
+                physicsVertices[vIndex] = physx::PxVec3(worldPos.x, worldPos.y, worldPos.z);
+            }
+        }
+
+        physx::PxTriangleMeshDesc meshDesc;
+        meshDesc.points.count = (physx::PxU32)physicsVertices.size();
+        meshDesc.points.stride = sizeof(physx::PxVec3);
+        meshDesc.points.data = physicsVertices.data();
+
+        meshDesc.triangles.count = (physx::PxU32)(indices.size() / 3);
+        meshDesc.triangles.stride = 3 * sizeof(uint32_t);
+        meshDesc.triangles.data = indices.data();
+
+        physx::PxTolerancesScale scale;
+        physx::PxCookingParams params(scale);
+
+        params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
+        params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
+
+        physx::PxTriangleMeshCookingResult::Enum result;
+        physx::PxTriangleMesh* triMesh = PxCreateTriangleMesh(params, meshDesc, s_Physics->getPhysicsInsertionCallback(), &result);
+
+        if (!triMesh)
+            RXN_CORE_ERROR("Failed to cook Triangle Mesh!");
+
+        return triMesh;
+    }
 
 }

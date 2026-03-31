@@ -15,7 +15,6 @@ namespace RXNEngine {
         static bool DrawColor3Control(const std::string& label, glm::vec3& values, float columnWidth = 100.0f);
         static bool DrawColor4Control(const std::string& label, glm::vec4& values, float columnWidth = 100.0f);
         static bool DrawCheckbox(const std::string& label, bool& value, float columnWidth = 100.0f);
-        static bool DrawComboBox(const std::string& label, const char* values, float columnWidth = 100.0f);
-
+        static bool DrawComboBox(const std::string& label, const char** options, int32_t optionCount, int32_t& selectedIndex, float columnWidth = 100.0f);
     };
 }

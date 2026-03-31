@@ -327,6 +327,22 @@ namespace RXNEngine {
 			out << YAML::EndMap; // CapsuleColliderComponent
 		}
 
+		if (entity.HasComponent<MeshColliderComponent>())
+		{
+			out << YAML::Key << "MeshColliderComponent";
+			out << YAML::BeginMap; // MeshColliderComponent
+
+			auto& mc = entity.GetComponent<MeshColliderComponent>();
+			out << YAML::Key << "IsConvex" << YAML::Value << mc.IsConvex;
+			out << YAML::Key << "OverrideAssetPath" << YAML::Value << mc.OverrideAssetPath;
+			out << YAML::Key << "StaticFriction" << YAML::Value << mc.StaticFriction;
+			out << YAML::Key << "DynamicFriction" << YAML::Value << mc.DynamicFriction;
+			out << YAML::Key << "Restitution" << YAML::Value << mc.Restitution;
+			out << YAML::Key << "IsTrigger" << YAML::Value << mc.IsTrigger;
+
+			out << YAML::EndMap; // MeshColliderComponent
+		}
+
 		if (entity.HasComponent<ScriptComponent>())
 		{
 			out << YAML::Key << "ScriptComponent";
@@ -611,6 +627,24 @@ namespace RXNEngine {
 						cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
 					if (capsuleColliderComponent["IsTrigger"])
 						cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
+				}
+
+				auto meshColliderComponent = entity["MeshColliderComponent"];
+				if (meshColliderComponent)
+				{
+					auto& mc = deserializedEntity.AddComponent<MeshColliderComponent>();
+					if (meshColliderComponent["IsConvex"])
+						mc.IsConvex = meshColliderComponent["IsConvex"].as<bool>();
+					if (meshColliderComponent["OverrideAssetPath"])
+						mc.OverrideAssetPath = meshColliderComponent["OverrideAssetPath"].as<std::string>();
+					if (meshColliderComponent["StaticFriction"])
+						mc.StaticFriction = meshColliderComponent["StaticFriction"].as<float>();
+					if (meshColliderComponent["DynamicFriction"])
+						mc.DynamicFriction = meshColliderComponent["DynamicFriction"].as<float>();
+					if (meshColliderComponent["Restitution"])
+						mc.Restitution = meshColliderComponent["Restitution"].as<float>();
+					if (meshColliderComponent["IsTrigger"])
+						mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
 				}
 
 				auto scriptComponent = entity["ScriptComponent"];

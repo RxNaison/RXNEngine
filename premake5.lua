@@ -124,7 +124,8 @@ project "RXNEngine"
           PhysXBinDir .. "/debug/PhysXCommon_64.lib",
           PhysXBinDir .. "/debug/PhysXExtensions_static_64.lib",
           PhysXBinDir .. "/debug/PhysXPvdSDK_static_64.lib",
-          PhysXBinDir .. "/debug/PhysXCharacterKinematic_static_64.lib"
+          PhysXBinDir .. "/debug/PhysXCharacterKinematic_static_64.lib",
+          PhysXBinDir .. "/debug/PhysXCooking_64.lib"
       }
     filter "configurations:Release"
       defines { "RXN_RELEASE", "NDEBUG", "USE_OPTICK=1" }
@@ -141,7 +142,8 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCommon_64.lib",
           PhysXBinDir .. "/release/PhysXExtensions_static_64.lib",
           PhysXBinDir .. "/release/PhysXPvdSDK_static_64.lib",
-          PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib"
+          PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib",
+          PhysXBinDir .. "/release/PhysXCooking_64.lib"
       }
     filter "configurations:Dist"
       defines { "RXN_DIST", "NDEBUG", "USE_OPTICK=0" }
@@ -158,7 +160,8 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCommon_64.lib",
           PhysXBinDir .. "/release/PhysXExtensions_static_64.lib",
           PhysXBinDir .. "/release/PhysXPvdSDK_static_64.lib",
-          PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib"
+          PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib",
+          PhysXBinDir .. "/release/PhysXCooking_64.lib"
       }
 
 

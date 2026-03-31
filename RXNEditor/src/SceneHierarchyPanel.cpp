@@ -11,6 +11,19 @@
 
 namespace RXNEditor {
 
+	template<typename T, typename ... Args>
+    void ShowAddComponentEntry(const std::string& name, Entity& entity, Args&& ... args)
+    {
+        if (!entity.HasComponent<T>())
+        {
+            if (ImGui::MenuItem(name.c_str()))
+            {
+                entity.AddComponent<T>(std::forward<Args>(args)...);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+	}
+
     SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context)
     {
         SetContext(context);
@@ -225,78 +238,16 @@ namespace RXNEditor {
 
         if (ImGui::BeginPopup("AddComponent"))
         {
-            if (!m_SelectedEntity.HasComponent<CameraComponent>())
-            {
-                if (ImGui::MenuItem("Camera"))
-                {
-                    m_SelectedEntity.AddComponent<CameraComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<StaticMeshComponent>())
-            {
-                if (ImGui::MenuItem("Mesh"))
-                {
-                    m_SelectedEntity.AddComponent<StaticMeshComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<DirectionalLightComponent>())
-            {
-                if (ImGui::MenuItem("Directional Light"))
-                {
-                    m_SelectedEntity.AddComponent<DirectionalLightComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<PointLightComponent>())
-            {
-                if (ImGui::MenuItem("Point Light"))
-                {
-                    m_SelectedEntity.AddComponent<PointLightComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<RigidbodyComponent>())
-            {
-                if (ImGui::MenuItem("Rigidbody"))
-                {
-                    m_SelectedEntity.AddComponent<RigidbodyComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<BoxColliderComponent>())
-            {
-                if (ImGui::MenuItem("Box Collider"))
-                {
-                    m_SelectedEntity.AddComponent<BoxColliderComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<SphereColliderComponent>())
-            {
-                if (ImGui::MenuItem("Sphere Collider"))
-                {
-                    m_SelectedEntity.AddComponent<SphereColliderComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!m_SelectedEntity.HasComponent<CapsuleColliderComponent>())
-            {
-                if (ImGui::MenuItem("Capsule Collider"))
-                {
-                    m_SelectedEntity.AddComponent<CapsuleColliderComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!entity.HasComponent<ScriptComponent>())
-            {
-                if (ImGui::MenuItem("Script Component"))
-                {
-                    entity.AddComponent<ScriptComponent>(m_SelectedEntity.GetComponent<TagComponent>().Tag);
-                    ImGui::CloseCurrentPopup();
-                }
-            }
+            ShowAddComponentEntry<CameraComponent>("Camera", m_SelectedEntity);
+            ShowAddComponentEntry<StaticMeshComponent>("Mesh", m_SelectedEntity);
+            ShowAddComponentEntry<DirectionalLightComponent>("Directional Light", m_SelectedEntity);
+            ShowAddComponentEntry<PointLightComponent>("Point Light", m_SelectedEntity);
+            ShowAddComponentEntry<RigidbodyComponent>("Rigidbody", m_SelectedEntity);
+            ShowAddComponentEntry<BoxColliderComponent>("Box Collider", m_SelectedEntity);
+            ShowAddComponentEntry<SphereColliderComponent>("Sphere Collider", m_SelectedEntity);
+            ShowAddComponentEntry<CapsuleColliderComponent>("Capsule Collider", m_SelectedEntity);
+            ShowAddComponentEntry<MeshColliderComponent>("Mesh Collider", m_SelectedEntity);
+            ShowAddComponentEntry<ScriptComponent>("Script Component", m_SelectedEntity, m_SelectedEntity.GetComponent<TagComponent>().Tag);
 
             ImGui::EndPopup();
         }
@@ -334,24 +285,10 @@ namespace RXNEditor {
                 }
 
                 const char* projectionTypeStrings[] = { "Perspective", "Orthographic" };
-                const char* currentProjectionTypeString = projectionTypeStrings[(int)camera.GetProjectionType()];
+                int projectionIndex = (int)camera.GetProjectionType();
 
-                if (UI::DrawComboBox("Projection", currentProjectionTypeString))
-                {
-                    for (int i = 0; i < 2; i++)
-                    {
-                        bool isSelected = currentProjectionTypeString == projectionTypeStrings[i];
-                        if (ImGui::Selectable(projectionTypeStrings[i], isSelected))
-                        {
-                            currentProjectionTypeString = projectionTypeStrings[i];
-                            camera.SetProjectionType((SceneCamera::ProjectionMode)i);
-                        }
-
-                        if (isSelected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
+                if (UI::DrawComboBox("Projection", projectionTypeStrings, 2, projectionIndex))
+                    camera.SetProjectionType((SceneCamera::ProjectionMode)projectionIndex);
 
                 if (camera.GetProjectionType() == SceneCamera::ProjectionMode::Perspective)
                 {
@@ -525,22 +462,11 @@ namespace RXNEditor {
         DrawComponent<RigidbodyComponent>("Rigidbody", entity, [](auto& component)
             {
                 const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
-                const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
-                if (UI::DrawComboBox("Body Type", currentBodyTypeString))
-                {
-                    for (int i = 0; i < 3; i++)
-                    {
-                        bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
-                        if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
-                        {
-                            currentBodyTypeString = bodyTypeStrings[i];
-                            component.Type = (RigidbodyComponent::BodyType)i;
-                        }
-                        if (isSelected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
+                int bodyTypeIndex = (int)component.Type;
+
+                if (UI::DrawComboBox("Body Type", bodyTypeStrings, 3, bodyTypeIndex))
+                    component.Type = (RigidbodyComponent::BodyType)bodyTypeIndex;
+
                 UI::DrawFloatControl("Mass", component.Mass, 0.1f, 0.0f, 1000.0f);
                 UI::DrawFloatControl("Linear Drag", component.LinearDrag, 0.01f, 0.0f, 1.0f);
                 UI::DrawFloatControl("Angular Drag", component.AngularDrag, 0.01f, 0.0f, 1.0f);
@@ -586,6 +512,15 @@ namespace RXNEditor {
                 UI::DrawCheckbox("Is Trigger", component.IsTrigger);
             });
 
+        DrawComponent<MeshColliderComponent>("Mesh Collider", entity, [](auto& component)
+            {
+                UI::DrawCheckbox("Is Convex", component.IsConvex);
+                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
+                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
+                UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+            });
+
         DrawComponent<ScriptComponent>("Script", entity, [&](auto& component)
             {
                 char buffer[256];
@@ -625,96 +560,96 @@ namespace RXNEditor {
                             {
                                 switch (field.Type)
                                 {
-                                case ScriptFieldType::Float:
-                                {
-                                    float data = instance->GetFieldValue<float>(field.Name);
-                                    if (UI::DrawFloatControl(field.Name.c_str(), data, 0.1f))
-                                        instance->SetFieldValue(field.Name, data);
-                                    break;
-                                }
-                                case ScriptFieldType::Bool:
-                                {
-                                    bool data = instance->GetFieldValue<bool>(field.Name);
-                                    if (UI::DrawCheckbox(field.Name.c_str(), data))
-                                        instance->SetFieldValue(field.Name, data);
-                                    break;
-                                }
-                                case ScriptFieldType::Int:
-                                {
-                                    int data = instance->GetFieldValue<int>(field.Name);
-                                    if (UI::DrawIntControl(field.Name.c_str(), data))
-                                        instance->SetFieldValue(field.Name, data);
-                                    break;
-                                }
-                                case ScriptFieldType::Double:
-                                {
-                                    double data = instance->GetFieldValue<double>(field.Name);
-                                    if (ImGui::DragScalar(field.Name.c_str(), ImGuiDataType_Double, &data, 0.1f))
-                                        instance->SetFieldValue(field.Name, data);
-                                    break;
-                                }
-                                case ScriptFieldType::Vector2:
-                                {
-                                    glm::vec2 data = instance->GetFieldValue<glm::vec2>(field.Name);
-                                    if (UI::DrawVec2Control(field.Name.c_str(), data, 0.1f))
-                                        instance->SetFieldValue(field.Name, data);
-                                    break;
-                                }
-                                case ScriptFieldType::Vector3:
-                                {
-                                    glm::vec3 data = instance->GetFieldValue<glm::vec3>(field.Name);
-                                    if (UI::DrawVec3Control(field.Name.c_str(), data, 0.1f))
-                                        instance->SetFieldValue(field.Name, data);
-                                    break;
-                                }
-                                case ScriptFieldType::Vector4:
-                                {
-                                    glm::vec4 data = instance->GetFieldValue<glm::vec4>(field.Name);
-
-                                    if (field.Name.find("Color") != std::string::npos)
+                                    case ScriptFieldType::Float:
                                     {
-                                        if (UI::DrawColor4Control(field.Name.c_str(), data))
+                                        float data = instance->GetFieldValue<float>(field.Name);
+                                        if (UI::DrawFloatControl(field.Name.c_str(), data, 0.1f))
                                             instance->SetFieldValue(field.Name, data);
+                                        break;
                                     }
-                                    else
+                                    case ScriptFieldType::Bool:
                                     {
-                                        if (UI::DrawColor4Control(field.Name.c_str(), data, 0.1f))
+                                        bool data = instance->GetFieldValue<bool>(field.Name);
+                                        if (UI::DrawCheckbox(field.Name.c_str(), data))
                                             instance->SetFieldValue(field.Name, data);
+                                        break;
                                     }
-                                    break;
-                                }
-                                case ScriptFieldType::Entity:
-                                {
-                                    ImGui::Text("%s", field.Name.c_str());
-                                    ImGui::SameLine();
-
-                                    uint64_t targetID = instance->GetFieldValue<uint64_t>(field.Name);
-                                    std::string buttonText = targetID == 0 ? "None (Entity)" : std::to_string(targetID);
-
-                                    if (targetID != 0)
+                                    case ScriptFieldType::Int:
                                     {
-                                        Entity targetEntity = m_Context->GetEntityByUUID(targetID);
-                                        if (targetEntity)
-                                            buttonText = targetEntity.GetComponent<TagComponent>().Tag;
-                                        else
-                                            buttonText = "Invalid Entity";
+                                        int data = instance->GetFieldValue<int>(field.Name);
+                                        if (UI::DrawIntControl(field.Name.c_str(), data))
+                                            instance->SetFieldValue(field.Name, data);
+                                        break;
                                     }
-
-                                    ImGui::Button(buttonText.c_str(), ImVec2(100.0f, 0.0f));
-
-                                    if (ImGui::BeginDragDropTarget())
+                                    case ScriptFieldType::Double:
                                     {
-                                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY"))
+                                        double data = instance->GetFieldValue<double>(field.Name);
+                                        if (ImGui::DragScalar(field.Name.c_str(), ImGuiDataType_Double, &data, 0.1f))
+                                            instance->SetFieldValue(field.Name, data);
+                                        break;
+                                    }
+                                    case ScriptFieldType::Vector2:
+                                    {
+                                        glm::vec2 data = instance->GetFieldValue<glm::vec2>(field.Name);
+                                        if (UI::DrawVec2Control(field.Name.c_str(), data, 0.1f))
+                                            instance->SetFieldValue(field.Name, data);
+                                        break;
+                                    }
+                                    case ScriptFieldType::Vector3:
+                                    {
+                                        glm::vec3 data = instance->GetFieldValue<glm::vec3>(field.Name);
+                                        if (UI::DrawVec3Control(field.Name.c_str(), data, 0.1f))
+                                            instance->SetFieldValue(field.Name, data);
+                                        break;
+                                    }
+                                    case ScriptFieldType::Vector4:
+                                    {
+                                        glm::vec4 data = instance->GetFieldValue<glm::vec4>(field.Name);
+
+                                        if (field.Name.find("Color") != std::string::npos)
                                         {
-                                            UUID droppedEntityID = *(UUID*)payload->Data;
-                                            instance->SetFieldValue(field.Name, droppedEntityID);
+                                            if (UI::DrawColor4Control(field.Name.c_str(), data))
+                                                instance->SetFieldValue(field.Name, data);
                                         }
-                                        ImGui::EndDragDropTarget();
+                                        else
+                                        {
+                                            if (UI::DrawColor4Control(field.Name.c_str(), data, 0.1f))
+                                                instance->SetFieldValue(field.Name, data);
+                                        }
+                                        break;
                                     }
-                                    break;
-                                }
-                                default:
-                                    break;
+                                    case ScriptFieldType::Entity:
+                                    {
+                                        ImGui::Text("%s", field.Name.c_str());
+                                        ImGui::SameLine();
+
+                                        uint64_t targetID = instance->GetFieldValue<uint64_t>(field.Name);
+                                        std::string buttonText = targetID == 0 ? "None (Entity)" : std::to_string(targetID);
+
+                                        if (targetID != 0)
+                                        {
+                                            Entity targetEntity = m_Context->GetEntityByUUID(targetID);
+                                            if (targetEntity)
+                                                buttonText = targetEntity.GetComponent<TagComponent>().Tag;
+                                            else
+                                                buttonText = "Invalid Entity";
+                                        }
+
+                                        ImGui::Button(buttonText.c_str(), ImVec2(100.0f, 0.0f));
+
+                                        if (ImGui::BeginDragDropTarget())
+                                        {
+                                            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY"))
+                                            {
+                                                UUID droppedEntityID = *(UUID*)payload->Data;
+                                                instance->SetFieldValue(field.Name, droppedEntityID);
+                                            }
+                                            ImGui::EndDragDropTarget();
+                                        }
+                                        break;
+                                    }
+                                    default:
+                                        break;
                                 }
                             }
                         }

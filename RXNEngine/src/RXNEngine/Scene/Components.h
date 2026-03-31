@@ -205,6 +205,24 @@ namespace RXNEngine {
 		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
 	};
 
+	struct MeshColliderComponent
+	{
+		bool IsConvex = false;
+
+		std::string OverrideAssetPath = "";
+
+		float StaticFriction = 0.5f;
+		float DynamicFriction = 0.5f;
+		float Restitution = 0.1f;
+		bool IsTrigger = false;
+
+		void* RuntimeShape = nullptr;
+		void* RuntimeMaterial = nullptr;
+
+		MeshColliderComponent() = default;
+		MeshColliderComponent(const MeshColliderComponent&) = default;
+	};
+
 	template<typename... Component>
 	struct ComponentGroup {};
 
@@ -220,6 +238,7 @@ namespace RXNEngine {
 		RigidbodyComponent,
 		BoxColliderComponent,
 		SphereColliderComponent,
-		CapsuleColliderComponent
+		CapsuleColliderComponent,
+		MeshColliderComponent
 	>;
 }

@@ -6,6 +6,7 @@
 #include "RXNEngine/Physics/PhysicsSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Core/JobSystem.h"
+#include "RXNEngine/Asset/AssetManager.h"
 
 namespace RXNEngine {
 
@@ -1071,6 +1072,88 @@ namespace RXNEngine {
             cc.RuntimeShape = shape;
         }
 
+        if (entity.HasComponent<MeshColliderComponent>())
+        {
+            auto& mc = entity.GetComponent<MeshColliderComponent>();
+            auto& transform = entity.GetComponent<TransformComponent>();
+
+            Ref<StaticMesh> collisionMesh = nullptr;
+
+            if (!mc.OverrideAssetPath.empty())
+            {
+                collisionMesh = AssetManager::GetMesh(mc.OverrideAssetPath);
+            }
+            else
+            {
+                std::function<Ref<StaticMesh>(Entity)> findMesh = [&](Entity e) -> Ref<StaticMesh>
+                    {
+                        if (e.HasComponent<StaticMeshComponent>())
+                            return e.GetComponent<StaticMeshComponent>().Mesh;
+
+                        if (e.HasComponent<RelationshipComponent>())
+                        {
+                            for (UUID childID : e.GetComponent<RelationshipComponent>().Children)
+                            {
+                                Entity child = GetEntityByUUID(childID);
+                                if (child)
+                                {
+                                    Ref<StaticMesh> m = findMesh(child);
+                                    if (m) return m;
+                                }
+                            }
+                        }
+                        return nullptr;
+                    };
+
+                collisionMesh = findMesh(entity);
+            }
+
+            if (collisionMesh && !collisionMesh->GetVertices().empty())
+            {
+                physx::PxMaterial* material = physics->createMaterial(mc.StaticFriction, mc.DynamicFriction, mc.Restitution);
+                mc.RuntimeMaterial = material;
+
+                physx::PxShape* shape = nullptr;
+
+                if (mc.IsConvex)
+                {
+                    physx::PxConvexMesh* convexMesh = PhysicsSystem::CreateConvexMesh(collisionMesh);
+                    if (convexMesh)
+                    {
+                        physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
+                        physx::PxConvexMeshGeometry geom(convexMesh, scale);
+
+                        shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
+                    }
+                }
+                else
+                {
+                    physx::PxTriangleMesh* triMesh = PhysicsSystem::CreateTriangleMesh(collisionMesh);
+                    if (triMesh)
+                    {
+                        physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
+                        physx::PxTriangleMeshGeometry geom(triMesh, scale);
+
+                        shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
+                    }
+                }
+
+                if (shape)
+                {
+                    if (mc.IsTrigger)
+                    {
+                        shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+                        shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
+                    }
+                    mc.RuntimeShape = shape;
+                }
+            }
+            else
+            {
+                RXN_CORE_WARN("MeshColliderComponent on Entity '{0}' failed to build: Mesh not loaded yet or no child mesh found.", entity.GetComponent<TagComponent>().Tag);
+            }
+        }
+
         if (rb.Type != RigidbodyComponent::BodyType::Static)
         {
             physx::PxRigidBodyExt::updateMassAndInertia(*(physx::PxRigidDynamic*)actor, rb.Mass);
@@ -1086,11 +1169,24 @@ namespace RXNEngine {
     {
         PhysicsSystem::CreateScene();
 
-        auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
-        for (auto e : view)
-        {
-            CreatePhysicsBody({ e, this });
-        }
+        m_Registry.view<entt::entity>().each([&](auto entityID)
+            {
+                Entity entity = { entityID, this };
+
+                bool hasCollider = entity.HasComponent<BoxColliderComponent>() ||
+                    entity.HasComponent<SphereColliderComponent>() ||
+                    entity.HasComponent<CapsuleColliderComponent>() ||
+                    entity.HasComponent<MeshColliderComponent>();
+
+                if (hasCollider && !entity.HasComponent<RigidbodyComponent>())
+                {
+                    auto& rb = entity.AddComponent<RigidbodyComponent>();
+                    rb.Type = RigidbodyComponent::BodyType::Static;
+                }
+
+                if (entity.HasComponent<RigidbodyComponent>())
+                    CreatePhysicsBody(entity);
+            });
 
         m_IsSimulating = true;
     }

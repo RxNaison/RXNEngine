@@ -2,6 +2,7 @@
 
 #include "RXNEngine/Core/Base.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
+#include "RXNEngine/Asset/StaticMesh.h"
 #include <PxPhysicsAPI.h>
 
 namespace RXNEngine {
@@ -24,6 +25,9 @@ namespace RXNEngine {
         static void UnlockRead();
         static void LockWrite();
         static void UnlockWrite();
+
+        static physx::PxConvexMesh* CreateConvexMesh(Ref<StaticMesh> mesh);
+        static physx::PxTriangleMesh* CreateTriangleMesh(Ref<StaticMesh> mesh);
 
     private:
         static physx::PxFoundation* s_Foundation;

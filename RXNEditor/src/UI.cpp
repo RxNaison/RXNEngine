@@ -206,9 +206,11 @@ namespace RXNEngine {
         return modified;
     }
 
-    bool UI::DrawComboBox(const std::string& label, const char* values, float columnWidth)
+    bool UI::DrawComboBox(const std::string& label, const char** options, int32_t optionCount, int32_t& selectedIndex, float columnWidth)
     {
         bool modified = false;
+
+        const char* previewValue = options[selectedIndex];
 
         ImGui::PushID(label.c_str());
         ImGui::Columns(2);
@@ -217,8 +219,23 @@ namespace RXNEngine {
         ImGui::NextColumn();
 
         ImGui::PushItemWidth(-1);
-        if (ImGui::BeginCombo("Projection", values))
-            modified = true;
+
+        if (ImGui::BeginCombo("##value", previewValue))
+        {
+            for (int i = 0; i < optionCount; i++)
+            {
+                bool isSelected = (selectedIndex == i);
+                if (ImGui::Selectable(options[i], isSelected))
+                {
+                    selectedIndex = i;
+                    modified = true;
+                }
+
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
 
         ImGui::PopItemWidth();
         ImGui::Columns(1);
