@@ -1,6 +1,10 @@
 #include "rxnpch.h"
 #include "ContentBrowserPanel.h"
+#include "RXNEngine/Core/Application.h"
+
 #include <imgui.h>
+
+using namespace RXNEngine;
 
 namespace RXNEditor {
 

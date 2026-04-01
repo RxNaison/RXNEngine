@@ -1,4 +1,5 @@
 #pragma once
+#include "RXNEngine/Core/Subsystem.h"
 #include "RXNEngine/Asset/StaticMesh.h"
 #include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 #include "RXNEngine/Asset/ModelImporter.h"
@@ -8,17 +9,20 @@
 
 namespace RXNEngine {
 
-    class AssetManager
+    class AssetManager : public Subsystem
     {
     public:
-        static Ref<StaticMesh> GetMesh(const std::string& path);
-        static Ref<Texture2D> GetTexture(const std::string& path);
-        static Ref<Shader> GetShader(const std::string& path);
+        virtual void Init() override { RXN_CORE_INFO("AssetManager Initialized"); }
+        virtual void Update(float deltaTime) override;
+        virtual void Shutdown() override { Clear(); }
 
-        static void Clear();
+        Ref<StaticMesh> GetMesh(const std::string& path);
+        Ref<Texture2D> GetTexture(const std::string& path);
+        Ref<Shader> GetShader(const std::string& path);
 
-        static void LoadMeshAsync(const std::string& path, uint64_t entityID);
-        static void Update();
+        void Clear();
+
+        void LoadMeshAsync(const std::string& path, uint64_t entityID);
 
     private:
         struct AsyncLoadTask {
@@ -27,12 +31,12 @@ namespace RXNEngine {
             ImporterData Data;
         };
 
-        static std::mutex s_AsyncMutex;
-        static std::vector<AsyncLoadTask*> s_FinishedTasks;
+        std::mutex m_AsyncMutex;
+        std::vector<AsyncLoadTask*> m_FinishedTasks;
 
-        static std::unordered_map<std::string, Ref<StaticMesh>> s_Meshes;
-        static std::unordered_map<std::string, Ref<Shader>> s_Shaders;
-        static std::unordered_map<std::string, Ref<Texture2D>> m_Textures;
+        std::unordered_map<std::string, Ref<StaticMesh>> m_Meshes;
+        std::unordered_map<std::string, Ref<Shader>> m_Shaders;
+        std::unordered_map<std::string, Ref<Texture2D>> m_Textures;
     };
 
 }

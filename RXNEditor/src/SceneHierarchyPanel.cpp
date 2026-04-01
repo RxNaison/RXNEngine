@@ -331,13 +331,15 @@ namespace RXNEditor {
 
                 std::string label = component.Mesh ? component.AssetPath.substr(component.AssetPath.find_last_of("/\\") + 1) : "Drop Model Here";
 
+				auto assetManager = Application::Get().GetSubsystem<AssetManager>();
+
                 if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
                 {
                     std::string path = FileDialogs::OpenFile("*.obj *fbx *.glb *.gltf");
                     if (!path.empty())
                     {
                         component.AssetPath = path;
-                        component.Mesh = AssetManager::GetMesh(path);
+                        component.Mesh = assetManager->GetMesh(path);
                         component.SubmeshIndex = 0;
                         component.MaterialTableOverride = nullptr;
                     }
@@ -351,7 +353,7 @@ namespace RXNEditor {
                         if (!path.empty())
                         {
                             component.AssetPath = path;
-                            component.Mesh = AssetManager::GetMesh(path);
+                            component.Mesh = assetManager->GetMesh(path);
                             component.SubmeshIndex = 0;
                             component.MaterialTableOverride = nullptr;
                         }
@@ -541,21 +543,22 @@ namespace RXNEditor {
                 ImGui::Columns(1);
                 ImGui::PopID();
 
+                auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
 
-                bool classExists = ScriptEngine::EntityClassExists(component.ClassName);
+                bool classExists = scriptSys->EntityClassExists(component.ClassName);
                 if (!classExists && !component.ClassName.empty())
                 {
                     ImGui::TextColored(ImVec4(0.9f, 0.2f, 0.2f, 1.0f), "Warning: Class does not exist in loaded Assembly!");
                 }
 
-                if (ScriptEngine::EntityClassExists(component.ClassName))
+                if (scriptSys->EntityClassExists(component.ClassName))
                 {
                     if (m_Context->IsRunning())
                     {
-                        auto instance = ScriptEngine::GetEntityScriptInstance(entity.GetUUID());
+                        auto instance = scriptSys->GetEntityScriptInstance(entity.GetUUID());
                         if (instance)
                         {
-                            const auto& fields = ScriptEngine::GetClassFields(component.ClassName);
+                            const auto& fields = scriptSys->GetClassFields(component.ClassName);
                             for (const auto& field : fields)
                             {
                                 switch (field.Type)

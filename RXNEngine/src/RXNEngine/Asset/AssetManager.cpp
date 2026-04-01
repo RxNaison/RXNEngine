@@ -3,20 +3,13 @@
 
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
+#include "RXNengine/Core/Application.h"
 
 namespace RXNEngine {
 
-    std::mutex AssetManager::s_AsyncMutex;
-    std::vector<AssetManager::AsyncLoadTask*> AssetManager::s_FinishedTasks;
-
-    std::unordered_map<std::string, Ref<StaticMesh>> AssetManager::s_Meshes;
-    std::unordered_map<std::string, Ref<Shader>> AssetManager::s_Shaders;
-    std::unordered_map<std::string, Ref<Texture2D>> AssetManager::m_Textures;
-
-
     static void AttachMeshHierarchy(Ref<StaticMesh> mesh, const std::string& filepath, uint64_t entityID)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return;
 
         Entity rootEntity = scene->GetEntityByUUID(entityID);
@@ -46,23 +39,23 @@ namespace RXNEngine {
 
     Ref<Shader> AssetManager::GetShader(const std::string& path)
     {
-        if (s_Shaders.find(path) != s_Shaders.end())
-            return s_Shaders[path];
+        if (m_Shaders.find(path) != m_Shaders.end())
+            return m_Shaders[path];
 
         Ref<Shader> shader = Shader::Create(path);
-        s_Shaders[path] = shader;
+        m_Shaders[path] = shader;
         return shader;
     }
 
     Ref<StaticMesh> AssetManager::GetMesh(const std::string& path)
     {
-        if (s_Meshes.find(path) != s_Meshes.end())
-            return s_Meshes[path];
+        if (m_Meshes.find(path) != m_Meshes.end())
+            return m_Meshes[path];
 
         Ref<StaticMesh> newMesh = ModelImporter::ImportAsset(path);
 
         if (newMesh)
-            s_Meshes[path] = newMesh;
+            m_Meshes[path] = newMesh;
 
         return newMesh;
     }
@@ -82,19 +75,19 @@ namespace RXNEngine {
 
     void AssetManager::Clear()
     {
-        s_Meshes.clear();
-        s_Shaders.clear();
+        m_Meshes.clear();
+        m_Shaders.clear();
     }
 
     void AssetManager::LoadMeshAsync(const std::string& path, uint64_t entityID)
     {
-        if (s_Meshes.find(path) != s_Meshes.end())
+        if (m_Meshes.find(path) != m_Meshes.end())
         {
-            AttachMeshHierarchy(s_Meshes[path], path, entityID);
+            AttachMeshHierarchy(m_Meshes[path], path, entityID);
             return;
         }
 
-        JobSystem::Execute([path, entityID]()
+        Application::Get().GetSubsystem<JobSystem>()->Execute([this, path, entityID]()
             {
                 AsyncLoadTask* task = new AsyncLoadTask();
                 task->EntityID = entityID;
@@ -102,8 +95,8 @@ namespace RXNEngine {
 
                 if (ModelImporter::LoadModelData(path, task->Data))
                 {
-                    std::lock_guard<std::mutex> lock(s_AsyncMutex);
-                    s_FinishedTasks.push_back(task);
+                    std::lock_guard<std::mutex> lock(m_AsyncMutex);
+                    m_FinishedTasks.push_back(task);
                 }
                 else
                 {
@@ -112,19 +105,19 @@ namespace RXNEngine {
             });
     }
 
-    void AssetManager::Update()
+    void AssetManager::Update(float deltaTime)
     {
-        std::lock_guard<std::mutex> lock(s_AsyncMutex);
-        if (s_FinishedTasks.empty()) return;
+        std::lock_guard<std::mutex> lock(m_AsyncMutex);
+        if (m_FinishedTasks.empty()) return;
 
         OPTICK_EVENT("AssetManager::UploadToGPU");
 
-        AsyncLoadTask* task = s_FinishedTasks.front();
-        s_FinishedTasks.erase(s_FinishedTasks.begin());
+        AsyncLoadTask* task = m_FinishedTasks.front();
+        m_FinishedTasks.erase(m_FinishedTasks.begin());
 
         Ref<StaticMesh> gpuMesh = ModelImporter::BuildMeshFromData(task->Data);
 
-        s_Meshes[task->Filepath] = gpuMesh;
+        m_Meshes[task->Filepath] = gpuMesh;
 
         AttachMeshHierarchy(gpuMesh, task->Filepath, task->EntityID);
 

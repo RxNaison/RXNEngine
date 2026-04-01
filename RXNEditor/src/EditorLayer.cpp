@@ -46,9 +46,7 @@ namespace RXNEditor {
 	{
         OPTICK_EVENT();
 
-        Renderer::ResetStats();
-        AssetManager::Update();
-		Input::Update();
+        Application::Get().GetSubsystem<Renderer>()->ResetStats();
 
         switch (m_SceneState)
         {
@@ -56,7 +54,7 @@ namespace RXNEditor {
             {
                 m_EditorCamera->OnUpdate(deltaTime);
                 m_SceneRenderer->RenderEditor(*m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
-                ScriptEngine::ReloadIfModified(deltaTime);
+                Application::Get().GetSubsystem<ScriptEngine>()->ReloadIfModified(deltaTime);
                 break;
             }
             case SceneState::Simulate:
@@ -97,7 +95,7 @@ namespace RXNEditor {
             {
                 if (e.GetMouseButton() == MouseCode::ButtonLeft)
                 {
-                    if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(KeyCode::LeftAlt))
+                    if (m_ViewportHovered && !ImGuizmo::IsOver() && !Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftAlt))
                     {
                         auto [mx, my] = ImGui::GetMousePos();
 
@@ -277,7 +275,7 @@ namespace RXNEditor {
 
             glm::mat4 entityWorldTransform = m_ActiveScene->GetWorldTransform(selectedEntity);
 
-            bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
+            bool snap = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
             float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 5.0f : 0.5f;
             float snapValues[3] = { snapValue, snapValue, snapValue };
 
@@ -340,7 +338,7 @@ namespace RXNEditor {
 
         ImGui::Begin("Renderer Statistics");
 
-        auto stats = Renderer::GetStats();
+        auto stats = Application::Get().GetSubsystem<Renderer>()->GetStats();
 
         ImGui::Text("Draw Calls: %d", stats.DrawCalls);
         ImGui::Text("Instances: %d", stats.Instances);
@@ -413,8 +411,10 @@ namespace RXNEditor {
         if (e.GetRepeatCount() > 1)
             return false;
 
-        bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
-        bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+		auto inputSys = Application::Get().GetSubsystem<Input>();
+
+        bool control = inputSys->IsKeyPressed(KeyCode::LeftControl) || inputSys->IsKeyPressed(KeyCode::RightControl);
+        bool shift = inputSys->IsKeyPressed(KeyCode::LeftShift) || inputSys->IsKeyPressed(KeyCode::RightShift);
 
         switch (e.GetKeyCode())
         {
@@ -474,7 +474,7 @@ namespace RXNEditor {
             {
                 if (control && shift)
                 {
-                    ScriptEngine::ReloadAssembly();
+                    Application::Get().GetSubsystem<ScriptEngine>()->ReloadAssembly();
                 }
                 else
                 {

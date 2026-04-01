@@ -26,7 +26,7 @@
 
 #define LOAD_MANAGED_METHOD(ClassString, MethodName, FuncPtrVar) \
     { \
-        int rc = s_Data->LoadAssemblyAndGetFunctionPointer( \
+        int rc = m_Data->LoadAssemblyAndGetFunctionPointer( \
             hostDllPath.c_str(), \
             STR(ClassString), \
             STR(#MethodName), \
@@ -184,14 +184,12 @@ namespace RXNEngine {
         bool ReloadPending = false;
         float ReloadTimer = 0.0f;
     };
-
-    static ScriptEngineData* s_Data = nullptr;
 #pragma endregion
 
 #pragma region Initialization & Shutdown
     void ScriptEngine::Init()
     {
-        s_Data = new ScriptEngineData();
+        m_Data = new ScriptEngineData();
 
         if (!LoadHostFxr())
         {
@@ -217,63 +215,68 @@ namespace RXNEngine {
         if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
             RXN_CORE_CRITICAL("Get delegate failed: {0}", rc);
 
-        s_Data->LoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
+        m_Data->LoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
         close_fptr(cxt);
 
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetEngineTime, s_Data->SetEngineTime);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", LoadGameScripts, s_Data->LoadGameScripts);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", UnloadGameScripts, s_Data->UnloadGameScripts);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Interop, RXNScriptHost", RegisterInternalCalls, s_Data->RegisterInternalCalls);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InstantiateScript, s_Data->InstantiateScript);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnCreate, s_Data->InvokeOnCreate);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnDestroy, s_Data->InvokeOnDestroy);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, s_Data->InvokeOnUpdate);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnFixedUpdate, s_Data->InvokeOnFixedUpdate);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, s_Data->CheckEntityClassExists);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ReflectClass, s_Data->ReflectClass);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFieldValue, s_Data->GetFieldValue);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFieldValue, s_Data->SetFieldValue);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionEnter, s_Data->OnCollisionEnter);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionExit, s_Data->OnCollisionExit);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerEnter, s_Data->OnTriggerEnter);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerExit, s_Data->OnTriggerExit);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetEngineTime, m_Data->SetEngineTime);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", LoadGameScripts, m_Data->LoadGameScripts);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", UnloadGameScripts, m_Data->UnloadGameScripts);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Interop, RXNScriptHost", RegisterInternalCalls, m_Data->RegisterInternalCalls);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InstantiateScript, m_Data->InstantiateScript);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnCreate, m_Data->InvokeOnCreate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnDestroy, m_Data->InvokeOnDestroy);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, m_Data->InvokeOnUpdate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnFixedUpdate, m_Data->InvokeOnFixedUpdate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, m_Data->CheckEntityClassExists);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ReflectClass, m_Data->ReflectClass);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFieldValue, m_Data->GetFieldValue);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetFieldValue, m_Data->SetFieldValue);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionEnter, m_Data->OnCollisionEnter);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionExit, m_Data->OnCollisionExit);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerEnter, m_Data->OnTriggerEnter);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerExit, m_Data->OnTriggerExit);
 
         InternalCalls nativeFunctions;
         ScriptInterop::RegisterFunctions(&nativeFunctions);
 
-        if (s_Data->RegisterInternalCalls)
+        if (m_Data->RegisterInternalCalls)
         {
-            s_Data->RegisterInternalCalls(&nativeFunctions);
+            m_Data->RegisterInternalCalls(&nativeFunctions);
         }
 
         LoadAssembly("res/scripts/RXNScriptApp.dll");
         RXN_CORE_INFO("CoreCLR Runtime initialized successfully!");
     }
 
+    void ScriptEngine::Update(float deltaTime)
+    {
+        ReloadIfModified(deltaTime);
+    }
+
     void ScriptEngine::Shutdown()
     {
-        if (s_Data && s_Data->UnloadGameScripts)
-            s_Data->UnloadGameScripts();
+        if (m_Data && m_Data->UnloadGameScripts)
+            m_Data->UnloadGameScripts();
 
-        delete s_Data;
+        delete m_Data;
     }
 #pragma endregion
 
 #pragma region Assembly Loading & Hot Reloading
     void ScriptEngine::LoadAssembly(const std::string& appFilepath)
     {
-        if (s_Data && s_Data->LoadGameScripts)
+        if (m_Data && m_Data->LoadGameScripts)
         {
-            s_Data->UnloadGameScripts();
+            m_Data->UnloadGameScripts();
 
             std::filesystem::path appAbsolutePath = std::filesystem::absolute(appFilepath);
             std::filesystem::path coreAbsolutePath = std::filesystem::absolute("res/scripts/RXNScriptCore.dll");
 
-            s_Data->CoreAssemblyPath = appAbsolutePath;
-            s_Data->CoreAssemblyLastWriteTime = std::filesystem::last_write_time(appAbsolutePath);
-            s_Data->ReloadPending = false;
+            m_Data->CoreAssemblyPath = appAbsolutePath;
+            m_Data->CoreAssemblyLastWriteTime = std::filesystem::last_write_time(appAbsolutePath);
+            m_Data->ReloadPending = false;
 
-            s_Data->LoadGameScripts(coreAbsolutePath.string().c_str(), appAbsolutePath.string().c_str());
+            m_Data->LoadGameScripts(coreAbsolutePath.string().c_str(), appAbsolutePath.string().c_str());
         }
         else
         {
@@ -283,7 +286,7 @@ namespace RXNEngine {
 
     void ScriptEngine::ReloadAssembly()
     {
-        s_Data->ScriptClassFields.clear();
+        m_Data->ScriptClassFields.clear();
 
         LoadAssembly("res/scripts/RXNScriptApp.dll");
         RXN_CORE_INFO("ScriptEngine: Assembly Hot-Reloaded successfully!");
@@ -291,24 +294,24 @@ namespace RXNEngine {
 
     void ScriptEngine::ReloadIfModified(float deltaTime)
     {
-        if (s_Data->ReloadPending)
+        if (m_Data->ReloadPending)
         {
-            s_Data->ReloadTimer -= deltaTime;
-            if (s_Data->ReloadTimer <= 0.0f)
+            m_Data->ReloadTimer -= deltaTime;
+            if (m_Data->ReloadTimer <= 0.0f)
             {
-                s_Data->ReloadPending = false;
+                m_Data->ReloadPending = false;
                 ReloadAssembly();
             }
             return;
         }
 
         std::error_code ec;
-        auto currentWriteTime = std::filesystem::last_write_time(s_Data->CoreAssemblyPath, ec);
+        auto currentWriteTime = std::filesystem::last_write_time(m_Data->CoreAssemblyPath, ec);
 
-        if (!ec && currentWriteTime > s_Data->CoreAssemblyLastWriteTime)
+        if (!ec && currentWriteTime > m_Data->CoreAssemblyLastWriteTime)
         {
-            s_Data->ReloadPending = true;
-            s_Data->ReloadTimer = 0.5f;
+            m_Data->ReloadPending = true;
+            m_Data->ReloadTimer = 0.5f;
             RXN_CORE_TRACE("ScriptEngine: Assembly modification detected. Waiting for compiler...");
         }
     }
@@ -317,26 +320,26 @@ namespace RXNEngine {
 #pragma region Runtime Context Management
     void ScriptEngine::OnRuntimeStart(Scene* scene)
     {
-        s_Data->SceneContext = scene;
+        m_Data->SceneContext = scene;
         RXN_CORE_INFO("ScriptEngine: Runtime started, Scene context set.");
     }
 
     void ScriptEngine::OnRuntimeStop()
     {
-        s_Data->SceneContext = nullptr;
-        s_Data->EntityInstances.clear();
+        m_Data->SceneContext = nullptr;
+        m_Data->EntityInstances.clear();
         RXN_CORE_INFO("ScriptEngine: Runtime stopped, Scene context cleared.");
     }
 
     void ScriptEngine::SetEngineTime(float deltaTime)
     {
-		s_Data->SetEngineTime(deltaTime);
+		m_Data->SetEngineTime(deltaTime);
     }
 
 
     Scene* ScriptEngine::GetSceneContext()
     {
-        return s_Data->SceneContext;
+        return m_Data->SceneContext;
     }
 #pragma endregion
 
@@ -350,9 +353,9 @@ namespace RXNEngine {
         {
             UUID entityID = entity.GetUUID();
 
-            Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(entity, sc.ClassName);
+            Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(this, entity, sc.ClassName);
 
-            s_Data->EntityInstances[entityID] = instance;
+            m_Data->EntityInstances[entityID] = instance;
 
             instance->InvokeOnCreate();
         }
@@ -364,115 +367,124 @@ namespace RXNEngine {
 
     void ScriptEngine::OnDestroyEntity(Entity entity)
     {
-        if (s_Data && s_Data->InvokeOnDestroy)
-            s_Data->InvokeOnDestroy(entity.GetUUID());
+        if (m_Data && m_Data->InvokeOnDestroy)
+            m_Data->InvokeOnDestroy(entity.GetUUID());
     }
 
     void ScriptEngine::OnUpdateEntity(Entity entity, float deltaTime)
     {
         UUID entityID = entity.GetUUID();
 
-        if (s_Data->EntityInstances.find(entityID) != s_Data->EntityInstances.end())
-            s_Data->EntityInstances[entityID]->InvokeOnUpdate(deltaTime);
+        if (m_Data->EntityInstances.find(entityID) != m_Data->EntityInstances.end())
+            m_Data->EntityInstances[entityID]->InvokeOnUpdate(deltaTime);
     }
 
     void ScriptEngine::OnFixedUpdateEntity(Entity entity, float deltaTime)
     {
         UUID entityID = entity.GetUUID();
 
-        if (s_Data->EntityInstances.find(entityID) != s_Data->EntityInstances.end())
-            s_Data->EntityInstances[entityID]->InvokeOnFixedUpdate(deltaTime);
+        if (m_Data->EntityInstances.find(entityID) != m_Data->EntityInstances.end())
+            m_Data->EntityInstances[entityID]->InvokeOnFixedUpdate(deltaTime);
     }
 #pragma endregion
 
 #pragma region Physics Events
     void ScriptEngine::OnCollisionEnter(uint64_t entityID, uint64_t otherID)
     {
-        if (s_Data && s_Data->OnCollisionEnter)
-            s_Data->OnCollisionEnter(entityID, otherID);
+        if (m_Data && m_Data->OnCollisionEnter)
+            m_Data->OnCollisionEnter(entityID, otherID);
     }
 
     void ScriptEngine::OnCollisionExit(uint64_t entityID, uint64_t otherID)
     {
-        if (s_Data && s_Data->OnCollisionExit)
-            s_Data->OnCollisionExit(entityID, otherID);
+        if (m_Data && m_Data->OnCollisionExit)
+            m_Data->OnCollisionExit(entityID, otherID);
     }
 
     void ScriptEngine::OnTriggerEnter(uint64_t entityID, uint64_t otherID)
     {
-        if (s_Data && s_Data->OnTriggerEnter)
-            s_Data->OnTriggerEnter(entityID, otherID);
+        if (m_Data && m_Data->OnTriggerEnter)
+            m_Data->OnTriggerEnter(entityID, otherID);
     }
     void ScriptEngine::OnTriggerExit(uint64_t entityID, uint64_t otherID)
     {
-        if (s_Data && s_Data->OnTriggerExit)
-            s_Data->OnTriggerExit(entityID, otherID);
+        if (m_Data && m_Data->OnTriggerExit)
+            m_Data->OnTriggerExit(entityID, otherID);
     }
 #pragma endregion
 
 #pragma region Reflection
     void ScriptEngine::RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type)
     {
-        s_Data->ScriptClassFields[className].push_back({ type, fieldName });
+        m_Data->ScriptClassFields[className].push_back({ type, fieldName });
     }
 
     const std::vector<ScriptField>& ScriptEngine::GetClassFields(const std::string& className)
     {
-        return s_Data->ScriptClassFields[className];
+        return m_Data->ScriptClassFields[className];
     }
 
     bool ScriptEngine::EntityClassExists(const std::string& fullClassName)
     {
-        if (!s_Data || !s_Data->CheckEntityClassExists || fullClassName.empty())
+        if (!m_Data || !m_Data->CheckEntityClassExists || fullClassName.empty())
             return false;
 
-        int32_t exists = s_Data->CheckEntityClassExists(fullClassName.c_str());
-        if (exists != 0 && s_Data->ScriptClassFields.find(fullClassName) == s_Data->ScriptClassFields.end())
-            s_Data->ReflectClass(fullClassName.c_str());
+        int32_t exists = m_Data->CheckEntityClassExists(fullClassName.c_str());
+        if (exists != 0 && m_Data->ScriptClassFields.find(fullClassName) == m_Data->ScriptClassFields.end())
+            m_Data->ReflectClass(fullClassName.c_str());
 
         return exists != 0;
     }
 
     Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID uuid)
     {
-        if (s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end())
-            return s_Data->EntityInstances[uuid];
+        if (m_Data->EntityInstances.find(uuid) != m_Data->EntityInstances.end())
+            return m_Data->EntityInstances[uuid];
 
         return nullptr;
     }
 #pragma endregion
 
 #pragma region ScriptInstance Implementation
-    ScriptInstance::ScriptInstance(Entity entity, const std::string& className)
-        : m_Entity(entity), m_ClassName(className)
+    ScriptInstance::ScriptInstance(ScriptEngine* engine, Entity entity, const std::string& className)
+        : m_Engine(engine), m_Entity(entity), m_ClassName(className)
     {
-        if (s_Data->InstantiateScript)
-            s_Data->InstantiateScript(m_Entity.GetUUID(), className.c_str());
+        auto data = m_Engine->GetData();
+        if (data->InstantiateScript)
+            data->InstantiateScript(m_Entity.GetUUID(), className.c_str());
     }
 
     void ScriptInstance::InvokeOnCreate()
     {
-        if (s_Data->InvokeOnCreate)
-            s_Data->InvokeOnCreate(m_Entity.GetUUID());
+        auto data = m_Engine->GetData();
+
+        if (data->InvokeOnCreate)
+            data->InvokeOnCreate(m_Entity.GetUUID());
     }
 
     void ScriptInstance::InvokeOnUpdate(float deltaTime)
     {
-        if (s_Data->InvokeOnUpdate)
-            s_Data->InvokeOnUpdate(m_Entity.GetUUID(), deltaTime);
+        auto data = m_Engine->GetData();
+
+        if (data->InvokeOnUpdate)
+            data->InvokeOnUpdate(m_Entity.GetUUID(), deltaTime);
     }
 
     void ScriptInstance::InvokeOnFixedUpdate(float deltaTime)
     {
-        if (s_Data->InvokeOnFixedUpdate)
-            s_Data->InvokeOnFixedUpdate(m_Entity.GetUUID(), deltaTime);
+        auto data = m_Engine->GetData();
+
+        if (data->InvokeOnFixedUpdate)
+            data->InvokeOnFixedUpdate(m_Entity.GetUUID(), deltaTime);
     }
 
     bool ScriptInstance::GetFieldValueInternal(const std::string& name, void* outBuffer)
     {
-        if (s_Data->GetFieldValue)
+        auto data = m_Engine->GetData();
+
+        if (data->GetFieldValue)
         {
-            s_Data->GetFieldValue(m_Entity.GetUUID(), name.c_str(), outBuffer);
+            data->GetFieldValue(m_Entity.GetUUID(), name.c_str(), outBuffer);
             return true;
         }
         return false;
@@ -480,8 +492,10 @@ namespace RXNEngine {
 
     void ScriptInstance::SetFieldValueInternal(const std::string& name, const void* inBuffer)
     {
-        if (s_Data->SetFieldValue)
-            s_Data->SetFieldValue(m_Entity.GetUUID(), name.c_str(), inBuffer);
+        auto data = m_Engine->GetData();
+
+        if (data->SetFieldValue)
+            data->SetFieldValue(m_Entity.GetUUID(), name.c_str(), inBuffer);
     }
 #pragma endregion
 

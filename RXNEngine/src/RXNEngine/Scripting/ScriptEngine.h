@@ -3,8 +3,10 @@
 #include "RXNEngine/Scene/Scene.h"
 #include "RXNEngine/Scene/Entity.h"
 #include "RXNEngine/Core/Base.h"
+#include "RXNEngine/Core/Subsystem.h"
 
 #include <string>
+#include <vector>
 
 namespace RXNEngine {
 
@@ -24,10 +26,12 @@ namespace RXNEngine {
 		std::string Name;
 	};
 
+	class ScriptEngine;
+
 	class ScriptInstance
 	{
 	public:
-		ScriptInstance(Entity entity, const std::string& className);
+		ScriptInstance(ScriptEngine* engine, Entity entity, const std::string& className);
 
 		void InvokeOnCreate();
 		void InvokeOnUpdate(float deltaTime);
@@ -50,46 +54,57 @@ namespace RXNEngine {
 		bool GetFieldValueInternal(const std::string& name, void* outBuffer);
 		void SetFieldValueInternal(const std::string& name, const void* inBuffer);
 	private:
+		ScriptEngine* m_Engine;
 		Entity m_Entity;
 		std::string m_ClassName;
 	};
 
-	class ScriptEngine
+	struct ScriptEngineData;
+
+	class ScriptEngine : public Subsystem
 	{
 	public:
-		static void Init();
-		static void Shutdown();
+		ScriptEngine() = default;
+		virtual ~ScriptEngine() = default;
 
-		static void LoadAssembly(const std::string& appFilepath);
+		virtual void Init() override;
+		virtual void Update(float deltaTime) override;
+		virtual void Shutdown() override;
 
-		static void OnRuntimeStart(Scene* scene);
-		static void OnRuntimeStop();
+		void LoadAssembly(const std::string& appFilepath);
 
-		static void SetEngineTime(float deltaTime);
+		void OnRuntimeStart(Scene* scene);
+		void OnRuntimeStop();
 
-		static void OnCreateEntity(Entity entity);
-		static void OnDestroyEntity(Entity entity);
+		void SetEngineTime(float deltaTime);
 
-		static void OnUpdateEntity(Entity entity, float deltaTime);
-		static void OnFixedUpdateEntity(Entity entity, float deltaTime);
+		void OnCreateEntity(Entity entity);
+		void OnDestroyEntity(Entity entity);
 
-		static void OnCollisionEnter(uint64_t entityID, uint64_t otherID);
-		static void OnCollisionExit(uint64_t entityID, uint64_t otherID);
+		void OnUpdateEntity(Entity entity, float deltaTime);
+		void OnFixedUpdateEntity(Entity entity, float deltaTime);
 
-		static void OnTriggerEnter(uint64_t entityID, uint64_t otherID);
-		static void OnTriggerExit(uint64_t entityID, uint64_t otherID);
+		void OnCollisionEnter(uint64_t entityID, uint64_t otherID);
+		void OnCollisionExit(uint64_t entityID, uint64_t otherID);
 
-		static bool EntityClassExists(const std::string& fullClassName);
+		void OnTriggerEnter(uint64_t entityID, uint64_t otherID);
+		void OnTriggerExit(uint64_t entityID, uint64_t otherID);
 
-		static Scene* GetSceneContext();
+		bool EntityClassExists(const std::string& fullClassName);
 
-		static void RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type);
-		static const std::vector<ScriptField>& GetClassFields(const std::string& className);
+		Scene* GetSceneContext();
 
-		static Ref<ScriptInstance> GetEntityScriptInstance(UUID uuid);
+		void RegisterField(const std::string& className, const std::string& fieldName, ScriptFieldType type);
+		const std::vector<ScriptField>& GetClassFields(const std::string& className);
 
-		static void ReloadAssembly();
-		static void ReloadIfModified(float deltaTime);
+		Ref<ScriptInstance> GetEntityScriptInstance(UUID uuid);
 
+		void ReloadAssembly();
+		void ReloadIfModified(float deltaTime);
+
+		ScriptEngineData* GetData() { return m_Data; }
+
+	private:
+		ScriptEngineData* m_Data = nullptr;
 	};
 }

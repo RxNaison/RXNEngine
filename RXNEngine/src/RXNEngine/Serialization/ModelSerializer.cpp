@@ -135,7 +135,9 @@ namespace RXNEngine {
         in.read((char*)&matCount, sizeof(uint32_t));
         std::vector<Ref<Material>> materials(matCount);
 
-        Ref<Shader> defaultPBR = AssetManager::GetShader("res/shaders/pbr.glsl");
+		auto assetManager = Application::Get().GetSubsystem<AssetManager>();
+
+        Ref<Shader> defaultPBR = assetManager->GetShader("res/shaders/pbr.glsl");
 
         for (uint32_t i = 0; i < matCount; i++)
         {
@@ -151,10 +153,17 @@ namespace RXNEngine {
             mat->SetAO(params.AO);
 
             std::string path;
-            if (!(path = ReadString(in)).empty()) mat->SetAlbedoMap(AssetManager::GetTexture(path));
-            if (!(path = ReadString(in)).empty()) mat->SetNormalMap(AssetManager::GetTexture(path));
-            if (!(path = ReadString(in)).empty()) mat->SetMetalnessRoughnessMap(AssetManager::GetTexture(path));
-            if (!(path = ReadString(in)).empty()) mat->SetAOMap(AssetManager::GetTexture(path));
+            if (!(path = ReadString(in)).empty())
+                mat->SetAlbedoMap(assetManager->GetTexture(path));
+
+            if (!(path = ReadString(in)).empty())
+                mat->SetNormalMap(assetManager->GetTexture(path));
+
+            if (!(path = ReadString(in)).empty())
+                mat->SetMetalnessRoughnessMap(assetManager->GetTexture(path));
+
+            if (!(path = ReadString(in)).empty())
+                mat->SetAOMap(assetManager->GetTexture(path));
 
             bool isTransparent = false;
             in.read((char*)&isTransparent, sizeof(bool));

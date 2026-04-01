@@ -14,7 +14,7 @@ namespace RXNEngine {
     struct LightDataGPU
     {
         glm::vec4 DirLightDirection;
-        glm::vec4 DirLightColor;    
+        glm::vec4 DirLightColor;
 
         uint32_t PointLightCount;
         uint32_t Padding[3];      // align to 16 bytes
@@ -79,7 +79,7 @@ namespace RXNEngine {
         Ref<Shader> SkyboxShader;
 
         Ref<Cubemap> SceneEnvironment;
-		ShadowData ShadowData;
+        ShadowData ShadowData;
 
         Ref<VertexArray> LineVAO;
         Ref<VertexBuffer> LineVBO;
@@ -91,16 +91,14 @@ namespace RXNEngine {
         RendererStatistics Stats;
     };
 
-    static RendererData s_Data;
-
     RendererStatistics Renderer::GetStats()
     {
-        return s_Data.Stats;
+        return m_Data->Stats;
     }
 
     void Renderer::ResetStats()
     {
-        s_Data.Stats.Reset();
+        m_Data->Stats.Reset();
     }
 
     std::vector<glm::vec4> GetFrustumCornersWorldSpace(const glm::mat4& proj, const glm::mat4& view)
@@ -123,18 +121,18 @@ namespace RXNEngine {
         return frustumCorners;
     }
 
-    void CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir)
+    void Renderer::CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir)
     {
         OPTICK_EVENT();
 
-        float aspect = (float)s_Data.CurrentRenderTarget->GetSpecification().Width / (float)s_Data.CurrentRenderTarget->GetSpecification().Height;
-        float fov = s_Data.CameraFOV < 0.01f ? glm::radians(45.0f) : s_Data.CameraFOV;
+        float aspect = (float)m_Data->CurrentRenderTarget->GetSpecification().Width / (float)m_Data->CurrentRenderTarget->GetSpecification().Height;
+        float fov = m_Data->CameraFOV < 0.01f ? glm::radians(45.0f) : m_Data->CameraFOV;
         float nearPlane = 0.1f;
 
         for (size_t i = 0; i < 4; ++i)
         {
-            float pNear = (i == 0) ? nearPlane : s_Data.ShadowData.CascadeSplits[i - 1];
-            float pFar = s_Data.ShadowData.CascadeSplits[i];
+            float pNear = (i == 0) ? nearPlane : m_Data->ShadowData.CascadeSplits[i - 1];
+            float pFar = m_Data->ShadowData.CascadeSplits[i];
 
             glm::mat4 proj = glm::perspective(fov, aspect, pNear, pFar);
             auto corners = GetFrustumCornersWorldSpace(proj, cameraView);
@@ -157,33 +155,34 @@ namespace RXNEngine {
                 minZ = std::min(minZ, trf.z); maxZ = std::max(maxZ, trf.z);
             }
 
-            // Tune Z bounds to include casters behind the camera slice
             float zMult = 10.0f;
             if (minZ < 0) minZ *= zMult; else minZ /= zMult;
             if (maxZ < 0) maxZ /= zMult; else maxZ *= zMult;
 
             const glm::mat4 lightProjection = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
 
-            s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i] = lightProjection * lightView;
-            s_Data.ShadowData.BufferLocal.CascadePlaneDistances[i].x = pFar;
+            m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i] = lightProjection * lightView;
+            m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].x = pFar;
         }
 
-        s_Data.ShadowData.ShadowUniformBuffer->SetData(&s_Data.ShadowData.BufferLocal, sizeof(ShadowData::ShadowDataGPU));
+        m_Data->ShadowData.ShadowUniformBuffer->SetData(&m_Data->ShadowData.BufferLocal, sizeof(ShadowData::ShadowDataGPU));
     }
 
     void Renderer::Init()
     {
+        m_Data = new RendererData();
+
         RenderCommand::Init();
-        s_Data.OpaqueQueue.reserve(1000);
-        s_Data.InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
-        s_Data.InstanceVertexBuffer->SetLayout({
+        m_Data->OpaqueQueue.reserve(1000);
+        m_Data->InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
+        m_Data->InstanceVertexBuffer->SetLayout({
             { ShaderDataType::Float4, "a_ModelMatrixCol0", false, true },
             { ShaderDataType::Float4, "a_ModelMatrixCol1", false, true },
             { ShaderDataType::Float4, "a_ModelMatrixCol2", false, true },
             { ShaderDataType::Float4, "a_ModelMatrixCol3", false, true },
             { ShaderDataType::Int,    "a_EntityID",        false, true }
             });
-        s_Data.LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataGPU), 1);
+        m_Data->LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataGPU), 1);
 
         float skyboxVertices[] = {
             -1.0f,  1.0f, -1.0f,
@@ -228,36 +227,38 @@ namespace RXNEngine {
             -1.0f, -1.0f,  1.0f,
              1.0f, -1.0f,  1.0f
         };
-        //move it to the scene renderer
+
         Ref<VertexBuffer> skyboxVB = VertexBuffer::Create(skyboxVertices, sizeof(skyboxVertices));
         skyboxVB->SetLayout({ { ShaderDataType::Float3, "a_Position" } });
-        s_Data.SkyboxVAO = VertexArray::Create();
-        s_Data.SkyboxVAO->AddVertexBuffer(skyboxVB);
+        m_Data->SkyboxVAO = VertexArray::Create();
+        m_Data->SkyboxVAO->AddVertexBuffer(skyboxVB);
 
-        s_Data.SkyboxShader = Shader::Create("res/shaders/skybox.glsl");
+        m_Data->SkyboxShader = Shader::Create("res/shaders/skybox.glsl");
 
-        s_Data.ShadowData.ShadowTarget = ShadowMap::Create(4096);
-        s_Data.ShadowData.ShadowTarget->Init(4096);
+        m_Data->ShadowData.ShadowTarget = ShadowMap::Create(4096);
+        m_Data->ShadowData.ShadowTarget->Init(4096);
 
-        s_Data.ShadowData.ShadowShader = Shader::Create("res/shaders/shadow_depth.glsl");
+        m_Data->ShadowData.ShadowShader = Shader::Create("res/shaders/shadow_depth.glsl");
 
-        s_Data.ShadowData.ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowData::ShadowDataGPU), 2);
+        m_Data->ShadowData.ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowData::ShadowDataGPU), 2);
 
-        s_Data.ShadowData.CascadeSplits = { 7.0f, 25.0f, 90.0f, 1000.0f };
+        m_Data->ShadowData.CascadeSplits = { 7.0f, 25.0f, 90.0f, 1000.0f };
 
-        s_Data.LineVAO = VertexArray::Create();
-        s_Data.LineVBO = VertexBuffer::Create(s_Data.MaxLineVertices * sizeof(LineVertex));
-        s_Data.LineVBO->SetLayout({
+        m_Data->LineVAO = VertexArray::Create();
+        m_Data->LineVBO = VertexBuffer::Create(m_Data->MaxLineVertices * sizeof(LineVertex));
+        m_Data->LineVBO->SetLayout({
             { ShaderDataType::Float3, "a_Position" },
             { ShaderDataType::Float4, "a_Color" }
             });
-        s_Data.LineVAO->AddVertexBuffer(s_Data.LineVBO);
-        s_Data.LineShader = Shader::Create("res/shaders/line.glsl");
+        m_Data->LineVAO->AddVertexBuffer(m_Data->LineVBO);
+        m_Data->LineShader = Shader::Create("res/shaders/line.glsl");
     }
 
     void Renderer::Shutdown()
     {
-        s_Data.OpaqueQueue.clear();
+        m_Data->OpaqueQueue.clear();
+        delete m_Data;
+        m_Data = nullptr;
     }
 
     void Renderer::OnWindowResize(uint32_t width, uint32_t height)
@@ -269,7 +270,6 @@ namespace RXNEngine {
         const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
     {
         OPTICK_EVENT();
-
         PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, renderTarget);
     }
 
@@ -299,7 +299,7 @@ namespace RXNEngine {
 
         if (environment)
         {
-            s_Data.SceneEnvironment = environment;
+            m_Data->SceneEnvironment = environment;
 
             RenderCommand::BindTextureID(10, environment->GetIrradianceRendererID());
             RenderCommand::BindTextureID(11, environment->GetPrefilterRendererID());
@@ -307,61 +307,57 @@ namespace RXNEngine {
         }
         else
         {
-            s_Data.SceneEnvironment = nullptr;
+            m_Data->SceneEnvironment = nullptr;
         }
 
-        s_Data.CurrentRenderTarget = renderTarget;
+        m_Data->CurrentRenderTarget = renderTarget;
 
-        if (s_Data.CurrentRenderTarget)
+        if (m_Data->CurrentRenderTarget)
         {
-            s_Data.CurrentRenderTarget->Bind();
+            m_Data->CurrentRenderTarget->Bind();
             RenderCommand::SetViewport(0, 0,
-                s_Data.CurrentRenderTarget->GetSpecification().Width,
-                s_Data.CurrentRenderTarget->GetSpecification().Height);
+                m_Data->CurrentRenderTarget->GetSpecification().Width,
+                m_Data->CurrentRenderTarget->GetSpecification().Height);
             RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
             RenderCommand::Clear();
         }
         else
         {
-			RenderCommand::BindDefaultRenderTarget();
-
-            //RenderCommand::SetViewport(0, 0, s_Data.WindowWidth, s_Data.WindowHeight);
-
+            RenderCommand::BindDefaultRenderTarget();
             RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f });
             RenderCommand::Clear();
         }
 
-        s_Data.ViewProjectionMatrix = viewProjection;
-        s_Data.ViewMatrix = viewMatrix;
-        s_Data.CameraPosition = cameraPosition;
-        s_Data.CameraForward = -glm::normalize(glm::vec3(glm::inverse(viewMatrix)[2]));
-        s_Data.CameraFrustum.Define(viewProjection);
+        m_Data->ViewProjectionMatrix = viewProjection;
+        m_Data->ViewMatrix = viewMatrix;
+        m_Data->CameraPosition = cameraPosition;
+        m_Data->CameraForward = -glm::normalize(glm::vec3(glm::inverse(viewMatrix)[2]));
+        m_Data->CameraFrustum.Define(viewProjection);
 
-        s_Data.LightBufferLocal.DirLightDirection = glm::vec4(lights.DirLight.Direction, lights.DirLight.Intensity);
-        s_Data.LightBufferLocal.DirLightColor = glm::vec4(lights.DirLight.Color, 0.0f);
-        s_Data.LightBufferLocal.PointLightCount = std::min((uint32_t)lights.PointLights.size(), 100u);
+        m_Data->LightBufferLocal.DirLightDirection = glm::vec4(lights.DirLight.Direction, lights.DirLight.Intensity);
+        m_Data->LightBufferLocal.DirLightColor = glm::vec4(lights.DirLight.Color, 0.0f);
+        m_Data->LightBufferLocal.PointLightCount = std::min((uint32_t)lights.PointLights.size(), 100u);
 
-        for (uint32_t i = 0; i < s_Data.LightBufferLocal.PointLightCount; i++)
+        for (uint32_t i = 0; i < m_Data->LightBufferLocal.PointLightCount; i++)
         {
             const auto& light = lights.PointLights[i];
-            s_Data.LightBufferLocal.PointLights[i].Position = glm::vec4(light.Position, light.Intensity);
-            s_Data.LightBufferLocal.PointLights[i].Color = glm::vec4(light.Color, light.Radius);
-            s_Data.LightBufferLocal.PointLights[i].Falloff = glm::vec4(light.Falloff, 0.0f, 0.0f, 0.0f);
+            m_Data->LightBufferLocal.PointLights[i].Position = glm::vec4(light.Position, light.Intensity);
+            m_Data->LightBufferLocal.PointLights[i].Color = glm::vec4(light.Color, light.Radius);
+            m_Data->LightBufferLocal.PointLights[i].Falloff = glm::vec4(light.Falloff, 0.0f, 0.0f, 0.0f);
         }
 
-        s_Data.LightUniformBuffer->SetData(&s_Data.LightBufferLocal, sizeof(LightDataGPU));
+        m_Data->LightUniformBuffer->SetData(&m_Data->LightBufferLocal, sizeof(LightDataGPU));
 
-        s_Data.OpaqueQueue.clear();
-        s_Data.TransparentQueue.clear();
-        s_Data.ShadowQueue.clear();
+        m_Data->OpaqueQueue.clear();
+        m_Data->TransparentQueue.clear();
+        m_Data->ShadowQueue.clear();
 
-        // reset state at start of frame? 
-        s_Data.CurrentShaderID = 0;
-        s_Data.CurrentVertexArrayID = 0;
-        std::fill(s_Data.TextureSlots.begin(), s_Data.TextureSlots.end(), 0);
-        s_Data.LineVertices.clear();
+        m_Data->CurrentShaderID = 0;
+        m_Data->CurrentVertexArrayID = 0;
+        std::fill(m_Data->TextureSlots.begin(), m_Data->TextureSlots.end(), 0);
+        m_Data->LineVertices.clear();
 
-        CalculateShadowMapMatrices(s_Data.ViewMatrix, s_Data.LightBufferLocal.DirLightDirection);
+        CalculateShadowMapMatrices(m_Data->ViewMatrix, m_Data->LightBufferLocal.DirLightDirection);
     }
 
     void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID)
@@ -379,8 +375,8 @@ namespace RXNEngine {
         packet.EntityID = entityID;
 
         glm::vec3 position = glm::vec3(transform[3]);
-        glm::vec3 directionToPosition = position - s_Data.CameraPosition;
-        packet.DistanceToCamera = glm::dot(s_Data.CameraForward, directionToPosition);
+        glm::vec3 directionToPosition = position - m_Data->CameraPosition;
+        packet.DistanceToCamera = glm::dot(m_Data->CameraForward, directionToPosition);
 
         uint64_t shaderID = material->GetShader()->GetRendererID();
         uint64_t vaoID = mesh->GetVertexArray()->GetRendererID();
@@ -388,29 +384,29 @@ namespace RXNEngine {
         packet.SortKey = (shaderID << 32) | ((vaoID & 0xFFFF) << 16) | (submeshIndex & 0xFFFF);
 
         if (material->IsTransparent())
-            s_Data.TransparentQueue.push_back(packet);
+            m_Data->TransparentQueue.push_back(packet);
         else
-            s_Data.OpaqueQueue.push_back(packet);
+            m_Data->OpaqueQueue.push_back(packet);
     }
 
     void Renderer::EndScene()
     {
         Flush();
 
-        if (s_Data.CurrentRenderTarget)
+        if (m_Data->CurrentRenderTarget)
         {
-            s_Data.CurrentRenderTarget->Unbind();
-            s_Data.CurrentRenderTarget = nullptr;
+            m_Data->CurrentRenderTarget->Unbind();
+            m_Data->CurrentRenderTarget = nullptr;
         }
     }
 
     void Renderer::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color)
     {
-        if (s_Data.LineVertices.size() >= s_Data.MaxLineVertices)
+        if (m_Data->LineVertices.size() >= m_Data->MaxLineVertices)
             return;
 
-        s_Data.LineVertices.push_back({ p0, color });
-        s_Data.LineVertices.push_back({ p1, color });
+        m_Data->LineVertices.push_back({ p0, color });
+        m_Data->LineVertices.push_back({ p1, color });
     }
 
     void Renderer::DrawWireBox(const glm::mat4& transform, const glm::vec4& color)
@@ -530,14 +526,14 @@ namespace RXNEngine {
         data.Transform = transform;
         data.EntityID = -1;
 
-        s_Data.InstanceVertexBuffer->SetData(&data, sizeof(InstanceData));
+        m_Data->InstanceVertexBuffer->SetData(&data, sizeof(InstanceData));
 
         outlineShader->Bind();
         mesh->GetVertexArray()->Bind();
-        s_Data.InstanceVertexBuffer->Bind();
+        m_Data->InstanceVertexBuffer->Bind();
 
         const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
-        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, 1, submesh.IndexCount, submesh.BaseIndex);
+        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, 1, submesh.IndexCount, submesh.BaseIndex);
     }
 
     void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera)
@@ -556,19 +552,19 @@ namespace RXNEngine {
 
         RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
 
-        s_Data.SkyboxShader->Bind();
+        m_Data->SkyboxShader->Bind();
 
         glm::mat4 view = glm::mat4(glm::mat3(cameraViewMatrix));
         glm::mat4 projection = cameraProjectionMatrix;
 
-        s_Data.SkyboxShader->SetMat4("u_ViewProjection", projection * view);
+        m_Data->SkyboxShader->SetMat4("u_ViewProjection", projection * view);
 
         skybox->Bind(0);
-        s_Data.SkyboxShader->SetInt("u_Skybox", 0);
+        m_Data->SkyboxShader->SetInt("u_Skybox", 0);
 
-        s_Data.SkyboxVAO->Bind();
-        RenderCommand::Draw(s_Data.SkyboxVAO, 36);
-        s_Data.SkyboxVAO->Unbind();
+        m_Data->SkyboxVAO->Bind();
+        RenderCommand::Draw(m_Data->SkyboxVAO, 36);
+        m_Data->SkyboxVAO->Unbind();
 
         RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::Less);
     }
@@ -579,19 +575,19 @@ namespace RXNEngine {
 
         FlushShadows();
 
-        if (s_Data.CurrentRenderTarget) s_Data.CurrentRenderTarget->Bind();
+        if (m_Data->CurrentRenderTarget) m_Data->CurrentRenderTarget->Bind();
         else RenderCommand::BindDefaultRenderTarget();
 
-        RenderCommand::SetViewport(0, 0, 
-            s_Data.CurrentRenderTarget ? s_Data.CurrentRenderTarget->GetSpecification().Width : 1280,
-            s_Data.CurrentRenderTarget ? s_Data.CurrentRenderTarget->GetSpecification().Height : 720);
+        RenderCommand::SetViewport(0, 0,
+            m_Data->CurrentRenderTarget ? m_Data->CurrentRenderTarget->GetSpecification().Width : 1280,
+            m_Data->CurrentRenderTarget ? m_Data->CurrentRenderTarget->GetSpecification().Height : 720);
 
-        s_Data.ShadowData.ShadowTarget->BindRead(8);
+        m_Data->ShadowData.ShadowTarget->BindRead(8);
 
         RenderCommand::SetDepthMask(true);
         RenderCommand::SetBlend(false);
 
-        std::sort(s_Data.OpaqueQueue.begin(), s_Data.OpaqueQueue.end(),
+        std::sort(m_Data->OpaqueQueue.begin(), m_Data->OpaqueQueue.end(),
             [](const RenderCommandPacket& a, const RenderCommandPacket& b)
             {
                 if (a.SortKey != b.SortKey)
@@ -600,14 +596,14 @@ namespace RXNEngine {
                 return a.DistanceToCamera < b.DistanceToCamera;
             });
 
-        ExecuteQueue(s_Data.OpaqueQueue);
+        ExecuteQueue(m_Data->OpaqueQueue);
 
         RenderCommand::SetDepthMask(false);
         RenderCommand::SetBlend(true);
 
         RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
 
-        std::sort(s_Data.TransparentQueue.begin(), s_Data.TransparentQueue.end(),
+        std::sort(m_Data->TransparentQueue.begin(), m_Data->TransparentQueue.end(),
             [](const RenderCommandPacket& a, const RenderCommandPacket& b)
             {
                 if (glm::abs(a.DistanceToCamera - b.DistanceToCamera) < 0.001f)
@@ -616,20 +612,20 @@ namespace RXNEngine {
                 return a.DistanceToCamera > b.DistanceToCamera;
             });
 
-        ExecuteQueue(s_Data.TransparentQueue);
+        ExecuteQueue(m_Data->TransparentQueue);
 
-        RenderCommand::SetDepthMask(true); 
+        RenderCommand::SetDepthMask(true);
         RenderCommand::SetBlend(false);
 
-        if (!s_Data.LineVertices.empty())
+        if (!m_Data->LineVertices.empty())
         {
-            s_Data.LineVBO->SetData(s_Data.LineVertices.data(), s_Data.LineVertices.size() * sizeof(LineVertex));
+            m_Data->LineVBO->SetData(m_Data->LineVertices.data(), m_Data->LineVertices.size() * sizeof(LineVertex));
 
-            s_Data.LineShader->Bind();
-            s_Data.LineShader->SetMat4("u_ViewProjection", s_Data.ViewProjectionMatrix);
+            m_Data->LineShader->Bind();
+            m_Data->LineShader->SetMat4("u_ViewProjection", m_Data->ViewProjectionMatrix);
 
             RenderCommand::SetLineWidth(2.0f);
-            RenderCommand::DrawLines(s_Data.LineVAO, s_Data.LineVertices.size());
+            RenderCommand::DrawLines(m_Data->LineVAO, m_Data->LineVertices.size());
         }
     }
 
@@ -680,50 +676,50 @@ namespace RXNEngine {
         OPTICK_EVENT();
         if (count == 0) return;
 
-        s_Data.InstanceVertexBuffer->SetData(instanceData, count * sizeof(InstanceData));
+        m_Data->InstanceVertexBuffer->SetData(instanceData, count * sizeof(InstanceData));
         material->Bind();
 
         Ref<Shader> shader = material->GetShader();
-        if (s_Data.CurrentShaderID != shader->GetRendererID())
+        if (m_Data->CurrentShaderID != shader->GetRendererID())
         {
             shader->Bind();
-            s_Data.CurrentShaderID = shader->GetRendererID();
-            shader->SetMat4("u_ViewProjection", s_Data.ViewProjectionMatrix);
-            shader->SetFloat3("u_CameraPosition", s_Data.CameraPosition);
-            shader->SetMat4("u_View", s_Data.ViewMatrix);
+            m_Data->CurrentShaderID = shader->GetRendererID();
+            shader->SetMat4("u_ViewProjection", m_Data->ViewProjectionMatrix);
+            shader->SetFloat3("u_CameraPosition", m_Data->CameraPosition);
+            shader->SetMat4("u_View", m_Data->ViewMatrix);
         }
 
         mesh->GetVertexArray()->Bind();
-        s_Data.InstanceVertexBuffer->Bind();
+        m_Data->InstanceVertexBuffer->Bind();
 
         const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
 
-        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, count, submesh.IndexCount, submesh.BaseIndex);
+        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, count, submesh.IndexCount, submesh.BaseIndex);
 
-        s_Data.Stats.DrawCalls++;
-        s_Data.Stats.Instances += count;
-        s_Data.Stats.TotalIndices += submesh.IndexCount * count;
+        m_Data->Stats.DrawCalls++;
+        m_Data->Stats.Instances += count;
+        m_Data->Stats.TotalIndices += submesh.IndexCount * count;
     }
 
     void Renderer::FlushShadows()
     {
         OPTICK_EVENT();
 
-        s_Data.ShadowData.ShadowTarget->BindWrite();
+        m_Data->ShadowData.ShadowTarget->BindWrite();
         RenderCommand::Clear();
         RenderCommand::SetCullFace(RendererAPI::CullFace::Front);
 
-        s_Data.ShadowData.ShadowShader->Bind();
+        m_Data->ShadowData.ShadowShader->Bind();
 
-        auto& matrices = s_Data.ShadowData.BufferLocal.LightSpaceMatrices;
+        auto& matrices = m_Data->ShadowData.BufferLocal.LightSpaceMatrices;
         for (int i = 0; i < 4; i++)
         {
-            s_Data.ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrices[" + std::to_string(i) + "]", matrices[i]);
+            m_Data->ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrices[" + std::to_string(i) + "]", matrices[i]);
         }
 
-        if (!s_Data.ShadowQueue.empty())
+        if (!m_Data->ShadowQueue.empty())
         {
-            auto batchStart = s_Data.ShadowQueue.begin();
+            auto batchStart = m_Data->ShadowQueue.begin();
             static InstanceData batchData[MaxInstances];
             uint32_t transformCount = 0;
 
@@ -731,7 +727,7 @@ namespace RXNEngine {
             batchData[transformCount].EntityID = batchStart->EntityID;
             transformCount++;
 
-            for (auto it = s_Data.ShadowQueue.begin() + 1; it != s_Data.ShadowQueue.end(); ++it)
+            for (auto it = m_Data->ShadowQueue.begin() + 1; it != m_Data->ShadowQueue.end(); ++it)
             {
                 bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
 
@@ -743,16 +739,16 @@ namespace RXNEngine {
                 }
                 else
                 {
-                    s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                    m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
                     batchStart->Mesh->GetVertexArray()->Bind();
 
                     const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
 
-                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-                    s_Data.Stats.DrawCalls++;
-                    s_Data.Stats.Instances += transformCount;
-                    s_Data.Stats.TotalIndices += submesh.IndexCount * transformCount;
+                    m_Data->Stats.DrawCalls++;
+                    m_Data->Stats.Instances += transformCount;
+                    m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
 
                     batchStart = it;
                     transformCount = 0;
@@ -764,16 +760,16 @@ namespace RXNEngine {
 
             if (transformCount > 0)
             {
-                s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
                 batchStart->Mesh->GetVertexArray()->Bind();
 
                 const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
 
-                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-                s_Data.Stats.DrawCalls++;
-                s_Data.Stats.Instances += transformCount;
-                s_Data.Stats.TotalIndices += submesh.IndexCount * transformCount;
+                m_Data->Stats.DrawCalls++;
+                m_Data->Stats.Instances += transformCount;
+                m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
             }
         }
 
@@ -784,7 +780,7 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
-        auto drawQueue = [](const std::vector<RenderCommandPacket>& queue)
+        auto drawQueue = [&](const std::vector<RenderCommandPacket>& queue)
             {
                 if (queue.empty()) return;
 
@@ -808,13 +804,13 @@ namespace RXNEngine {
                     }
                     else
                     {
-                        s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                        m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
 
                         batchStart->Mesh->GetVertexArray()->Bind();
-                        s_Data.InstanceVertexBuffer->Bind();
+                        m_Data->InstanceVertexBuffer->Bind();
 
                         const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                        RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                        RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
                         batchStart = it;
                         transformCount = 0;
@@ -826,34 +822,34 @@ namespace RXNEngine {
 
                 if (transformCount > 0)
                 {
-                    s_Data.InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                    m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
 
                     batchStart->Mesh->GetVertexArray()->Bind();
-                    s_Data.InstanceVertexBuffer->Bind();
+                    m_Data->InstanceVertexBuffer->Bind();
 
                     const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), s_Data.InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
                 }
             };
 
-        drawQueue(s_Data.OpaqueQueue);
-        drawQueue(s_Data.TransparentQueue);
+        drawQueue(m_Data->OpaqueQueue);
+        drawQueue(m_Data->TransparentQueue);
     }
 
     bool Renderer::IsSphereVisibleToShadows(const glm::vec3& center, float radius)
     {
         for (int i = 0; i < 4; i++)
         {
-            glm::vec4 centerNDC = s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i] * glm::vec4(center, 1.0f);
+            glm::vec4 centerNDC = m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i] * glm::vec4(center, 1.0f);
 
-            float rX = radius * glm::abs(s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i][0][0]);
-            float rY = radius * glm::abs(s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i][1][1]);
-            float rZ = radius * glm::abs(s_Data.ShadowData.BufferLocal.LightSpaceMatrices[i][2][2]);
+            float rX = radius * glm::abs(m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i][0][0]);
+            float rY = radius * glm::abs(m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i][1][1]);
+            float rZ = radius * glm::abs(m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i][2][2]);
 
             if (glm::abs(centerNDC.x) <= 1.0f + rX && glm::abs(centerNDC.y) <= 1.0f + rY &&
                 centerNDC.z >= -1.0f - rZ && centerNDC.z <= 1.0f + rZ)
             {
-                return true; 
+                return true;
             }
         }
         return false;
@@ -867,6 +863,6 @@ namespace RXNEngine {
         packet.Transform = transform;
         packet.EntityID = entityID;
 
-        s_Data.ShadowQueue.push_back(packet);
+        m_Data->ShadowQueue.push_back(packet);
     }
 }

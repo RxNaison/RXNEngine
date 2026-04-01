@@ -5,125 +5,34 @@
 
 namespace RXNEngine {
 
-    using namespace physx;
-
-    physx::PxFilterFlags ContactReportFilterShader(
-        physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0,
-        physx::PxFilterObjectAttributes attributes1, physx::PxFilterData filterData1,
-        physx::PxPairFlags& pairFlags, const void* constantBlock, physx::PxU32 constantBlockSize)
-    {
-        pairFlags = physx::PxPairFlag::eCONTACT_DEFAULT;
-        pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_FOUND | physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
-        pairFlags |= physx::PxPairFlag::eDETECT_CCD_CONTACT;
-        return physx::PxFilterFlag::eDEFAULT;
-    }
-
-    static PhysicsContactListener s_ContactListener;
-
-    PxFoundation* PhysicsSystem::s_Foundation = nullptr;
-    PxPhysics* PhysicsSystem::s_Physics = nullptr;
-    PxDefaultCpuDispatcher* PhysicsSystem::s_Dispatcher = nullptr;
-    PxScene* PhysicsSystem::s_Scene = nullptr;
-    PxPvd* PhysicsSystem::s_Pvd = nullptr;
-    PxControllerManager* PhysicsSystem::s_ControllerManager = nullptr;
-
-    PxDefaultAllocator PhysicsSystem::s_Allocator;
-    PxDefaultErrorCallback PhysicsSystem::s_ErrorCallback;
-
     void PhysicsSystem::Init()
     {
-        s_Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, s_Allocator, s_ErrorCallback);
-        RXN_CORE_ASSERT(s_Foundation, "PxCreateFoundation Failed!");
+        m_Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, m_Allocator, m_ErrorCallback);
+        RXN_CORE_ASSERT(m_Foundation, "PxCreateFoundation Failed!");
 
-        s_Pvd = PxCreatePvd(*s_Foundation);
-        PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
-        s_Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+        m_Pvd = physx::PxCreatePvd(*m_Foundation);
+        physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 10);
+        m_Pvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
 
-        s_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *s_Foundation, PxTolerancesScale(), true, s_Pvd);
-        RXN_CORE_ASSERT(s_Physics, "PxCreatePhysics Failed!");
+        m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, physx::PxTolerancesScale(), true, m_Pvd);
+        RXN_CORE_ASSERT(m_Physics, "PxCreatePhysics Failed!");
 
-        // TODO: std::thread::hardware_concurrency()
-        s_Dispatcher = PxDefaultCpuDispatcherCreate(2);
-
-        RXN_CORE_INFO("PhysX Initialized Successfully!");
+        m_Dispatcher = physx::PxDefaultCpuDispatcherCreate(2);
+        RXN_CORE_INFO("PhysX Core Initialized Successfully!");
     }
 
     void PhysicsSystem::Shutdown()
     {
-        DestroyScene();
-
-        if (s_Dispatcher)
-            s_Dispatcher->release();
-
-        if (s_Physics)
-            s_Physics->release();
-
-        if (s_Pvd)
+        if (m_Dispatcher) m_Dispatcher->release();
+        if (m_Physics) m_Physics->release();
+        if (m_Pvd)
         {
-            PxPvdTransport* transport = s_Pvd->getTransport();
-            s_Pvd->release();
+            physx::PxPvdTransport* transport = m_Pvd->getTransport();
+            m_Pvd->release();
             transport->release();
         }
-
-        if (s_Foundation)
-            s_Foundation->release();
+        if (m_Foundation) m_Foundation->release();
     }
-
-    void PhysicsSystem::CreateScene()
-    {
-        if (s_Scene)
-            DestroyScene();
-
-        PxSceneDesc sceneDesc(s_Physics->getTolerancesScale());
-
-        sceneDesc.cpuDispatcher = s_Dispatcher;
-        sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-        sceneDesc.filterShader = ContactReportFilterShader;
-        sceneDesc.simulationEventCallback = &s_ContactListener;
-
-        sceneDesc.flags |= physx::PxSceneFlag::eENABLE_CCD;
-
-        sceneDesc.flags |= physx::PxSceneFlag::eREQUIRE_RW_LOCK;
-
-        s_Scene = s_Physics->createScene(sceneDesc);
-
-        s_Scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
-        s_Scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
-
-        s_ControllerManager = PxCreateControllerManager(*s_Scene);
-
-        PxPvdSceneClient* pvdClient = s_Scene->getScenePvdClient();
-        if (pvdClient)
-        {
-            pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS, true);
-            pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES, true);
-            pvdClient->setScenePvdFlag(PxPvdSceneFlag::eTRANSMIT_CONTACTS, true);
-        }
-    }
-
-    void PhysicsSystem::DestroyScene()
-    {
-        if (s_ControllerManager) s_ControllerManager->release();
-        if (s_Scene) s_Scene->release();
-
-        s_ControllerManager = nullptr;
-        s_Scene = nullptr;
-    }
-
-    void PhysicsSystem::Update(float dt)
-    {
-        OPTICK_EVENT();
-
-        if (!s_Scene) return;
-
-        s_Scene->simulate(dt);
-        s_Scene->fetchResults(true);
-    }
-
-    void PhysicsSystem::LockRead() { if (s_Scene) s_Scene->lockRead(); }
-    void PhysicsSystem::UnlockRead() { if (s_Scene) s_Scene->unlockRead(); }
-    void PhysicsSystem::LockWrite() { if (s_Scene) s_Scene->lockWrite(); }
-    void PhysicsSystem::UnlockWrite() { if (s_Scene) s_Scene->unlockWrite(); }
 
     physx::PxConvexMesh* PhysicsSystem::CreateConvexMesh(Ref<StaticMesh> mesh)
     {
@@ -159,7 +68,7 @@ namespace RXNEngine {
         physx::PxCookingParams params(scale);
 
         physx::PxConvexMeshCookingResult::Enum result;
-        physx::PxConvexMesh* convexMesh = PxCreateConvexMesh(params, convexDesc, s_Physics->getPhysicsInsertionCallback(), &result);
+        physx::PxConvexMesh* convexMesh = PxCreateConvexMesh(params, convexDesc, m_Physics->getPhysicsInsertionCallback(), &result);
 
         if (!convexMesh)
             RXN_CORE_ERROR("Failed to cook Convex Mesh!");
@@ -209,7 +118,7 @@ namespace RXNEngine {
         params.meshPreprocessParams |= physx::PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
 
         physx::PxTriangleMeshCookingResult::Enum result;
-        physx::PxTriangleMesh* triMesh = PxCreateTriangleMesh(params, meshDesc, s_Physics->getPhysicsInsertionCallback(), &result);
+        physx::PxTriangleMesh* triMesh = PxCreateTriangleMesh(params, meshDesc, m_Physics->getPhysicsInsertionCallback(), &result);
 
         if (!triMesh)
             RXN_CORE_ERROR("Failed to cook Triangle Mesh!");

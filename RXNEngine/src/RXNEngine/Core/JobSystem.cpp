@@ -5,74 +5,57 @@
 
 namespace RXNEngine {
 
-    namespace {
-        uint32_t s_NumThreads = 0;
-        std::thread::id s_MainThreadID;
-
-        std::vector<std::thread> s_Workers;
-
-        std::queue<std::function<void()>> s_JobQueue;
-        std::mutex s_QueueMutex;
-        std::condition_variable s_WakeCondition;
-
-        std::atomic<uint64_t> s_CurrentLabel = 0;
-        std::atomic<uint64_t> s_FinishedLabel = 0;
-        bool s_IsRunning = false;
-    }
-
     void JobSystem::Init()
     {
-        s_IsRunning = true;
-        s_MainThreadID = std::this_thread::get_id();
+        m_IsRunning = true;
+        m_MainThreadID = std::this_thread::get_id();
 
         uint32_t coreCount = std::thread::hardware_concurrency();
-        s_NumThreads = (coreCount > 1) ? coreCount - 1 : 1;
+        m_NumThreads = (coreCount > 1) ? coreCount - 1 : 1;
 
-        RXN_CORE_INFO("JobSystem: Initializing {0} Worker Threads...", s_NumThreads);
+        RXN_CORE_INFO("JobSystem: Initializing {0} Worker Threads...", m_NumThreads);
 
-        for (uint32_t i = 0; i < s_NumThreads; ++i)
-        {
-            s_Workers.emplace_back(std::thread(&JobSystem::WorkerThread, i));
-        }
+        for (uint32_t i = 0; i < m_NumThreads; ++i)
+            m_Workers.emplace_back(std::thread(&JobSystem::WorkerThread, this, i));
     }
 
     void JobSystem::Shutdown()
     {
-        if (!s_IsRunning) return;
+        if (!m_IsRunning) return;
 
-        s_IsRunning = false;
+        m_IsRunning = false;
+        m_WakeCondition.notify_all();
 
-        s_WakeCondition.notify_all();
-
-        for (auto& thread : s_Workers)
+        for (auto& thread : m_Workers)
         {
             if (thread.joinable())
                 thread.join();
         }
 
-        s_Workers.clear();
+        m_Workers.clear();
         RXN_CORE_INFO("JobSystem: Shutdown successful.");
     }
 
     void JobSystem::Execute(const std::function<void()>& job)
     {
-        s_CurrentLabel.fetch_add(1);
+        m_CurrentLabel.fetch_add(1);
 
         {
-            std::lock_guard<std::mutex> lock(s_QueueMutex);
-            s_JobQueue.push(job);
+            std::lock_guard<std::mutex> lock(m_QueueMutex);
+            m_JobQueue.push(job);
         }
 
-        s_WakeCondition.notify_one();
+        m_WakeCondition.notify_one();
     }
 
     void JobSystem::Dispatch(uint32_t jobCount, uint32_t groupSize, const std::function<void(JobDispatchArgs)>& job)
     {
-        if (jobCount == 0 || groupSize == 0) return;
+        if (jobCount == 0 || groupSize == 0)
+            return;
 
         uint32_t groupCount = (jobCount + groupSize - 1) / groupSize;
 
-        s_CurrentLabel.fetch_add(groupCount);
+        m_CurrentLabel.fetch_add(groupCount);
 
         for (uint32_t groupIndex = 0; groupIndex < groupCount; ++groupIndex)
         {
@@ -92,27 +75,27 @@ namespace RXNEngine {
                 };
 
             {
-                std::lock_guard<std::mutex> lock(s_QueueMutex);
-                s_JobQueue.push(jobGroup);
+                std::lock_guard<std::mutex> lock(m_QueueMutex);
+                m_JobQueue.push(jobGroup);
             }
 
-            s_WakeCondition.notify_one();
+            m_WakeCondition.notify_one();
         }
     }
 
     void JobSystem::Wait()
     {
-        while (s_FinishedLabel.load() < s_CurrentLabel.load())
+        while (m_FinishedLabel.load() < m_CurrentLabel.load())
         {
             std::function<void()> job;
             bool hasJob = false;
 
             {
-                std::lock_guard<std::mutex> lock(s_QueueMutex);
-                if (!s_JobQueue.empty())
+                std::lock_guard<std::mutex> lock(m_QueueMutex);
+                if (!m_JobQueue.empty())
                 {
-                    job = s_JobQueue.front();
-                    s_JobQueue.pop();
+                    job = m_JobQueue.front();
+                    m_JobQueue.pop();
                     hasJob = true;
                 }
             }
@@ -120,7 +103,7 @@ namespace RXNEngine {
             if (hasJob)
             {
                 job();
-                s_FinishedLabel.fetch_add(1);
+                m_FinishedLabel.fetch_add(1);
             }
             else
             {
@@ -129,14 +112,14 @@ namespace RXNEngine {
         }
     }
 
-    bool JobSystem::IsMainThread()
+    bool JobSystem::IsMainThread() const
     {
-        return std::this_thread::get_id() == s_MainThreadID;
+        return std::this_thread::get_id() == m_MainThreadID;
     }
 
-    uint32_t JobSystem::GetThreadCount()
+    uint32_t JobSystem::GetThreadCount() const
     {
-        return s_NumThreads + 1;
+        return m_NumThreads + 1;
     }
 
     void JobSystem::WorkerThread(uint32_t threadID)
@@ -144,24 +127,24 @@ namespace RXNEngine {
         std::string threadName = "Worker Thread " + std::to_string(threadID);
         OPTICK_THREAD(threadName.c_str());
 
-        while (s_IsRunning)
+        while (m_IsRunning)
         {
             std::function<void()> job;
 
             {
-                std::unique_lock<std::mutex> lock(s_QueueMutex);
+                std::unique_lock<std::mutex> lock(m_QueueMutex);
 
-                s_WakeCondition.wait(lock, [] { return !s_JobQueue.empty() || !s_IsRunning; });
+                m_WakeCondition.wait(lock, [this] { return !m_JobQueue.empty() || !m_IsRunning; });
 
-                if (!s_IsRunning) break;
+                if (!m_IsRunning) break;
 
-                job = s_JobQueue.front();
-                s_JobQueue.pop();
+                job = m_JobQueue.front();
+                m_JobQueue.pop();
             }
 
             job();
 
-            s_FinishedLabel.fetch_add(1);
+            m_FinishedLabel.fetch_add(1);
         }
     }
 

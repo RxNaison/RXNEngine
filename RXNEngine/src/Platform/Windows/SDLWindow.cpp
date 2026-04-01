@@ -4,6 +4,7 @@
 #include "RXNEngine/Events/ApplicationEvent.h"
 #include "RXNEngine/Events/KeyEvent.h"
 #include "RXNEngine/Events/MouseEvent.h"
+#include "RXNEngine/Core/Application.h"
 
 #include <backends/imgui_impl_sdl3.h>
 #include <imgui.h>
@@ -144,12 +145,16 @@ namespace RXNEngine {
                 }
                 case SDL_EVENT_GAMEPAD_ADDED:
                 {
-                    ((SDLInput*)Input::Get())->AddGamepad(e.gdevice.which);
+                    auto input = std::static_pointer_cast<SDLInput>(Application::Get().GetSubsystem<Input>());
+                    if (input)
+                        input->AddGamepad(e.gdevice.which);
                     break;
                 }
                 case SDL_EVENT_GAMEPAD_REMOVED:
                 {
-                    ((SDLInput*)Input::Get())->RemoveGamepad(e.gdevice.which);
+                    auto input = std::static_pointer_cast<SDLInput>(Application::Get().GetSubsystem<Input>());
+                    if (input)
+                        input->RemoveGamepad(e.gdevice.which);
                     break;
                 }
             }

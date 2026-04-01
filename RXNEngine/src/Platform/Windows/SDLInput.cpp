@@ -3,17 +3,22 @@
 
 namespace RXNEngine {
 
-    Input* Input::s_Instance = new SDLInput();
+    Ref<Input> Input::Create()
+    {
+        return CreateRef<SDLInput>();
+    }
 
-    void SDLInput::InitImpl() {}
-    void SDLInput::UpdateImpl()
+    void SDLInput::Init() {}
+
+    void SDLInput::Update(float deltaTime)
     {
         float dx, dy;
         SDL_GetRelativeMouseState(&dx, &dy);
         m_MouseDeltaX = dx;
         m_MouseDeltaY = dy;
     }
-    void SDLInput::ShutdownImpl()
+
+    void SDLInput::Shutdown()
     {
         for (int i = 0; i < 4; i++)
         {
@@ -30,9 +35,9 @@ namespace RXNEngine {
         SDL_Gamepad* pad = SDL_OpenGamepad(id);
         if (pad)
         {
-            for (int i = 0; i < 4; i++) 
+            for (int i = 0; i < 4; i++)
             {
-                if (m_Gamepads[i] == nullptr) 
+                if (m_Gamepads[i] == nullptr)
                 {
                     m_Gamepads[i] = pad;
                     RXN_CORE_INFO("Player {0} Gamepad Connected: {1}", i, SDL_GetGamepadName(pad));
@@ -45,9 +50,9 @@ namespace RXNEngine {
 
     void SDLInput::RemoveGamepad(SDL_JoystickID id)
     {
-        for (int i = 0; i < 4; i++) 
+        for (int i = 0; i < 4; i++)
         {
-            if (m_Gamepads[i] && SDL_GetGamepadID(m_Gamepads[i]) == id) 
+            if (m_Gamepads[i] && SDL_GetGamepadID(m_Gamepads[i]) == id)
             {
                 SDL_CloseGamepad(m_Gamepads[i]);
                 m_Gamepads[i] = nullptr;
@@ -57,7 +62,7 @@ namespace RXNEngine {
         }
     }
 
-    bool SDLInput::IsKeyPressedImpl(int keycode)
+    bool SDLInput::IsKeyPressed(int keycode)
     {
         int numKeys;
         const bool* state = SDL_GetKeyboardState(&numKeys);
@@ -70,29 +75,29 @@ namespace RXNEngine {
         return state[scancode];
     }
 
-    bool SDLInput::IsMouseButtonPressedImpl(int button)
+    bool SDLInput::IsMouseButtonPressed(int button)
     {
         float x, y;
         uint32_t state = SDL_GetMouseState(&x, &y);
         return (state & SDL_BUTTON_MASK(button)) != 0;
     }
 
-    std::pair<float, float> SDLInput::GetMousePositionImpl()
+    std::pair<float, float> SDLInput::GetMousePosition()
     {
         float x, y;
         SDL_GetMouseState(&x, &y);
         return { x, y };
     }
 
-    float SDLInput::GetMouseXImpl() { return GetMousePositionImpl().first; }
-    float SDLInput::GetMouseYImpl() { return GetMousePositionImpl().second; }
+    float SDLInput::GetMouseX() { return GetMousePosition().first; }
+    float SDLInput::GetMouseY() { return GetMousePosition().second; }
 
-    std::pair<float, float> SDLInput::GetMouseDeltaImpl()
+    std::pair<float, float> SDLInput::GetMouseDelta()
     {
         return { m_MouseDeltaX, m_MouseDeltaY };
     }
 
-    bool SDLInput::IsGamepadButtonPressedImpl(int gamepadID, GamepadButton button)
+    bool SDLInput::IsGamepadButtonPressed(int gamepadID, GamepadButton button)
     {
         if (gamepadID < 0 || gamepadID >= 4 || m_Gamepads[gamepadID] == nullptr)
             return false;
@@ -100,7 +105,7 @@ namespace RXNEngine {
         return SDL_GetGamepadButton(m_Gamepads[gamepadID], (SDL_GamepadButton)button);
     }
 
-    float SDLInput::GetGamepadAxisImpl(int gamepadID, GamepadAxis axis)
+    float SDLInput::GetGamepadAxis(int gamepadID, GamepadAxis axis)
     {
         if (gamepadID < 0 || gamepadID >= 4 || m_Gamepads[gamepadID] == nullptr)
             return 0.0f;
@@ -118,7 +123,7 @@ namespace RXNEngine {
         return sign * ((std::abs(value) - deadzone) / (1.0f - deadzone));
     }
 
-    void SDLInput::SetGamepadVibrationImpl(int gamepadID, float leftMotor, float rightMotor)
+    void SDLInput::SetGamepadVibration(int gamepadID, float leftMotor, float rightMotor)
     {
         if (gamepadID < 0 || gamepadID >= 4 || m_Gamepads[gamepadID] == nullptr)
             return;

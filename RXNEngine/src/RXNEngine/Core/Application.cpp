@@ -4,9 +4,11 @@
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Renderer/RenderCommand.h"
 #include "RXNEngine/Core/Time.h"
+#include "RXNEngine/Core/Input.h"
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
+#include "RXNEngine/Asset/AssetManager.h"
 
 namespace RXNEngine {
 
@@ -17,13 +19,17 @@ namespace RXNEngine {
 		RXN_CORE_ASSERT(!s_Instance, "Application already exists!");
 		s_Instance = this;
 
+		AddSubsystem<Log>();
+
 		m_Window = std::unique_ptr<Window>(Window::Create(props));
 		m_Window->SetEventCallback([this](Event& e) { OnEvent(e); });
 
-		JobSystem::Init();
-		Renderer::Init();
-		PhysicsSystem::Init();
-		ScriptEngine::Init();
+		AddSubsystem<JobSystem>();
+		AddSubsystem<Renderer>();
+		AddSubsystem<Input>(Input::Create());
+		AddSubsystem<PhysicsSystem>();
+		AddSubsystem<ScriptEngine>();
+		AddSubsystem<AssetManager>();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -31,9 +37,17 @@ namespace RXNEngine {
 
 	Application::~Application()
 	{
-		PhysicsSystem::Shutdown();
-		ScriptEngine::Shutdown();
-		JobSystem::Shutdown();
+		for (Layer* layer : m_LayerStack)
+		{
+			layer->OnDetach();
+			delete layer;
+		}
+
+		for (auto it = m_SubsystemList.rbegin(); it != m_SubsystemList.rend(); ++it)
+			(*it)->Shutdown();
+
+		m_Subsystems.clear();
+		m_SubsystemList.clear();
 	}
 
 	void Application::PushLayer(Layer* layer)
@@ -73,6 +87,9 @@ namespace RXNEngine {
 
 			if (!m_Minimized)
 			{
+				for (auto& subsystem : m_SubsystemList)
+					subsystem->Update(Time::Get().GetDeltaTime());
+
 				while (Time::Get().ShouldRunFixedUpdate())
 				{
 					for (Layer* layer : m_LayerStack)
@@ -99,7 +116,7 @@ namespace RXNEngine {
 	}
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
-		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+		GetSubsystem<Renderer>()->OnWindowResize(e.GetWidth(), e.GetHeight());
 		return false;
 	}
 	bool Application::OnWindowMinimize(WindowMinimizeEvent& e)

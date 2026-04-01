@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "RXNEngine/Renderer/Renderer.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
+#include "RXNEngine/Physics/PhysicsWorld.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Asset/AssetManager.h"
@@ -146,10 +147,16 @@ namespace RXNEngine {
     Scene::Scene()
     {
         m_Registry.on_construct<CameraComponent>().connect<&Scene::OnCameraComponentAdded>(this);
+        AddSubsystem<PhysicsWorld>();
     }
 
     Scene::~Scene()
     {
+        for (auto it = m_SubsystemList.rbegin(); it != m_SubsystemList.rend(); ++it)
+            (*it)->Shutdown();
+
+        m_Subsystems.clear();
+        m_SubsystemList.clear();
     }
 
     Entity Scene::CreateEntity(const std::string& name)
@@ -181,9 +188,7 @@ namespace RXNEngine {
         OPTICK_EVENT();
 
         if (m_IsRunning && entity.HasComponent<ScriptComponent>())
-        {
-            ScriptEngine::OnDestroyEntity(entity);
-        }
+			Application::Get().GetSubsystem<ScriptEngine>()->OnDestroyEntity(entity);
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
@@ -301,7 +306,9 @@ namespace RXNEngine {
 
         }
 
-        uint32_t threadCount = JobSystem::GetThreadCount();
+        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
+
+        uint32_t threadCount = jobSys->GetThreadCount();
 
         for (size_t i = 0; i < generations.size(); i++)
         {
@@ -309,7 +316,7 @@ namespace RXNEngine {
             uint32_t groupSize = (uint32_t)gen.size() / threadCount;
             if (groupSize == 0) groupSize = 1;
 
-            JobSystem::Dispatch(gen.size(), groupSize, [this, &gen, i](JobDispatchArgs args)
+            jobSys->Dispatch(gen.size(), groupSize, [this, &gen, i](JobDispatchArgs args)
                 {
                     entt::entity e = gen[args.JobIndex];
                     auto& tc = m_Registry.get<TransformComponent>(e);
@@ -328,7 +335,7 @@ namespace RXNEngine {
                     }
                 });
 
-            JobSystem::Wait();
+            jobSys->Wait();
         }
     }
 
@@ -341,6 +348,8 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
+        auto physicsWorld = GetSubsystem<PhysicsWorld>();
+
         if (m_IsRunning)
         {
             auto scriptView = m_Registry.view<ScriptComponent>();
@@ -348,23 +357,23 @@ namespace RXNEngine {
 
             if (!entities.empty())
             {
-                uint32_t threadCount = JobSystem::GetThreadCount();
+                uint32_t threadCount = Application::Get().GetSubsystem<JobSystem>()->GetThreadCount();
                 uint32_t groupSize = (uint32_t)entities.size() / threadCount;
                 if (groupSize == 0) groupSize = 1;
 
-                JobSystem::Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
+                Application::Get().GetSubsystem<JobSystem>()->Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
                     {
                         OPTICK_EVENT("Run C# Fixed Update");
                         Entity entity = { entities[args.JobIndex], this };
-                        ScriptEngine::OnFixedUpdateEntity(entity, deltaTime);
+                        Application::Get().GetSubsystem<ScriptEngine>()->OnFixedUpdateEntity(entity, deltaTime);
                     });
 
-                JobSystem::Wait();
+                Application::Get().GetSubsystem<JobSystem>()->Wait();
             }
 
             UpdateWorldTransforms();
 
-            PhysicsSystem::LockWrite();
+            physicsWorld->LockWrite();
 
             auto transformView = m_Registry.view<TransformComponent>();
             for (auto e : transformView)
@@ -382,7 +391,7 @@ namespace RXNEngine {
                 }
             }
 
-            PhysicsSystem::UnlockWrite();
+            physicsWorld->UnlockWrite();
         }
 
         auto rbView = m_Registry.view<RigidbodyComponent>();
@@ -401,7 +410,8 @@ namespace RXNEngine {
             }
         }
 
-        PhysicsSystem::Update(deltaTime);
+        for (auto& subsystem : m_SubsystemList)
+            subsystem->Update(deltaTime);
 
         auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
         for (auto e : view)
@@ -483,8 +493,11 @@ namespace RXNEngine {
                 lightEnv.PointLights.push_back(pl);
             }
         }
+        auto renderSys = Application::Get().GetSubsystem<Renderer>();
+        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
+        auto physicsWorld = GetSubsystem<PhysicsWorld>();
 
-        Renderer::BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
+        renderSys->BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
 
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
         ViewFrustum frustum;
@@ -498,11 +511,11 @@ namespace RXNEngine {
 
         if (!entities.empty())
         {
-            uint32_t threadCount = JobSystem::GetThreadCount();
+            uint32_t threadCount = jobSys->GetThreadCount();
             uint32_t groupSize = (uint32_t)entities.size() / threadCount;
             if (groupSize == 0) groupSize = 1;
 
-            JobSystem::Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
+            jobSys->Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
                 {
                     entt::entity e = entities[args.JobIndex];
                     auto [mc, tc] = view.get<StaticMeshComponent, TransformComponent>(e);
@@ -518,7 +531,7 @@ namespace RXNEngine {
                     float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
 
                     bool isVisible = frustum.IsSphereVisible(center, radius);
-                    bool isVisibleToShadows = Renderer::IsSphereVisibleToShadows(center, radius);
+                    bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
 
                     if (!isVisible && !isVisibleToShadows)
                         return;
@@ -540,27 +553,27 @@ namespace RXNEngine {
                     }
                 });
 
-            JobSystem::Wait();
+            jobSys->Wait();
         }
 
         for (const auto& cmd : renderQueue)
         {
             if (cmd.IsVisibleToCamera)
-                Renderer::Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
+                renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
 
             if (cmd.IsVisibleToShadows)
-                Renderer::SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
+                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
         }
 
         if (showColliders)
         {
-            if (PhysicsSystem::GetScene())
+            if (physicsWorld->GetScene())
             {
-                const physx::PxRenderBuffer& rb = PhysicsSystem::GetScene()->getRenderBuffer();
+                const physx::PxRenderBuffer& rb = physicsWorld->GetScene()->getRenderBuffer();
                 for (physx::PxU32 i = 0; i < rb.getNbLines(); i++)
                 {
                     const physx::PxDebugLine& line = rb.getLines()[i];
-                    Renderer::DrawLine(
+                    renderSys->DrawLine(
                         PhysicsUtils::PhysXToGLM(line.pos0),
                         PhysicsUtils::PhysXToGLM(line.pos1),
                         PhysicsUtils::UnpackPhysXColor(line.color0)
@@ -570,10 +583,9 @@ namespace RXNEngine {
         }
 
         if (m_Skybox)
-            Renderer::DrawSkybox(m_Skybox, camera, cameraTransform);
+            renderSys->DrawSkybox(m_Skybox, camera, cameraTransform);
 
-        Renderer::EndScene();
-
+        renderSys->EndScene();
     }
 
     void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders)
@@ -613,7 +625,10 @@ namespace RXNEngine {
             }
         }
 
-        Renderer::BeginScene(camera, lightEnv, m_Skybox, renderTarget);
+        auto renderSys = Application::Get().GetSubsystem<Renderer>();
+        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
+
+        renderSys->BeginScene(camera, lightEnv, m_Skybox, renderTarget);
 
         glm::mat4 viewProj = camera.GetViewProjection();
         ViewFrustum frustum;
@@ -627,11 +642,11 @@ namespace RXNEngine {
 
         if (!entities.empty())
         {
-            uint32_t threadCount = JobSystem::GetThreadCount();
+            uint32_t threadCount = jobSys->GetThreadCount();
             uint32_t groupSize = (uint32_t)entities.size() / threadCount;
             if (groupSize == 0) groupSize = 1;
 
-            JobSystem::Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
+            jobSys->Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
                 {
                     entt::entity e = entities[args.JobIndex];
                     auto [mc, tc] = view.get<StaticMeshComponent, TransformComponent>(e);
@@ -648,7 +663,7 @@ namespace RXNEngine {
                     float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
 
                     bool isVisible = frustum.IsSphereVisible(center, radius);
-                    bool isVisibleToShadows = Renderer::IsSphereVisibleToShadows(center, radius);
+                    bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
                     
                     if (!isVisible && !isVisibleToShadows)
                         return;
@@ -670,20 +685,20 @@ namespace RXNEngine {
                     }
                 });
 
-            JobSystem::Wait();
+            jobSys->Wait();
         }
 
         for (const auto& cmd : renderQueue)
         {
             if (cmd.IsVisibleToCamera)
-                Renderer::Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
+                renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
 
             if (cmd.IsVisibleToShadows)
-                Renderer::SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
+                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
         }
 
         if (m_Skybox)
-            Renderer::DrawSkybox(m_Skybox, camera);
+            renderSys->DrawSkybox(m_Skybox, camera);
 
         if (showColliders)
         {
@@ -704,7 +719,7 @@ namespace RXNEngine {
                         * glm::translate(glm::mat4(1.0f), bc.Offset)
                         * glm::scale(glm::mat4(1.0f), scale);
 
-                    Renderer::DrawWireBox(transform, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+                    renderSys->DrawWireBox(transform, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
                 }
             }
 
@@ -726,7 +741,7 @@ namespace RXNEngine {
                         * glm::translate(glm::mat4(1.0f), sc.Offset)
                         * glm::scale(glm::mat4(1.0f), scale);
 
-                    Renderer::DrawWireSphere(transform, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+                    renderSys->DrawWireSphere(transform, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
                 }
             }
 
@@ -748,17 +763,16 @@ namespace RXNEngine {
                         * glm::toMat4(glm::quat(worldRotation))
                         * glm::translate(glm::mat4(1.0f), cc.Offset);
 
-                    Renderer::DrawWireCapsule(transform, radius, height, glm::vec4(0.0f, 0.8f, 1.0f, 1.0f));
+                    renderSys->DrawWireCapsule(transform, radius, height, glm::vec4(0.0f, 0.8f, 1.0f, 1.0f));
                 }
             }
         }
 
-        Renderer::EndScene();
+        renderSys->EndScene();
 
         for (auto& entity : m_EntitiesToDestroy)
-        {
             RemoveEntity(entity);
-        }
+
         m_EntitiesToDestroy.clear();
     }
 
@@ -766,7 +780,10 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
-        ScriptEngine::SetEngineTime(deltaTime);
+        auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
+        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
+
+        scriptSys->SetEngineTime(deltaTime);
 
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
             {
@@ -789,24 +806,23 @@ namespace RXNEngine {
 
         if (!entities.empty())
         {
-            uint32_t threadCount = JobSystem::GetThreadCount();
+            uint32_t threadCount = jobSys->GetThreadCount();
             uint32_t groupSize = (uint32_t)entities.size() / threadCount;
             if (groupSize == 0) groupSize = 1;
 
-            JobSystem::Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
+            jobSys->Dispatch(entities.size(), groupSize, [this, &entities, deltaTime, &scriptSys](JobDispatchArgs args)
                 {
                     OPTICK_EVENT("Run C# Update");
                     Entity entity = { entities[args.JobIndex], this };
-                    ScriptEngine::OnUpdateEntity(entity, deltaTime);
+                    scriptSys->OnUpdateEntity(entity, deltaTime);
                 });
 
-            JobSystem::Wait();
+            jobSys->Wait();
         }
 
         for (auto& entity : m_EntitiesToDestroy)
-        {
             RemoveEntity(entity);
-        }
+
         m_EntitiesToDestroy.clear();
 
         UpdateWorldTransforms();
@@ -822,9 +838,7 @@ namespace RXNEngine {
         {
             auto& cameraComponent = view.get<CameraComponent>(entity);
             if (!cameraComponent.FixedAspectRatio)
-            {
                 cameraComponent.Camera.SetViewportSize(width, height);
-            }
         }
     }
 
@@ -838,6 +852,8 @@ namespace RXNEngine {
 
     Entity Scene::DuplicateEntity(Entity entity)
     {
+        OPTICK_EVENT();
+
         std::string name = entity.GetComponent<TagComponent>().Tag;
         Entity newEntity = CreateEntity(name + " (Clone)");
 
@@ -876,7 +892,7 @@ namespace RXNEngine {
         if (newEntity.HasComponent<ScriptComponent>())
         {
             if (m_IsRunning)
-                ScriptEngine::OnCreateEntity(newEntity);
+                Application::Get().GetSubsystem<ScriptEngine>()->OnCreateEntity(newEntity);
         }
 
         if (entity.HasComponent<RelationshipComponent>())
@@ -943,13 +959,16 @@ namespace RXNEngine {
     void Scene::OnRuntimeStart()
     {
         OnSimulationStart();
-        ScriptEngine::OnRuntimeStart(this);
+
+        auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
+
+        scriptSys->OnRuntimeStart(this);
 
         auto view = m_Registry.view<ScriptComponent>();
         for (auto e : view)
         {
             Entity entity = { e, this };
-            ScriptEngine::OnCreateEntity(entity);
+            scriptSys->OnCreateEntity(entity);
         }
 
         m_IsRunning = true;
@@ -958,15 +977,20 @@ namespace RXNEngine {
     void Scene::OnRuntimeStop()
     {
         OnSimulationStop();
-        ScriptEngine::OnRuntimeStop();
+        Application::Get().GetSubsystem<ScriptEngine>()->OnRuntimeStop();
 
         m_IsRunning = false;
     }
 
     void Scene::CreatePhysicsBody(Entity entity)
     {
-        physx::PxPhysics* physics = PhysicsSystem::GetPhysics();
-        physx::PxScene* physicsScene = PhysicsSystem::GetScene();
+        OPTICK_EVENT();
+
+        auto physicsSys = Application::Get().GetSubsystem<PhysicsSystem>();
+        auto physicsWorld = GetSubsystem<PhysicsWorld>();
+
+        physx::PxPhysics* physics = physicsSys->GetPhysics();
+        physx::PxScene* physicsScene = physicsWorld->GetScene();
 
         auto& transform = entity.GetComponent<TransformComponent>();
         auto& rb = entity.GetComponent<RigidbodyComponent>();
@@ -1081,7 +1105,7 @@ namespace RXNEngine {
 
             if (!mc.OverrideAssetPath.empty())
             {
-                collisionMesh = AssetManager::GetMesh(mc.OverrideAssetPath);
+                collisionMesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(mc.OverrideAssetPath);
             }
             else
             {
@@ -1117,7 +1141,7 @@ namespace RXNEngine {
 
                 if (mc.IsConvex)
                 {
-                    physx::PxConvexMesh* convexMesh = PhysicsSystem::CreateConvexMesh(collisionMesh);
+                    physx::PxConvexMesh* convexMesh = physicsSys->CreateConvexMesh(collisionMesh);
                     if (convexMesh)
                     {
                         physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
@@ -1128,7 +1152,7 @@ namespace RXNEngine {
                 }
                 else
                 {
-                    physx::PxTriangleMesh* triMesh = PhysicsSystem::CreateTriangleMesh(collisionMesh);
+                    physx::PxTriangleMesh* triMesh = physicsSys->CreateTriangleMesh(collisionMesh);
                     if (triMesh)
                     {
                         physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
@@ -1167,8 +1191,6 @@ namespace RXNEngine {
 
     void Scene::OnSimulationStart()
     {
-        PhysicsSystem::CreateScene();
-
         m_Registry.view<entt::entity>().each([&](auto entityID)
             {
                 Entity entity = { entityID, this };
@@ -1193,7 +1215,6 @@ namespace RXNEngine {
 
     void Scene::OnSimulationStop()
     {
-        PhysicsSystem::DestroyScene();
         m_IsSimulating = false;
     }
 

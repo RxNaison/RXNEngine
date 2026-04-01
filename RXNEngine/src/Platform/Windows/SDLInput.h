@@ -1,7 +1,6 @@
 #pragma once
 #include "RXNEngine/Core/Input.h"
 #include <SDL3/SDL.h>
-#include <map>
 
 namespace RXNEngine {
 
@@ -12,20 +11,20 @@ namespace RXNEngine {
         void RemoveGamepad(SDL_JoystickID id);
 
     protected:
-        virtual void InitImpl() override;
-        virtual void UpdateImpl() override;
-        virtual void ShutdownImpl() override;
+        virtual void Init() override;
+        virtual void Update(float deltaTime) override;
+        virtual void Shutdown() override;
 
-        virtual bool IsKeyPressedImpl(int keycode) override;
-        virtual bool IsMouseButtonPressedImpl(int button) override;
-        virtual std::pair<float, float> GetMousePositionImpl() override;
-        virtual float GetMouseXImpl() override;
-        virtual float GetMouseYImpl() override;
-        virtual std::pair<float, float> GetMouseDeltaImpl() override;
+        virtual bool IsKeyPressed(int keycode) override;
+        virtual bool IsMouseButtonPressed(int button) override;
+        virtual std::pair<float, float> GetMousePosition() override;
+        virtual float GetMouseX() override;
+        virtual float GetMouseY() override;
+        virtual std::pair<float, float> GetMouseDelta() override;
 
-        virtual bool IsGamepadButtonPressedImpl(int gamepadID, GamepadButton button) override;
-        virtual float GetGamepadAxisImpl(int gamepadID, GamepadAxis axis) override;
-        virtual void SetGamepadVibrationImpl(int gamepadID, float leftMotor, float rightMotor) override;
+        virtual bool IsGamepadButtonPressed(int gamepadID, GamepadButton button) override;
+        virtual float GetGamepadAxis(int gamepadID, GamepadAxis axis) override;
+        virtual void SetGamepadVibration(int gamepadID, float leftMotor, float rightMotor) override;
 
     private:
         SDL_Gamepad* m_Gamepads[4] = { nullptr, nullptr, nullptr, nullptr };

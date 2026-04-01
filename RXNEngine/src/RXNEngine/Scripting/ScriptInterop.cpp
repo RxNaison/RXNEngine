@@ -6,6 +6,7 @@
 #include "RXNEngine/Core/KeyCodes.h"
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
+#include "RXNEngine/Physics/PhysicsWorld.h"
 #include "RXNEngine/Asset/AssetManager.h"
 
 #include <coreclr_delegates.h>
@@ -49,31 +50,31 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScriptField_Register(const char* className, const char* fieldName, uint32_t type)
     {
-        ScriptEngine::RegisterField(className, fieldName, (ScriptFieldType)type);
+        Application::Get().GetSubsystem<ScriptEngine>()->RegisterField(className, fieldName, (ScriptFieldType)type);
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeAssetManager_LoadMeshAsync(const char* filepath, uint64_t entityID)
     {
-        AssetManager::LoadMeshAsync(filepath, entityID);
+        Application::Get().GetSubsystem<AssetManager>()->LoadMeshAsync(filepath, entityID);
     }
 #pragma endregion
 
 #pragma region Input
     extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeInput_IsKeyDown(uint32_t keycode)
     {
-        return Input::IsKeyPressed((KeyCode)keycode) ? 1 : 0;
+		return Application::Get().GetSubsystem<Input>()->IsKeyPressed((KeyCode)keycode) ? 1 : 0;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_GetMousePosition(glm::vec2* outPosition)
     {
-        float x = Input::GetMouseX();
-        float y = Input::GetMouseY();
+        float x = Application::Get().GetSubsystem<Input>()->GetMouseX();
+        float y = Application::Get().GetSubsystem<Input>()->GetMouseY();
         *outPosition = glm::vec2(x, y);
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_GetMouseDelta(glm::vec2* outDelta)
     {
-        auto [x, y] = Input::GetMouseDelta();
+        auto [x, y] = Application::Get().GetSubsystem<Input>()->GetMouseDelta();
         *outDelta = glm::vec2(x, y);
     }
 
@@ -84,34 +85,34 @@ namespace RXNEngine {
 
     extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeInput_IsGamepadButtonDown(int gamepadID, int button)
     {
-        return Input::IsGamepadButtonPressed(gamepadID, (GamepadButton)button);
+        return Application::Get().GetSubsystem<Input>()->IsGamepadButtonPressed(gamepadID, (GamepadButton)button);
     }
 
     extern "C" float CORECLR_DELEGATE_CALLTYPE NativeInput_GetGamepadAxis(int gamepadID, int axis)
     {
-        return Input::GetGamepadAxis(gamepadID, (GamepadAxis)axis);
+        return Application::Get().GetSubsystem<Input>()->GetGamepadAxis(gamepadID, (GamepadAxis)axis);
     }
 
     extern "C" float CORECLR_DELEGATE_CALLTYPE NativeInput_GetGamepadDeadzone()
     {
-        return Input::GetGamepadDeadzone();
+        return Application::Get().GetSubsystem<Input>()->GetGamepadDeadzone();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_SetGamepadDeadzone(float deadzone)
     {
-        Input::SetGamepadDeadzone(deadzone);
+        Application::Get().GetSubsystem<Input>()->SetGamepadDeadzone(deadzone);
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeInput_SetGamepadVibration(int gamepadID, float leftMotor, float rightMotor)
     {
-        Input::SetGamepadVibration(gamepadID, leftMotor, rightMotor);
+        Application::Get().GetSubsystem<Input>()->SetGamepadVibration(gamepadID, leftMotor, rightMotor);
     }
 #pragma endregion
 
 #pragma region Entity Lifecycle
     extern "C" uint64_t CORECLR_DELEGATE_CALLTYPE NativeEntity_Create()
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return 0;
 
         Entity newEntity = scene->CreateEntity("Spawned Entity");
@@ -120,7 +121,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_Destroy(uint64_t entityID)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return;
 
         Entity entity = scene->GetEntityByUUID(entityID);
@@ -132,7 +133,7 @@ namespace RXNEngine {
 
     extern "C" uint64_t CORECLR_DELEGATE_CALLTYPE NativeEntity_FindByName(const char* name)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return 0;
 
         Entity entity = scene->FindEntityByName(name);
@@ -141,7 +142,7 @@ namespace RXNEngine {
 
     extern "C" uint64_t CORECLR_DELEGATE_CALLTYPE NativeEntity_InstantiatePrefab(uint64_t entityID)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return 0;
 
         Entity original = scene->GetEntityByUUID(entityID);
@@ -156,7 +157,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetWorldPosition(uint64_t entityID, glm::vec3* outPosition)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity) return;
 
@@ -167,7 +168,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetForward(uint64_t entityID, glm::vec3* outForward)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity) return;
 
@@ -177,7 +178,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetRight(uint64_t entityID, glm::vec3* outRight)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity) return;
 
@@ -187,7 +188,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_GetUp(uint64_t entityID, glm::vec3* outUp)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity) return;
 
@@ -199,12 +200,14 @@ namespace RXNEngine {
 #pragma region Physics Interop
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_ApplyLinearImpulse(uint64_t entityID, glm::vec3* impulse, uint8_t wakeUp)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return;
 
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity || !entity.HasComponent<RigidbodyComponent>())
             return;
+
+        auto physicsWorld = scene->GetSubsystem<PhysicsWorld>();
 
         auto& rb = entity.GetComponent<RigidbodyComponent>();
         if (rb.RuntimeActor)
@@ -212,19 +215,21 @@ namespace RXNEngine {
             physx::PxRigidDynamic* dynamicActor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor)->is<physx::PxRigidDynamic>();
             if (dynamicActor)
             {
-                PhysicsSystem::LockWrite();
+                physicsWorld->LockWrite();
                 dynamicActor->addForce(physx::PxVec3(impulse->x, impulse->y, impulse->z), physx::PxForceMode::eIMPULSE, wakeUp != 0);
-                PhysicsSystem::UnlockWrite();
+                physicsWorld->UnlockWrite();
             }
         }
     }
 
     extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativePhysics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* outHit, uint64_t ignoreEntityID)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         if (!scene) return 0;
 
-        physx::PxScene* pxScene = PhysicsSystem::GetScene();
+        auto physicsWorld = scene->GetSubsystem<PhysicsWorld>();
+
+        physx::PxScene* pxScene = physicsWorld->GetScene();
         if (!pxScene) return 0;
 
         physx::PxVec3 pxOrigin(origin->x, origin->y, origin->z);
@@ -237,9 +242,9 @@ namespace RXNEngine {
         physx::PxQueryFilterData filterData;
         filterData.flags |= physx::PxQueryFlag::ePREFILTER;
 
-        PhysicsSystem::LockRead();
+        physicsWorld->LockRead();
         bool hit = pxScene->raycast(pxOrigin, pxDir, maxDistance, hitInfo, physx::PxHitFlags(physx::PxHitFlag::eDEFAULT), filterData, &filter);
-        PhysicsSystem::UnlockRead();
+        physicsWorld->UnlockRead();
 
         if (hit && hitInfo.hasBlock)
         {
@@ -264,7 +269,7 @@ namespace RXNEngine {
 #pragma region Component Accessors
     extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeEntity_HasComponent(uint64_t entityID, const char* componentType)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity) return 0;
 
@@ -289,7 +294,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_AddComponent(uint64_t entityID, const char* componentType)
     {
-        Scene* scene = ScriptEngine::GetSceneContext();
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
         Entity entity = scene->GetEntityByUUID(entityID);
         if (!entity) return;
 
@@ -313,7 +318,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTag_Get(uint64_t entityID, char* outBuffer, uint32_t maxLength)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         std::string tag = entity.GetComponent<TagComponent>().Tag;
 
         strncpy_s(outBuffer, maxLength, tag.c_str(), _TRUNCATE);
@@ -321,13 +326,13 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTag_Set(uint64_t entityID, const char* inTag)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<TagComponent>().Tag = inTag;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Get(uint64_t entityID, TransformDataInterop* outData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& tc = entity.GetComponent<TransformComponent>();
 
         outData->Translation = tc.Translation;
@@ -337,7 +342,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeTransform_Set(uint64_t entityID, TransformDataInterop* inData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& tc = entity.GetComponent<TransformComponent>();
 
         tc.Translation = inData->Translation;
@@ -349,19 +354,19 @@ namespace RXNEngine {
 
     extern "C" uint64_t CORECLR_DELEGATE_CALLTYPE NativeRelationship_GetParent(uint64_t entityID)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         return entity.GetComponent<RelationshipComponent>().ParentHandle;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRelationship_SetParent(uint64_t entityID, uint64_t parentID)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<RelationshipComponent>().ParentHandle = parentID;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeStaticMesh_GetAssetPath(uint64_t entityID, char* outBuffer, uint32_t maxLength)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         std::string tag = entity.GetComponent<StaticMeshComponent>().AssetPath;
 
         strncpy_s(outBuffer, maxLength, tag.c_str(), _TRUNCATE);
@@ -369,7 +374,7 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeStaticMesh_SetAssetPath(uint64_t entityID, const char* inTag)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<StaticMeshComponent>().AssetPath = inTag;
     }
      
@@ -377,31 +382,31 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Get(uint64_t entityID, DirectionalLightComponent* outComponent)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         *outComponent = entity.GetComponent<DirectionalLightComponent>();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Set(uint64_t entityID, DirectionalLightComponent* inComponent)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<DirectionalLightComponent>() = *inComponent;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Get(uint64_t entityID, PointLightComponent* outComponent)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         *outComponent = entity.GetComponent<PointLightComponent>();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Set(uint64_t entityID, PointLightComponent* inComponent)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<PointLightComponent>() = *inComponent;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Get(uint64_t entityID, char* outBuffer, uint32_t maxLength)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         std::string scriptPath = entity.GetComponent<ScriptComponent>().ClassName;
 
         strncpy_s(outBuffer, maxLength, scriptPath.c_str(), _TRUNCATE);
@@ -409,19 +414,19 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Set(uint64_t entityID, const char* inTag)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<ScriptComponent>().ClassName = inTag;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Get(uint64_t entityID, RigidbodyComponent* outData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         *outData = entity.GetComponent<RigidbodyComponent>();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Set(uint64_t entityID, RigidbodyComponent* inData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& rb = entity.GetComponent<RigidbodyComponent>();
 
         void* tempActor = rb.RuntimeActor;
@@ -439,13 +444,13 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Get(uint64_t entityID, BoxColliderComponent* outData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         *outData = entity.GetComponent<BoxColliderComponent>();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Set(uint64_t entityID, BoxColliderComponent* inData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& bc = entity.GetComponent<BoxColliderComponent>();
 
         void* tempShape = bc.RuntimeShape;
@@ -459,13 +464,13 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Get(uint64_t entityID, SphereColliderComponent* outData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         *outData = entity.GetComponent<SphereColliderComponent>();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Set(uint64_t entityID, SphereColliderComponent* inData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& bc = entity.GetComponent<SphereColliderComponent>();
 
         void* tempShape = bc.RuntimeShape;
@@ -479,13 +484,13 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Get(uint64_t entityID, CapsuleColliderComponent* outData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         *outData = entity.GetComponent<CapsuleColliderComponent>();
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Set(uint64_t entityID, CapsuleColliderComponent* inData)
     {
-        Entity entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& bc = entity.GetComponent<CapsuleColliderComponent>();
 
         void* tempShape = bc.RuntimeShape;

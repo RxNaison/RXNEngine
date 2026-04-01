@@ -61,37 +61,39 @@ namespace RXNEngine {
 	{
 		OPTICK_EVENT();
 
-		const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
+		auto inputSys = Application::Get().GetSubsystem<Input>();
+
+		const glm::vec2& mouse{ inputSys->GetMouseX(), inputSys->GetMouseY() };
 		glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 		m_InitialMousePosition = mouse;
 
-		if (Input::IsKeyPressed(KeyCode::LeftAlt))
+		if (inputSys->IsKeyPressed(KeyCode::LeftAlt))
 		{
-			if (Input::IsMouseButtonPressed(MouseCode::ButtonMiddle))
+			if (inputSys->IsMouseButtonPressed(MouseCode::ButtonMiddle))
 				MousePan(delta);
-			else if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft))
+			else if (inputSys->IsMouseButtonPressed(MouseCode::ButtonLeft))
 				MouseRotate(delta);
-			else if (Input::IsMouseButtonPressed(MouseCode::ButtonRight))
+			else if (inputSys->IsMouseButtonPressed(MouseCode::ButtonRight))
 				MouseZoom(delta.y);
 		}
-		else if (Input::IsMouseButtonPressed(MouseCode::ButtonRight))
+		else if (inputSys->IsMouseButtonPressed(MouseCode::ButtonRight))
 		{
 			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
 			m_Yaw += yawSign * delta.x * RotationSpeed();
 			m_Pitch += delta.y * RotationSpeed();
 
 			float moveSpeed = 15.0f;
-			if (Input::IsKeyPressed(KeyCode::LeftShift))
+			if (inputSys->IsKeyPressed(KeyCode::LeftShift))
 				moveSpeed *= 3.0f;
 
 			m_Position = CalculatePosition();
 
-			if (Input::IsKeyPressed(KeyCode::W)) m_Position += GetForwardDirection() * moveSpeed * deltaTime;
-			if (Input::IsKeyPressed(KeyCode::S)) m_Position -= GetForwardDirection() * moveSpeed * deltaTime;
-			if (Input::IsKeyPressed(KeyCode::A)) m_Position -= GetRightDirection() * moveSpeed * deltaTime;
-			if (Input::IsKeyPressed(KeyCode::D)) m_Position += GetRightDirection() * moveSpeed * deltaTime;
-			if (Input::IsKeyPressed(KeyCode::Q)) m_Position -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
-			if (Input::IsKeyPressed(KeyCode::E)) m_Position += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
+			if (inputSys->IsKeyPressed(KeyCode::W)) m_Position += GetForwardDirection() * moveSpeed * deltaTime;
+			if (inputSys->IsKeyPressed(KeyCode::S)) m_Position -= GetForwardDirection() * moveSpeed * deltaTime;
+			if (inputSys->IsKeyPressed(KeyCode::A)) m_Position -= GetRightDirection() * moveSpeed * deltaTime;
+			if (inputSys->IsKeyPressed(KeyCode::D)) m_Position += GetRightDirection() * moveSpeed * deltaTime;
+			if (inputSys->IsKeyPressed(KeyCode::Q)) m_Position -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
+			if (inputSys->IsKeyPressed(KeyCode::E)) m_Position += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
 
 			m_FocalPoint = m_Position + GetForwardDirection() * m_Distance;
 		}

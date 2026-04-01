@@ -33,6 +33,8 @@ namespace RXNEngine {
 
 			const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(str.C_Str());
 
+			auto assetManager = Application::Get().GetSubsystem<AssetManager>();
+
 			if (embeddedTexture)
 			{
 				std::filesystem::path mPath = modelPath;
@@ -59,7 +61,7 @@ namespace RXNEngine {
 					}
 				}
 
-				return AssetManager::GetTexture(extractedPath);
+				return assetManager->GetTexture(extractedPath);
 			}
 			else
 			{
@@ -67,7 +69,7 @@ namespace RXNEngine {
 				std::replace(filename.begin(), filename.end(), '\\', '/');
 				std::string filepath = directory + "/" + filename;
 
-				return AssetManager::GetTexture(filepath);
+				return assetManager->GetTexture(filepath);
 			}
 		}
 		return nullptr;
@@ -318,7 +320,10 @@ namespace RXNEngine {
 	Ref<StaticMesh> ModelImporter::BuildMeshFromData(const ImporterData& data)
 	{
 		OPTICK_EVENT("ModelImporter::BuildMeshFromData (GPU)");
-		Ref<Shader> defaultPBR = AssetManager::GetShader("res/shaders/pbr.glsl");
+
+		auto assetManager = Application::Get().GetSubsystem<AssetManager>();
+
+		Ref<Shader> defaultPBR = assetManager->GetShader("res/shaders/pbr.glsl");
 		std::vector<Ref<Material>> finalMaterials;
 
 		for (const auto& desc : data.Materials)
@@ -326,19 +331,19 @@ namespace RXNEngine {
 			Ref<Material> rxnMat = Material::CreateDefault(defaultPBR);
 
 			if (!desc.AlbedoPath.empty())
-				rxnMat->SetAlbedoMap(AssetManager::GetTexture(desc.AlbedoPath));
+				rxnMat->SetAlbedoMap(assetManager->GetTexture(desc.AlbedoPath));
 
 			if (!desc.NormalPath.empty())
-				rxnMat->SetNormalMap(AssetManager::GetTexture(desc.NormalPath));
+				rxnMat->SetNormalMap(assetManager->GetTexture(desc.NormalPath));
 
 			if (!desc.MetalRoughPath.empty())
-				rxnMat->SetMetalnessRoughnessMap(AssetManager::GetTexture(desc.MetalRoughPath));
+				rxnMat->SetMetalnessRoughnessMap(assetManager->GetTexture(desc.MetalRoughPath));
 
 			if (!desc.AOPath.empty())
-				rxnMat->SetAOMap(AssetManager::GetTexture(desc.AOPath));
+				rxnMat->SetAOMap(assetManager->GetTexture(desc.AOPath));
 
 			if (!desc.EmissivePath.empty())
-				rxnMat->SetEmissiveMap(AssetManager::GetTexture(desc.EmissivePath));
+				rxnMat->SetEmissiveMap(assetManager->GetTexture(desc.EmissivePath));
 
 			rxnMat->SetAlbedoColor(desc.AlbedoColor);
 			rxnMat->SetEmissiveColor(desc.EmissiveColor);

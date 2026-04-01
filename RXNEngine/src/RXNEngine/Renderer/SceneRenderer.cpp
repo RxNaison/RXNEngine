@@ -134,7 +134,7 @@ namespace RXNEngine {
                     {
                         auto& mc = entity.GetComponent<StaticMeshComponent>();
                         if (mc.Mesh)
-                            Renderer::DrawEntityOutline(mc.Mesh, mc.SubmeshIndex, m_Scene->GetWorldTransform(entity), m_OutlineMaskShader);
+                            Application::Get().GetSubsystem<Renderer>()->DrawEntityOutline(mc.Mesh, mc.SubmeshIndex, m_Scene->GetWorldTransform(entity), m_OutlineMaskShader);
                     }
 
                     if (entity.HasComponent<RelationshipComponent>())
@@ -217,7 +217,7 @@ namespace RXNEngine {
         m_PickingShader->Bind();
         m_PickingShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
 
-        Renderer::ExecutePickingPass(m_PickingShader);
+        Application::Get().GetSubsystem<Renderer>()->ExecutePickingPass(m_PickingShader);
 
         int pixelData = m_PickingPass->ReadPixel(0, x, y);
         m_PickingPass->Unbind();

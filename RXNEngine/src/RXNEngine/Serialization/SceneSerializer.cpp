@@ -516,7 +516,7 @@ namespace RXNEngine {
 					{
 						std::string assetPath = staticMeshComponent["AssetPath"].as<std::string>();
 						mc.AssetPath = assetPath;
-						mc.Mesh = AssetManager::GetMesh(assetPath);
+						mc.Mesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(assetPath);
 					}
 
 					if (staticMeshComponent["SubmeshIndex"])

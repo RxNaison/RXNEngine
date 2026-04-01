@@ -1,5 +1,6 @@
 #pragma once
 
+#include "RXNEngine/Core/Subsystem.h"
 #include "RendererAPI.h"
 #include "RenderTarget.h"
 #include "Light.h"
@@ -39,50 +40,63 @@ namespace RXNEngine {
         void Reset() { DrawCalls = 0; Instances = 0; TotalIndices = 0; }
     };
 
-    class Renderer
+    struct RendererData;
+
+    class Renderer : public Subsystem
     {
     public:
-        static void Init();
-        static void Shutdown();
+        Renderer() = default;
+        virtual ~Renderer() = default;
 
-        static void OnWindowResize(uint32_t width, uint32_t height);
+        virtual void Init() override;
+        virtual void Update(float deltaTime) override {}
+        virtual void Shutdown() override;
 
-        static void BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
+        void OnWindowResize(uint32_t width, uint32_t height);
+
+        void BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
             const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr);
 
-        static void BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
+        void BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
             const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr);
 
-        static void EndScene();
+        void EndScene();
 
-        static void Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID = -1);
+        void Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID = -1);
 
-        static void DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera);
-        static void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& cameraTransform);
-        static void DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& cameraViewMatrix, const glm::mat4& cameraProjectionMatrix);
+        void DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera);
+        void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& cameraTransform);
+        void DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& cameraViewMatrix, const glm::mat4& cameraProjectionMatrix);
 
-        static void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color);
-        static void DrawWireBox(const glm::mat4& transform, const glm::vec4& color);
-        static void DrawWireSphere(const glm::mat4& transform, const glm::vec4& color);
-        static void DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color);
+        void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color);
+        void DrawWireBox(const glm::mat4& transform, const glm::vec4& color);
+        void DrawWireSphere(const glm::mat4& transform, const glm::vec4& color);
+        void DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color);
 
-        static void DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader);
+        void DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader);
 
-        static void ExecutePickingPass(const Ref<Shader>& pickingShader);
+        void ExecutePickingPass(const Ref<Shader>& pickingShader);
 
-        static bool IsSphereVisibleToShadows(const glm::vec3& center, float radius);
-        static void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID);
+        bool IsSphereVisibleToShadows(const glm::vec3& center, float radius);
+        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID);
 
-        static RendererStatistics GetStats();
-        static void ResetStats();
+        RendererStatistics GetStats();
+        void ResetStats();
 
         static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
+
     private:
-        static void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
+        void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
             const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget);
-        static void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
-        static void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count);
-        static void Flush();
-        static void FlushShadows();
+
+        void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
+        void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count);
+        void Flush();
+        void FlushShadows();
+
+        void CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir);
+
+    private:
+        RendererData* m_Data = nullptr;
     };
 }
