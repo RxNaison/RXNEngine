@@ -250,7 +250,15 @@ namespace RXNScriptHost
                 if (field != null)
                 {
                     object? value = field.GetValue(instance);
-                    if (value == null) return;
+
+                    if (value == null)
+                    {
+                        if (field.FieldType == s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                        {
+                            Marshal.WriteInt64(outBuffer, 0);
+                        }
+                        return;
+                    }
 
                     if (field.FieldType == s_CoreAssembly?.GetType("RXNEngine.Entity"))
                     {

@@ -25,7 +25,6 @@ public class Player : Entity
     private bool m_JumpRequested = false;
     private int m_CurrentContacts = 0;
 
-    private Vector2 m_LastMousePos;
     private float m_Pitch = 0.0f;
     private float m_Yaw = 0.0f;
 
@@ -33,8 +32,7 @@ public class Player : Entity
 
     public override void OnCreate()
     {
-        //Input.SetCursorMode(CursorMode.Locked);
-        m_LastMousePos = Input.GetMousePosition();
+        Input.SetCursorMode(CursorMode.Locked);
 
         Vector3 currentRot = this.Rotation;
         m_Pitch = currentRot.X;
@@ -165,17 +163,17 @@ public class Player : Entity
             Thread.Sleep(50);
         }
 
-        if (SunEntity != null)
-        {
-            var light = SunEntity.GetComponent<DirectionalLightComponent>();
-            if (light != null)
-            {
-                var data = light.Data;
-                data.Color = new Vector3(1, 0, 0);
-                data.Intensity = 50.0f;
-                light.Data = data;
-            }
-        }
+        //if (SunEntity != null)
+        //{
+        //    var light = SunEntity.GetComponent<DirectionalLightComponent>();
+        //    if (light != null)
+        //    {
+        //        var data = light.Data;
+        //        data.Color = new Vector3(1, 0, 0);
+        //        data.Intensity = 50.0f;
+        //        light.Data = data;
+        //    }
+        //}
     }
 
     public override void OnFixedUpdate(float fixedTimeStep)
