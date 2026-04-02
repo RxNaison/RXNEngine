@@ -1,69 +1,81 @@
 #pragma once
-
-#include "RXNEngine/Renderer/GraphicsAPI/Buffer.h"
-#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
 #include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
 #include <glm/glm.hpp>
+#include <string>
 
 namespace RXNEngine {
 
-	class Material
-	{
-	public:
-		struct Parameters
-		{
-			glm::vec4 AlbedoColor = glm::vec4(1.0f);
-			glm::vec3 EmissiveColor = glm::vec3(0.0f);
-			float Roughness = 0.5f;
-			float Metalness = 0.0f;
-			float AO = 1.0f;
-			float Tiling = 1.0f;
-		};
+    struct MaterialParameters
+    {
+        glm::vec4 AlbedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+        glm::vec3 EmissiveColor = { 0.0f, 0.0f, 0.0f };
+        float Roughness = 0.5f;
+        float Metalness = 0.0f;
+        float AO = 1.0f;
+        float Tiling = 1.0f;
+    };
 
-	public:
-		Material(const Ref<Shader>& shader);
-		virtual ~Material() = default;
+    class Material
+    {
+    public:
+        Material(const Ref<Shader>& shader);
+        ~Material() = default;
 
-		void Bind();
+        void Bind();
+        static Ref<Material> CreateDefault(const Ref<Shader>& shader);
+        static Ref<Material> Copy(const Ref<Material>& other);
 
-		void SetAlbedoColor(const glm::vec4& color) { m_Parameters.AlbedoColor = color; }
-		void SetEmissiveColor(const glm::vec3& color) { m_Parameters.EmissiveColor = color; }
-		void SetRoughness(float roughness) { m_Parameters.Roughness = roughness; }
-		void SetMetalness(float metalness) { m_Parameters.Metalness = metalness; }
-		void SetAO(float ao) { m_Parameters.AO = ao; }
-		void SetTiling(float tiling) { m_Parameters.Tiling = tiling; }
+        inline void SetAssetPath(const std::string& path) { m_AssetPath = path; }
+        inline const std::string& GetAssetPath() const { return m_AssetPath; }
 
-		void SetAlbedoMap(const Ref<Texture2D>& texture) { m_AlbedoMap = texture; }
-		void SetNormalMap(const Ref<Texture2D>& texture) { m_NormalMap = texture; }
-		void SetMetalnessRoughnessMap(const Ref<Texture2D>& texture) { m_MetalnessRoughnessMap = texture; }
-		void SetAOMap(const Ref<Texture2D>& texture) { m_AOMap = texture; }
-		void SetEmissiveMap(const Ref<Texture2D>& texture) { m_EmissiveMap = texture; }
+        inline MaterialParameters& GetParameters() { return m_Parameters; }
+        inline void SetParameters(const MaterialParameters& params) { m_Parameters = params; }
 
-		Ref<Texture2D> GetAlbedoMap() const { return m_AlbedoMap; }
-		Ref<Texture2D> GetNormalMap() const { return m_NormalMap; }
-		Ref<Texture2D> GetMetalnessRoughnessMap() const { return m_MetalnessRoughnessMap; }
-		Ref<Texture2D> GetAOMap() const { return m_AOMap; }
+        inline void SetTransparent(bool transparent) { m_IsTransparent = transparent; }
+        inline bool IsTransparent() const { return m_IsTransparent; }
 
-		Ref<Shader> GetShader() const { return m_Shader; }
+        void SetAlbedoMap(const Ref<Texture2D>& texture, const std::string& path = "") { m_AlbedoMap = texture; m_AlbedoPath = path; }
+        void SetNormalMap(const Ref<Texture2D>& texture, const std::string& path = "") { m_NormalMap = texture; m_NormalPath = path; }
+        void SetMetalnessMap(const Ref<Texture2D>& texture, const std::string& path = "") { m_MetalnessMap = texture; m_MetalPath = path; }
+        void SetRoughnessMap(const Ref<Texture2D>& texture, const std::string& path = "") { m_RoughnessMap = texture; m_RoughPath = path; }
+        void SetAOMap(const Ref<Texture2D>& texture, const std::string& path = "") { m_AOMap = texture; m_AOPath = path; }
+        void SetEmissiveMap(const Ref<Texture2D>& texture, const std::string& path = "") { m_EmissiveMap = texture; m_EmissivePath = path; }
 
-		bool IsTransparent() const { return m_IsTransparent; }
-		void SetTransparent(bool transparent) { m_IsTransparent = transparent; }
+        inline Ref<Shader> GetShader() const { return m_Shader; }
 
-		const Parameters& GetParameters() const { return m_Parameters; }
+        inline Ref<Texture2D> GetAlbedoMap() const { return m_AlbedoMap; }
+        inline Ref<Texture2D> GetNormalMap() const { return m_NormalMap; }
+        inline Ref<Texture2D> GetMetalnessMap() const { return m_MetalnessMap; }
+        inline Ref<Texture2D> GetRoughnessMap() const { return m_RoughnessMap; }
+        inline Ref<Texture2D> GetAOMap() const { return m_AOMap; }
+        inline Ref<Texture2D> GetEmissiveMap() const { return m_EmissiveMap; }
 
-	public:
-		static Ref<Material> CreateDefault(const Ref<Shader>& shader);
+        inline const std::string& GetAlbedoPath() const { return m_AlbedoPath; }
+        inline const std::string& GetNormalPath() const { return m_NormalPath; }
+        inline const std::string& GetMetalPath() const { return m_MetalPath; }
+        inline const std::string& GetRoughPath() const { return m_RoughPath; }
+        inline const std::string& GetAOPath() const { return m_AOPath; }
+        inline const std::string& GetEmissivePath() const { return m_EmissivePath; }
 
-	private:
-		Ref<Shader> m_Shader;
-		Parameters m_Parameters;
+    private:
+        Ref<Shader> m_Shader;
+        MaterialParameters m_Parameters;
+        bool m_IsTransparent = false;
+        std::string m_AssetPath;
 
-		Ref<Texture2D> m_AlbedoMap;
-		Ref<Texture2D> m_NormalMap;
-		Ref<Texture2D> m_MetalnessRoughnessMap;
-		Ref<Texture2D> m_AOMap;
-		Ref<Texture2D> m_EmissiveMap;
+        Ref<Texture2D> m_AlbedoMap;
+        Ref<Texture2D> m_NormalMap;
+        Ref<Texture2D> m_MetalnessMap;
+        Ref<Texture2D> m_RoughnessMap;
+        Ref<Texture2D> m_AOMap;
+        Ref<Texture2D> m_EmissiveMap;
 
-		bool m_IsTransparent = false;
-	};
+        std::string m_AlbedoPath;
+        std::string m_NormalPath;
+        std::string m_MetalPath;
+        std::string m_RoughPath;
+        std::string m_AOPath;
+        std::string m_EmissivePath;
+    };
 }

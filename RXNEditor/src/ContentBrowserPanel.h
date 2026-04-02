@@ -18,6 +18,9 @@ namespace RXNEditor {
         ContentBrowserPanel();
         void OnImGuiRender();
 
+        using MaterialOpenCallbackFn = std::function<void(const std::string&)>;
+        void SetMaterialOpenCallback(const MaterialOpenCallbackFn& callback) { m_MaterialOpenCallback = callback; }
+
     private:
         void DrawTopBar();
         void DrawDirectoryTree(const std::filesystem::path& directoryPath);
@@ -42,5 +45,7 @@ namespace RXNEditor {
         float m_ThumbnailSize = 96.0f;
         float m_Padding = 16.0f;
         bool m_SettingsWindow = false;
+
+        MaterialOpenCallbackFn m_MaterialOpenCallback;
     };
 }

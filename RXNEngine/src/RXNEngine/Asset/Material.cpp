@@ -21,74 +21,72 @@ namespace RXNEngine {
 
         // Slot 0: Albedo
         if (m_AlbedoMap)
-        {
             m_AlbedoMap->Bind(0);
-            m_Shader->SetInt("u_UseAlbedoMap", 1);
-        }
         else
-        {
             Texture2D::WhiteTexture()->Bind(0);
-            m_Shader->SetInt("u_UseAlbedoMap", 0);
-        }
+
         m_Shader->SetInt("u_AlbedoMap", 0);
 
         // Slot 1: Normal
         if (m_NormalMap)
-        {
             m_NormalMap->Bind(1);
-            m_Shader->SetInt("u_UseNormalMap", 1);
-        }
         else
-        {
             Texture2D::BlueTexture()->Bind(1);
-            m_Shader->SetInt("u_UseNormalMap", 0);
-        }
+
         m_Shader->SetInt("u_NormalMap", 1);
 
-        // Slot 2: Metal/Rough (Often packed)
-        if (m_MetalnessRoughnessMap) 
-        { 
-            m_MetalnessRoughnessMap->Bind(2);
-            m_Shader->SetInt("u_MetallicMap", 2);
-            m_Shader->SetInt("u_RoughnessMap", 2);
-        }
+        // Slot 2: Metalness
+        if (m_MetalnessMap)
+            m_MetalnessMap->Bind(2);
         else
-        { 
             Texture2D::WhiteTexture()->Bind(2);
-            m_Shader->SetInt("u_MetallicMap", 2);
-            m_Shader->SetInt("u_RoughnessMap", 2);
-        }
-        m_Shader->SetInt("u_MetalnessRoughnessMap", 2);
 
-        // Slot 3: Ambient Occlusion (AO)
-        if (m_AOMap)
-        { 
-            m_AOMap->Bind(3);
-            m_Shader->SetInt("u_UseAOMap", 1);
-        }
+        m_Shader->SetInt("u_MetalnessMap", 2);
+
+        // Slot 3: Roughness
+        if (m_RoughnessMap)
+            m_RoughnessMap->Bind(3);
         else
-        { 
             Texture2D::WhiteTexture()->Bind(3);
-            m_Shader->SetInt("u_UseAOMap", 0);
-        }
-        m_Shader->SetInt("u_AOMap", 3);
 
-        // Slot 4: Emissive
-        if (m_EmissiveMap)
-        { 
-            m_EmissiveMap->Bind(4);
-            m_Shader->SetInt("u_UseEmissiveMap", 1);
-        }
+        m_Shader->SetInt("u_RoughnessMap", 3);
+
+        // Slot 4: Ambient Occlusion (AO)
+        if (m_AOMap)
+            m_AOMap->Bind(4);
         else
-        { 
             Texture2D::WhiteTexture()->Bind(4);
-            m_Shader->SetInt("u_UseEmissiveMap", 0);
-        }
-        m_Shader->SetInt("u_EmissiveMap", 4);
+
+        m_Shader->SetInt("u_AOMap", 4);
+
+        // Slot 5: Emissive
+        if (m_EmissiveMap)
+            m_EmissiveMap->Bind(5);
+        else
+            Texture2D::WhiteTexture()->Bind(5);
+
+        m_Shader->SetInt("u_EmissiveMap", 5);
     }
 
 	Ref<Material> Material::CreateDefault(const Ref<Shader>& shader)
 	{
 		return CreateRef<Material>(shader);
 	}
+
+    Ref<Material> Material::Copy(const Ref<Material>& other)
+    {
+        Ref<Material> mat = CreateRef<Material>(other->GetShader());
+
+        mat->SetParameters(other->GetParameters());
+        mat->SetTransparent(other->IsTransparent());
+
+        mat->SetAlbedoMap(other->GetAlbedoMap(), other->GetAlbedoPath());
+        mat->SetNormalMap(other->GetNormalMap(), other->GetNormalPath());
+        mat->SetMetalnessMap(other->GetMetalnessMap(), other->GetMetalPath());
+        mat->SetRoughnessMap(other->GetRoughnessMap(), other->GetRoughPath());
+        mat->SetAOMap(other->GetAOMap(), other->GetAOPath());
+        mat->SetEmissiveMap(other->GetEmissiveMap(), other->GetEmissivePath());
+
+        return mat;
+    }
 }

@@ -3,7 +3,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-namespace RXNEngine {
+namespace RXNEditor {
 
     class UI
     {

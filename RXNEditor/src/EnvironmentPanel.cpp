@@ -18,12 +18,12 @@ namespace RXNEditor {
 	void EnvironmentPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Settings");
-		RXNEngine::UI::DrawFloatControl("Exposure", m_Context->GetSettings().Exposure, 0.1, 0.0f, 100.0f);
-		RXNEngine::UI::DrawFloatControl("Gamma", m_Context->GetSettings().Gamma, 0.1, 0.0f, 100.0f);
+		UI::DrawFloatControl("Exposure", m_Context->GetSettings().Exposure, 0.1, 0.0f, 100.0f);
+		UI::DrawFloatControl("Gamma", m_Context->GetSettings().Gamma, 0.1, 0.0f, 100.0f);
 
-		RXNEngine::UI::DrawFloatControl("Bloom Intensity", m_Context->GetSettings().BloomIntensity, 0.1f, 0.0f, 100.0f, 110.0f);
+		UI::DrawFloatControl("Bloom Intensity", m_Context->GetSettings().BloomIntensity, 0.1f, 0.0f, 100.0f, 110.0f);
 
-		RXNEngine::UI::DrawCheckbox("Show Colliders", m_Context->GetSettings().ShowColliders);
+		UI::DrawCheckbox("Show Colliders", m_Context->GetSettings().ShowColliders);
 		ImGui::End();
 	}
 }

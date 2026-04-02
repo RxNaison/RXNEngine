@@ -8,6 +8,7 @@
 
 #include "RXNEngine/Asset/ModelImporter.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
+#include "RXNEngine/Serialization/MaterialSerializer.h"
 
 namespace RXNEditor {
 
@@ -322,129 +323,84 @@ namespace RXNEditor {
             });
 
 
-        DrawComponent<StaticMeshComponent>("Mesh", entity, [](auto& component)
+        DrawComponent<StaticMeshComponent>("Static Mesh", entity, [&](auto& component)
             {
-                ImGui::Columns(2);
-                ImGui::SetColumnWidth(0, 100.0f);
-                ImGui::Text("Mesh Asset");
-                ImGui::NextColumn();
+                auto assetManager = Application::Get().GetSubsystem<AssetManager>();
 
-                std::string label = component.Mesh ? component.AssetPath.substr(component.AssetPath.find_last_of("/\\") + 1) : "Drop Model Here";
-
-				auto assetManager = Application::Get().GetSubsystem<AssetManager>();
-
-                if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
-                {
-                    std::string path = FileDialogs::OpenFile("*.obj *fbx *.glb *.gltf");
-                    if (!path.empty())
-                    {
-                        component.AssetPath = path;
-                        component.Mesh = assetManager->GetMesh(path);
-                        component.SubmeshIndex = 0;
-                        component.MaterialTableOverride = nullptr;
-                    }
-                }
+                ImGui::Text("Mesh");
+                ImGui::SameLine(100.0f);
+                std::string meshLabel = component.Mesh ? component.AssetPath.substr(component.AssetPath.find_last_of("/\\") + 1) : "None";
+                ImGui::Button(meshLabel.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
 
                 if (ImGui::BeginDragDropTarget())
                 {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
                         std::string path = (const char*)payload->Data;
-                        if (!path.empty())
+                        if (path.ends_with(".gltf") || path.ends_with(".obj"))
                         {
                             component.AssetPath = path;
                             component.Mesh = assetManager->GetMesh(path);
-                            component.SubmeshIndex = 0;
                             component.MaterialTableOverride = nullptr;
                         }
                     }
                     ImGui::EndDragDropTarget();
                 }
 
-                ImGui::Columns(1);
+                if (!component.Mesh) return;
 
-                if (component.Mesh)
+                ImGui::Separator();
+
+                ImGui::Text("Material");
+                ImGui::SameLine(100.0f);
+
+                std::string matName = component.MaterialAssetPath.empty() ? "Default Material" : component.MaterialAssetPath.substr(component.MaterialAssetPath.find_last_of("/\\") + 1);
+
+                ImGui::Button(matName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
+
+                if (ImGui::BeginDragDropTarget())
                 {
-                    ImGui::Separator();
-
-                    uint32_t submeshCount = (uint32_t)component.Mesh->GetSubmeshes().size();
-                    if (submeshCount > 1)
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
-                        int submeshIndex = (int)component.SubmeshIndex;
-                        if (ImGui::SliderInt("Submesh Index", &submeshIndex, 0, submeshCount - 1))
+                        std::string path = (const char*)payload->Data;
+                        if (path.ends_with(".rxnmat"))
                         {
-                            component.SubmeshIndex = (uint32_t)submeshIndex;
-                            component.MaterialTableOverride = nullptr;
-                        }
-
-                        ImGui::Text("Node Name: %s", component.Mesh->GetSubmeshes()[component.SubmeshIndex].NodeName.c_str());
-                    }
-
-                    ImGui::Separator();
-                    ImGui::Text("Material Properties");
-
-                    bool hasOverride = component.MaterialTableOverride != nullptr;
-                    if (UI::DrawCheckbox("Override Default Material", hasOverride, 175.0f))
-                    {
-                        if (hasOverride)
-                        {
-                            uint32_t matIndex = component.Mesh->GetSubmeshes()[component.SubmeshIndex].MaterialIndex;
-                            Ref<Material> defaultMat = component.Mesh->GetMaterials()[matIndex];
-
-                            component.MaterialTableOverride = Material::CreateDefault(defaultMat->GetShader());
-
-                            component.MaterialTableOverride->SetTransparent(defaultMat->IsTransparent());
-
-                            auto params = defaultMat->GetParameters();
-                            component.MaterialTableOverride->SetAlbedoColor(params.AlbedoColor);
-                            component.MaterialTableOverride->SetRoughness(params.Roughness);
-                            component.MaterialTableOverride->SetMetalness(params.Metalness);
-                            component.MaterialTableOverride->SetAO(params.AO);
-                            component.MaterialTableOverride->SetEmissiveColor(params.EmissiveColor);
-
-                            component.MaterialTableOverride->SetAlbedoMap(defaultMat->GetAlbedoMap());
-                            component.MaterialTableOverride->SetNormalMap(defaultMat->GetNormalMap());
-                            component.MaterialTableOverride->SetMetalnessRoughnessMap(defaultMat->GetMetalnessRoughnessMap());
-                            component.MaterialTableOverride->SetAOMap(defaultMat->GetAOMap());
-                        }
-                        else
-                        {
-                            component.MaterialTableOverride = nullptr;
+                            component.MaterialTableOverride = assetManager->GetMaterial(path);
+                            component.MaterialAssetPath = path;
                         }
                     }
+                    ImGui::EndDragDropTarget();
+                }
 
-                    uint32_t activeMatIndex = component.Mesh->GetSubmeshes()[component.SubmeshIndex].MaterialIndex;
-                    Ref<Material> activeMaterial = component.MaterialTableOverride ?
-                        component.MaterialTableOverride :
-                        component.Mesh->GetMaterials()[activeMatIndex];
-
-                    if (!hasOverride)
-                        ImGui::BeginDisabled();
-
-                    auto params = activeMaterial->GetParameters();
-
-                    if (UI::DrawColor4Control("Albedo", params.AlbedoColor))
+                if (component.MaterialTableOverride)
+                {
+                    if (ImGui::Button("Reset to Default"))
                     {
-                        activeMaterial->SetAlbedoColor(params.AlbedoColor);
-                        activeMaterial->SetTransparent(params.AlbedoColor.a < 1.0f);
+                        component.MaterialTableOverride = nullptr;
+                        component.MaterialAssetPath = "";
                     }
 
-                    if (UI::DrawFloatControl("Roughness", params.Roughness, 0.0f, 1.0f))
-                        activeMaterial->SetRoughness(params.Roughness);
+                    ImGui::SameLine();
+                    if (ImGui::Button("Apply to Entire Model"))
+                    {
+                        auto& rc = entity.GetComponent<RelationshipComponent>();
+                        Entity rootEntity = entity;
+                        if (rc.ParentHandle != 0)
+                            rootEntity = m_Context->GetEntityByUUID(rc.ParentHandle);
 
-                    if (UI::DrawFloatControl("Metalness", params.Metalness, 0.0f, 1.0f))
-                        activeMaterial->SetMetalness(params.Metalness);
-
-                    if (UI::DrawFloatControl("AO Strength", params.AO, 0.01f, 0.0f, 1.0f))
-                        activeMaterial->SetAO(params.AO);
-
-                    if (UI::DrawColor3Control("Emissive", params.EmissiveColor))
-                        activeMaterial->SetEmissiveColor(params.EmissiveColor);
-
-                    if (!hasOverride) ImGui::EndDisabled();
+                        for (UUID childID : rootEntity.GetComponent<RelationshipComponent>().Children)
+                        {
+                            Entity child = m_Context->GetEntityByUUID(childID);
+                            if (child && child.HasComponent<StaticMeshComponent>())
+                            {
+                                auto& childMc = child.GetComponent<StaticMeshComponent>();
+                                childMc.MaterialTableOverride = component.MaterialTableOverride;
+                                childMc.MaterialAssetPath = component.MaterialAssetPath;
+                            }
+                        }
+                    }
                 }
             });
-
 
         DrawComponent<DirectionalLightComponent>("Directional Light", entity, [](auto& component)
             {
@@ -638,7 +594,8 @@ namespace RXNEditor {
                                                 buttonText = "Invalid Entity";
                                         }
 
-                                        ImGui::Button(buttonText.c_str(), ImVec2(100.0f, 0.0f));
+                                        std::string buttonID = buttonText + "##" + field.Name;
+                                        ImGui::Button(buttonID.c_str(), ImVec2(100.0f, 0.0f));
 
                                         if (ImGui::BeginDragDropTarget())
                                         {

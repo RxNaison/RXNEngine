@@ -4,6 +4,7 @@
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNengine/Core/Application.h"
+#include "RXNEngine/Serialization/MaterialSerializer.h"
 
 namespace RXNEngine {
 
@@ -73,6 +74,29 @@ namespace RXNEngine {
         return newTexture;
     }
 
+    Ref<Material> AssetManager::GetMaterial(const std::string& path)
+    {
+        std::string normalizedPath = std::filesystem::path(path).generic_string();
+
+        if (m_Materials.find(normalizedPath) != m_Materials.end())
+            return m_Materials[normalizedPath];
+
+        Ref<Shader> defaultShader = GetShader("res/shaders/pbr.glsl");
+        Ref<Material> newMaterial = Material::CreateDefault(defaultShader);
+
+        newMaterial->SetAssetPath(normalizedPath);
+
+        MaterialSerializer serializer(newMaterial);
+        if (serializer.Deserialize(normalizedPath))
+        {
+            m_Materials[normalizedPath] = newMaterial;
+            return newMaterial;
+        }
+
+        RXN_CORE_ERROR("Could not load Material: {0}", normalizedPath);
+        return nullptr;
+    }
+
     void AssetManager::Clear()
     {
         m_Meshes.clear();
@@ -115,7 +139,7 @@ namespace RXNEngine {
         AsyncLoadTask* task = m_FinishedTasks.front();
         m_FinishedTasks.erase(m_FinishedTasks.begin());
 
-        Ref<StaticMesh> gpuMesh = ModelImporter::BuildMeshFromData(task->Data);
+        Ref<StaticMesh> gpuMesh = ModelImporter::BuildMeshFromData(task->Data, task->Filepath);
 
         m_Meshes[task->Filepath] = gpuMesh;
 

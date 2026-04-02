@@ -1,6 +1,8 @@
 #include "rxnpch.h"
 #include "ContentBrowserPanel.h"
 #include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Asset/AssetManager.h"
+#include "RXNEngine/Serialization/MaterialSerializer.h"
 
 #include <imgui.h>
 
@@ -56,14 +58,6 @@ namespace RXNEditor {
 
         ImGui::Begin("Content Browser");
 
-        if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
-        {
-            if (ImGui::MenuItem("Content Browser Settings"))
-                m_SettingsWindow = true;
-
-            ImGui::EndPopup();
-        }
-
         DrawTopBar();
 
         ImGui::Separator();
@@ -81,6 +75,41 @@ namespace RXNEditor {
 
             ImGui::TableNextColumn();
             ImGui::BeginChild("GridPanel");
+
+            if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+            {
+                if (ImGui::MenuItem("Content Browser Settings"))
+                    m_SettingsWindow = true;
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Create New Material"))
+                {
+                    auto assetManager = Application::Get().GetSubsystem<AssetManager>();
+                    Ref<Shader> defaultShader = assetManager->GetShader("res/shaders/pbr.glsl");
+                    Ref<Material> newMaterial = Material::CreateDefault(defaultShader);
+
+                    std::string newFilename = "NewMaterial.rxnmat";
+                    std::filesystem::path newFilePath = m_CurrentDirectory / newFilename;
+
+                    int count = 1;
+                    while (std::filesystem::exists(newFilePath))
+                    {
+                        newFilename = "NewMaterial (" + std::to_string(count) + ").rxnmat";
+                        newFilePath = m_CurrentDirectory / newFilename;
+                        count++;
+                    }
+
+                    MaterialSerializer serializer(newMaterial);
+                    serializer.Serialize(newFilePath.string());
+
+                    RXN_CORE_INFO("Created new material at {0}", newFilePath.string());
+                    Refresh();
+                }
+
+                ImGui::EndPopup();
+            }
+
             DrawContentGrid();
             ImGui::EndChild();
 
@@ -183,6 +212,15 @@ namespace RXNEditor {
                 if (ImGui::MenuItem("Delete"))
                     DeleteItem(item.Path);
 
+                if (item.Path.extension() == ".rxnmat")
+                {
+                    if (ImGui::MenuItem("Edit Material"))
+                    {
+                        if (m_MaterialOpenCallback)
+                            m_MaterialOpenCallback(item.Path.string());
+                    }
+                }
+
                 ImGui::EndPopup();
             }
 
@@ -199,10 +237,18 @@ namespace RXNEditor {
 
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
-                if (item.IsDirectory)
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {
-                    m_CurrentDirectory /= item.Path.filename();
-                    Refresh();
+                    if (item.IsDirectory)
+                    {
+                        m_CurrentDirectory /= item.Path.filename();
+                        Refresh();
+                    }
+                    else if (item.Path.extension() == ".rxnmat")
+                    {
+                        if (m_MaterialOpenCallback)
+                            m_MaterialOpenCallback(item.Path.string());
+                    }
                 }
             }
 

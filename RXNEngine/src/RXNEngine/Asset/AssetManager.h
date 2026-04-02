@@ -19,6 +19,7 @@ namespace RXNEngine {
         Ref<StaticMesh> GetMesh(const std::string& path);
         Ref<Texture2D> GetTexture(const std::string& path);
         Ref<Shader> GetShader(const std::string& path);
+        Ref<Material> GetMaterial(const std::string& path);
 
         void Clear();
 
@@ -37,6 +38,7 @@ namespace RXNEngine {
         std::unordered_map<std::string, Ref<StaticMesh>> m_Meshes;
         std::unordered_map<std::string, Ref<Shader>> m_Shaders;
         std::unordered_map<std::string, Ref<Texture2D>> m_Textures;
+        std::unordered_map<std::string, Ref<Material>> m_Materials;
     };
 
 }

@@ -36,6 +36,11 @@ namespace RXNEditor {
                 m_PendingImportPath = path;
                 m_ShowImportDialog = true;
             });
+        m_ContentBrowserPanel.SetMaterialOpenCallback([this](const std::string& filepath)
+            {
+                auto mat = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(filepath);
+                m_MaterialEditorPanel.SetContext(mat, filepath);
+            });
 	}
 
 	void EditorLayer::OnDetach()
@@ -225,6 +230,7 @@ namespace RXNEditor {
         m_SceneHierarchyPanel.OnImGuiRender();
         m_ContentBrowserPanel.OnImGuiRender();
         m_EnvironmentPanel.OnImGuiRender();
+        m_MaterialEditorPanel.OnImGuiRender();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");

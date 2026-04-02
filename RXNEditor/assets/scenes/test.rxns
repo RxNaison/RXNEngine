@@ -18,6 +18,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
     RigidbodyComponent:
       Type: 0
       Mass: 1
@@ -76,6 +77,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
     RigidbodyComponent:
       Type: 0
       Mass: 1
@@ -105,6 +107,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
     RigidbodyComponent:
       Type: 0
       Mass: 1
@@ -134,6 +137,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 8143408826906669679
     TagComponent:
       Tag: Floor
@@ -148,6 +152,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
     RigidbodyComponent:
       Type: 0
       Mass: 1
@@ -298,6 +303,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 13600245767358562742
     TagComponent:
       Tag: Plane.013_0
@@ -312,6 +318,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 1
+      MaterialAssetPath: ""
   - Entity: 13428986380014461845
     TagComponent:
       Tag: Plane.013_0
@@ -326,6 +333,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 2
+      MaterialAssetPath: ""
   - Entity: 8351282863422315045
     TagComponent:
       Tag: Circle.038_1
@@ -340,6 +348,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 3
+      MaterialAssetPath: ""
   - Entity: 12794014329831494862
     TagComponent:
       Tag: Circle.038_1
@@ -354,6 +363,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 4
+      MaterialAssetPath: ""
   - Entity: 15097526715012267934
     TagComponent:
       Tag: Circle.037_2
@@ -368,6 +378,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 5
+      MaterialAssetPath: ""
   - Entity: 3085956774660115290
     TagComponent:
       Tag: Circle.037_2
@@ -382,6 +393,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 6
+      MaterialAssetPath: ""
   - Entity: 5201983896891254625
     TagComponent:
       Tag: Circle.034_3
@@ -396,6 +408,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 7
+      MaterialAssetPath: ""
   - Entity: 5540750664703012040
     TagComponent:
       Tag: Circle.031_4
@@ -410,6 +423,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 8
+      MaterialAssetPath: ""
   - Entity: 12041828526243297238
     TagComponent:
       Tag: Circle.016_5
@@ -424,6 +438,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 9
+      MaterialAssetPath: ""
   - Entity: 18417587807887796814
     TagComponent:
       Tag: Cube.003_6
@@ -438,6 +453,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 10
+      MaterialAssetPath: ""
   - Entity: 7337435931392498992
     TagComponent:
       Tag: Circle.025_7
@@ -452,6 +468,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 11
+      MaterialAssetPath: ""
   - Entity: 17323243471430220088
     TagComponent:
       Tag: Circle.006_8
@@ -466,6 +483,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 12
+      MaterialAssetPath: ""
   - Entity: 13137416030288936219
     TagComponent:
       Tag: Circle.012_9
@@ -480,6 +498,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 13
+      MaterialAssetPath: ""
   - Entity: 10615546523572742323
     TagComponent:
       Tag: Circle.003_10
@@ -494,6 +513,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 14
+      MaterialAssetPath: ""
   - Entity: 16298283468991300900
     TagComponent:
       Tag: Circle.002_11
@@ -508,6 +528,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 15
+      MaterialAssetPath: ""
   - Entity: 11178872671220011248
     TagComponent:
       Tag: Circle.000_12
@@ -522,6 +543,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 16
+      MaterialAssetPath: ""
   - Entity: 9918981126069130319
     TagComponent:
       Tag: Cylinder.000_13
@@ -536,6 +558,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 17
+      MaterialAssetPath: ""
   - Entity: 17705741481375189036
     TagComponent:
       Tag: Circle.018_14
@@ -550,6 +573,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 18
+      MaterialAssetPath: ""
   - Entity: 1059428699463346259
     TagComponent:
       Tag: Circle.061_15
@@ -564,6 +588,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 19
+      MaterialAssetPath: ""
   - Entity: 2362246203391010556
     TagComponent:
       Tag: Cube.010_16
@@ -578,6 +603,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 20
+      MaterialAssetPath: ""
   - Entity: 4166875193854679622
     TagComponent:
       Tag: Cube.009_17
@@ -592,6 +618,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 21
+      MaterialAssetPath: ""
   - Entity: 3309161211827727420
     TagComponent:
       Tag: Cube.007_18
@@ -606,6 +633,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 22
+      MaterialAssetPath: ""
   - Entity: 6277819072254635842
     TagComponent:
       Tag: Cube.007_18
@@ -620,6 +648,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 23
+      MaterialAssetPath: ""
   - Entity: 1975034240307028554
     TagComponent:
       Tag: Circle.041_19
@@ -634,6 +663,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 24
+      MaterialAssetPath: ""
   - Entity: 5885653495254045018
     TagComponent:
       Tag: Cylinder.006_20
@@ -648,6 +678,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 25
+      MaterialAssetPath: ""
   - Entity: 11269949912052467097
     TagComponent:
       Tag: Circle.060_21
@@ -662,6 +693,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 26
+      MaterialAssetPath: ""
   - Entity: 8398868108156222578
     TagComponent:
       Tag: Circle.056_22
@@ -676,6 +708,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 27
+      MaterialAssetPath: ""
   - Entity: 8326273662239788494
     TagComponent:
       Tag: Cube.004_23
@@ -690,6 +723,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 28
+      MaterialAssetPath: ""
   - Entity: 10958867626876669762
     TagComponent:
       Tag: Cube.004_23
@@ -704,6 +738,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 29
+      MaterialAssetPath: ""
   - Entity: 17093497239494890400
     TagComponent:
       Tag: Cylinder.009_24
@@ -718,6 +753,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 30
+      MaterialAssetPath: ""
   - Entity: 15922764965419679947
     TagComponent:
       Tag: Cylinder.009_24
@@ -732,6 +768,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 31
+      MaterialAssetPath: ""
   - Entity: 17542154849558249107
     TagComponent:
       Tag: Plane.011_25
@@ -746,6 +783,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 32
+      MaterialAssetPath: ""
   - Entity: 738386593384683781
     TagComponent:
       Tag: Plane.010_26
@@ -760,6 +798,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 33
+      MaterialAssetPath: ""
   - Entity: 18281466872012947616
     TagComponent:
       Tag: Plane.010_26
@@ -774,6 +813,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 34
+      MaterialAssetPath: ""
   - Entity: 16505599751320704050
     TagComponent:
       Tag: Cube_27
@@ -788,6 +828,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 35
+      MaterialAssetPath: ""
   - Entity: 18167157279363103040
     TagComponent:
       Tag: Cylinder.003_29
@@ -802,6 +843,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 36
+      MaterialAssetPath: ""
   - Entity: 9977789356231525211
     TagComponent:
       Tag: Plane.007_28
@@ -816,6 +858,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 37
+      MaterialAssetPath: ""
   - Entity: 7233376843963457413
     TagComponent:
       Tag: Plane.002_30
@@ -830,6 +873,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 38
+      MaterialAssetPath: ""
   - Entity: 3467507632183062594
     TagComponent:
       Tag: Plane.001_31
@@ -844,6 +888,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 39
+      MaterialAssetPath: ""
   - Entity: 16287340142077274983
     TagComponent:
       Tag: Cylinder.002_32
@@ -858,6 +903,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 40
+      MaterialAssetPath: ""
   - Entity: 9057183804001119526
     TagComponent:
       Tag: Plane.003_33
@@ -872,6 +918,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 41
+      MaterialAssetPath: ""
   - Entity: 9393550261919343073
     TagComponent:
       Tag: Plane.003_33
@@ -886,6 +933,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 42
+      MaterialAssetPath: ""
   - Entity: 18061614379604771926
     TagComponent:
       Tag: Plane.003_33
@@ -900,6 +948,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 43
+      MaterialAssetPath: ""
   - Entity: 3219978886554996103
     TagComponent:
       Tag: Circle.040_34
@@ -914,6 +963,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 44
+      MaterialAssetPath: ""
   - Entity: 17048373297953069101
     TagComponent:
       Tag: Plane.009_35
@@ -928,6 +978,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 45
+      MaterialAssetPath: ""
   - Entity: 7977245398676575775
     TagComponent:
       Tag: Plane.004_36
@@ -942,6 +993,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 46
+      MaterialAssetPath: ""
   - Entity: 7619976209740821669
     TagComponent:
       Tag: Circle.051_37
@@ -956,6 +1008,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 47
+      MaterialAssetPath: ""
   - Entity: 5377004428475693565
     TagComponent:
       Tag: Circle.051_37
@@ -970,6 +1023,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 48
+      MaterialAssetPath: ""
   - Entity: 3279065227869929173
     TagComponent:
       Tag: Circle.024_38
@@ -984,6 +1038,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 49
+      MaterialAssetPath: ""
   - Entity: 6697755087398390799
     TagComponent:
       Tag: Plane_39
@@ -998,6 +1053,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 50
+      MaterialAssetPath: ""
   - Entity: 15073910313021764866
     TagComponent:
       Tag: Circle.036_40
@@ -1012,6 +1068,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 51
+      MaterialAssetPath: ""
   - Entity: 16672749000860045090
     TagComponent:
       Tag: Circle.035_41
@@ -1026,6 +1083,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 52
+      MaterialAssetPath: ""
   - Entity: 2353235543731373720
     TagComponent:
       Tag: Circle.033_42
@@ -1040,6 +1098,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 53
+      MaterialAssetPath: ""
   - Entity: 13487629814118230669
     TagComponent:
       Tag: Circle.030_43
@@ -1054,6 +1113,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 54
+      MaterialAssetPath: ""
   - Entity: 14136013093648628204
     TagComponent:
       Tag: Circle.027_44
@@ -1068,6 +1128,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 55
+      MaterialAssetPath: ""
   - Entity: 17690775802030753760
     TagComponent:
       Tag: Circle.026_45
@@ -1082,6 +1143,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 56
+      MaterialAssetPath: ""
   - Entity: 16393162367606735045
     TagComponent:
       Tag: Circle.020_46
@@ -1096,6 +1158,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 57
+      MaterialAssetPath: ""
   - Entity: 7802023195884728180
     TagComponent:
       Tag: Circle.010_47
@@ -1110,6 +1173,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 58
+      MaterialAssetPath: ""
   - Entity: 1327486859421852156
     TagComponent:
       Tag: Circle.009_48
@@ -1124,6 +1188,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 59
+      MaterialAssetPath: ""
   - Entity: 6842088858543949815
     TagComponent:
       Tag: Circle.001_49
@@ -1138,6 +1203,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 60
+      MaterialAssetPath: ""
   - Entity: 3061395818263758818
     TagComponent:
       Tag: Cube.006_50
@@ -1152,6 +1218,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 61
+      MaterialAssetPath: ""
   - Entity: 1088512734857128310
     TagComponent:
       Tag: Circle.050_51
@@ -1166,6 +1233,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 62
+      MaterialAssetPath: ""
   - Entity: 3953884370044326943
     TagComponent:
       Tag: Circle.050_51
@@ -1180,6 +1248,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 63
+      MaterialAssetPath: ""
   - Entity: 7041735908682279196
     TagComponent:
       Tag: Circle.048_52
@@ -1194,6 +1263,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 64
+      MaterialAssetPath: ""
   - Entity: 14788500037112967091
     TagComponent:
       Tag: Plane.005_53
@@ -1208,6 +1278,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 65
+      MaterialAssetPath: ""
   - Entity: 11876151023869025892
     TagComponent:
       Tag: Circle.007_54
@@ -1222,6 +1293,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 66
+      MaterialAssetPath: ""
   - Entity: 13669243609566513265
     TagComponent:
       Tag: Circle.017_55
@@ -1236,6 +1308,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 67
+      MaterialAssetPath: ""
   - Entity: 178227394912827205
     TagComponent:
       Tag: Circle.004_56
@@ -1250,6 +1323,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 68
+      MaterialAssetPath: ""
   - Entity: 16933370758717708413
     TagComponent:
       Tag: Circle.005_57
@@ -1264,6 +1338,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 69
+      MaterialAssetPath: ""
   - Entity: 8596756465101681038
     TagComponent:
       Tag: Circle.008_58
@@ -1278,6 +1353,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 70
+      MaterialAssetPath: ""
   - Entity: 3981430838485640107
     TagComponent:
       Tag: Circle.011_59
@@ -1292,6 +1368,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 71
+      MaterialAssetPath: ""
   - Entity: 14779263420634184348
     TagComponent:
       Tag: Circle.013_60
@@ -1306,6 +1383,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 72
+      MaterialAssetPath: ""
   - Entity: 3798023924905655708
     TagComponent:
       Tag: Circle.014_61
@@ -1320,6 +1398,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 73
+      MaterialAssetPath: ""
   - Entity: 16566059294053494310
     TagComponent:
       Tag: Plane.015_62
@@ -1334,6 +1413,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/porsche/scene.gltf
       SubmeshIndex: 74
+      MaterialAssetPath: ""
   - Entity: 18099224266103788785
     TagComponent:
       Tag: Cube
@@ -1487,6 +1567,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 4136984385437136225
     TagComponent:
       Tag: node_Adam_BloodyHeadBracket_-5606
@@ -1501,6 +1582,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 1
+      MaterialAssetPath: ""
   - Entity: 17894408738186424041
     TagComponent:
       Tag: node_Adam_monitor_back_-5608
@@ -1515,6 +1597,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 2
+      MaterialAssetPath: ""
   - Entity: 12001177348105736700
     TagComponent:
       Tag: node_cables_-5610
@@ -1529,6 +1612,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 3
+      MaterialAssetPath: ""
   - Entity: 3122712192269321487
     TagComponent:
       Tag: node_Eye_L_Blend_00_-5612
@@ -1543,6 +1627,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 4
+      MaterialAssetPath: ""
   - Entity: 15454245810615832188
     TagComponent:
       Tag: node_Eye_L_Blend_01_-5614
@@ -1557,6 +1642,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 5
+      MaterialAssetPath: ""
   - Entity: 5090737177781202234
     TagComponent:
       Tag: node_Eye_L_Blend_02_-5616
@@ -1571,6 +1657,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 6
+      MaterialAssetPath: ""
   - Entity: 14846715984965470747
     TagComponent:
       Tag: node_Eye_L_Blend_03_-5618
@@ -1585,6 +1672,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 7
+      MaterialAssetPath: ""
   - Entity: 15961424197232422404
     TagComponent:
       Tag: node_Eye_L_Blend_04_-5620
@@ -1599,6 +1687,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 8
+      MaterialAssetPath: ""
   - Entity: 16638262999120814227
     TagComponent:
       Tag: node_Eye_L_Blend_05_-5622
@@ -1613,6 +1702,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 9
+      MaterialAssetPath: ""
   - Entity: 12460747669722291738
     TagComponent:
       Tag: node_Eye_L_BlendBase_-5624
@@ -1627,6 +1717,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 10
+      MaterialAssetPath: ""
   - Entity: 11286742969686153304
     TagComponent:
       Tag: node_Eye_L_BlendScrew_00_-5626
@@ -1641,6 +1732,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 11
+      MaterialAssetPath: ""
   - Entity: 2270131831297139105
     TagComponent:
       Tag: node_Eye_L_BlendScrew_01_-5628
@@ -1655,6 +1747,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 12
+      MaterialAssetPath: ""
   - Entity: 8079410881517586508
     TagComponent:
       Tag: node_Eye_L_BlendScrew_02_-5630
@@ -1669,6 +1762,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 13
+      MaterialAssetPath: ""
   - Entity: 13354124530175810641
     TagComponent:
       Tag: node_Eye_L_BlendScrew_03_-5632
@@ -1683,6 +1777,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 14
+      MaterialAssetPath: ""
   - Entity: 12571676221941915207
     TagComponent:
       Tag: node_Eye_L_BlendScrew_04_-5634
@@ -1697,6 +1792,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 15
+      MaterialAssetPath: ""
   - Entity: 5303144255982660805
     TagComponent:
       Tag: node_Eye_L_BlendScrew_05_-5636
@@ -1711,6 +1807,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 16
+      MaterialAssetPath: ""
   - Entity: 9617395938018969517
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_01_-5638
@@ -1725,6 +1822,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 17
+      MaterialAssetPath: ""
   - Entity: 8922600685148977309
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_02_-5640
@@ -1739,6 +1837,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 18
+      MaterialAssetPath: ""
   - Entity: 6051458987175858346
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_03_-5642
@@ -1753,6 +1852,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 19
+      MaterialAssetPath: ""
   - Entity: 7142057938567529717
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_04_-5644
@@ -1767,6 +1867,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 20
+      MaterialAssetPath: ""
   - Entity: 104101602430919479
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_05_-5646
@@ -1781,6 +1882,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 21
+      MaterialAssetPath: ""
   - Entity: 1526860087635317676
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_06_-5648
@@ -1795,6 +1897,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 22
+      MaterialAssetPath: ""
   - Entity: 7404423462613109361
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_09_-5650
@@ -1809,6 +1912,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 23
+      MaterialAssetPath: ""
   - Entity: 15435082289408062428
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_10_-5652
@@ -1823,6 +1927,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 24
+      MaterialAssetPath: ""
   - Entity: 2195469893530325106
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_11_-5654
@@ -1837,6 +1942,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 25
+      MaterialAssetPath: ""
   - Entity: 1331540035336439760
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_12_-5656
@@ -1851,6 +1957,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 26
+      MaterialAssetPath: ""
   - Entity: 12007467056566520461
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_13_-5658
@@ -1865,6 +1972,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 27
+      MaterialAssetPath: ""
   - Entity: 7402704428474901882
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_14_-5660
@@ -1879,6 +1987,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 28
+      MaterialAssetPath: ""
   - Entity: 17315676131458254287
     TagComponent:
       Tag: node_Eye_L_LowerEyelid_-5732
@@ -1893,6 +2002,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 29
+      MaterialAssetPath: ""
   - Entity: 13570122510508191615
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_08_-5828
@@ -1907,6 +2017,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 30
+      MaterialAssetPath: ""
   - Entity: 7824332980265552574
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_15_-5830
@@ -1921,6 +2032,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 31
+      MaterialAssetPath: ""
   - Entity: 11455801660540471491
     TagComponent:
       Tag: node_Eye_L_Sclera_-5734
@@ -1935,6 +2047,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 32
+      MaterialAssetPath: ""
   - Entity: 7799273506076248048
     TagComponent:
       Tag: node_Eye_L_Lens_-5962
@@ -1949,6 +2062,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 33
+      MaterialAssetPath: ""
   - Entity: 3788836298732869812
     TagComponent:
       Tag: node_Eye_L_Side1_-5736
@@ -1963,6 +2077,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 34
+      MaterialAssetPath: ""
   - Entity: 6555957964548342864
     TagComponent:
       Tag: node_Eye_L_Side2_-5738
@@ -1977,6 +2092,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 35
+      MaterialAssetPath: ""
   - Entity: 1604568308443256882
     TagComponent:
       Tag: node_Eye_L_UpperEyelid_-5740
@@ -1991,6 +2107,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 36
+      MaterialAssetPath: ""
   - Entity: 6980523131521893851
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_00_-5772
@@ -2005,6 +2122,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 37
+      MaterialAssetPath: ""
   - Entity: 9161174477578855625
     TagComponent:
       Tag: node_Eye_L_EyelidSegment_07_-5774
@@ -2019,6 +2137,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 38
+      MaterialAssetPath: ""
   - Entity: 13568667853937670530
     TagComponent:
       Tag: node_Eye_R_Blend_00_-5664
@@ -2033,6 +2152,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 39
+      MaterialAssetPath: ""
   - Entity: 1487254619819255779
     TagComponent:
       Tag: node_Eye_R_Blend_01_-5666
@@ -2047,6 +2167,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 40
+      MaterialAssetPath: ""
   - Entity: 3506706903796353875
     TagComponent:
       Tag: node_Eye_R_Blend_02_-5668
@@ -2061,6 +2182,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 41
+      MaterialAssetPath: ""
   - Entity: 595173273630120059
     TagComponent:
       Tag: node_Eye_R_Blend_03_-5670
@@ -2075,6 +2197,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 42
+      MaterialAssetPath: ""
   - Entity: 16042940411536657232
     TagComponent:
       Tag: node_Eye_R_Blend_04_-5672
@@ -2089,6 +2212,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 43
+      MaterialAssetPath: ""
   - Entity: 16118352695746315585
     TagComponent:
       Tag: node_Eye_R_Blend_05_-5674
@@ -2103,6 +2227,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 44
+      MaterialAssetPath: ""
   - Entity: 8887257096678470833
     TagComponent:
       Tag: node_Eye_R_BlendBase_-5676
@@ -2117,6 +2242,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 45
+      MaterialAssetPath: ""
   - Entity: 3059785628217300260
     TagComponent:
       Tag: node_Eye_R_BlendScrew_00_-5678
@@ -2131,6 +2257,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 46
+      MaterialAssetPath: ""
   - Entity: 15607954271520690024
     TagComponent:
       Tag: node_Eye_R_BlendScrew_01_-5680
@@ -2145,6 +2272,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 47
+      MaterialAssetPath: ""
   - Entity: 4184499010524742536
     TagComponent:
       Tag: node_Eye_R_BlendScrew_02_-5682
@@ -2159,6 +2287,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 48
+      MaterialAssetPath: ""
   - Entity: 13398537045799301082
     TagComponent:
       Tag: node_Eye_R_BlendScrew_03_-5684
@@ -2173,6 +2302,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 49
+      MaterialAssetPath: ""
   - Entity: 10281004880148047624
     TagComponent:
       Tag: node_Eye_R_BlendScrew_04_-5686
@@ -2187,6 +2317,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 50
+      MaterialAssetPath: ""
   - Entity: 9543049204540694375
     TagComponent:
       Tag: node_Eye_R_BlendScrew_05_-5688
@@ -2201,6 +2332,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 51
+      MaterialAssetPath: ""
   - Entity: 6864608055934694010
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_01_-5690
@@ -2215,6 +2347,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 52
+      MaterialAssetPath: ""
   - Entity: 18032426804005285772
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_02_-5692
@@ -2229,6 +2362,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 53
+      MaterialAssetPath: ""
   - Entity: 9945570067695579598
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_03_-5694
@@ -2243,6 +2377,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 54
+      MaterialAssetPath: ""
   - Entity: 10165808288260496871
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_04_-5696
@@ -2257,6 +2392,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 55
+      MaterialAssetPath: ""
   - Entity: 6202429673275433333
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_05_-5698
@@ -2271,6 +2407,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 56
+      MaterialAssetPath: ""
   - Entity: 2914941714050992395
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_06_-5700
@@ -2285,6 +2422,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 57
+      MaterialAssetPath: ""
   - Entity: 809553619326616118
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_09_-5702
@@ -2299,6 +2437,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 58
+      MaterialAssetPath: ""
   - Entity: 16527195932138288093
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_10_-5704
@@ -2313,6 +2452,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 59
+      MaterialAssetPath: ""
   - Entity: 7280150820142773716
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_11_-5706
@@ -2327,6 +2467,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 60
+      MaterialAssetPath: ""
   - Entity: 2928905551756117510
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_12_-5708
@@ -2341,6 +2482,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 61
+      MaterialAssetPath: ""
   - Entity: 13179664681509872047
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_13_-5710
@@ -2355,6 +2497,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 62
+      MaterialAssetPath: ""
   - Entity: 18267296762677289569
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_14_-5712
@@ -2369,6 +2512,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 63
+      MaterialAssetPath: ""
   - Entity: 585767800054725994
     TagComponent:
       Tag: node_Eye_R_LowerEyelid_-5722
@@ -2383,6 +2527,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 64
+      MaterialAssetPath: ""
   - Entity: 6344323251244072138
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_08_-5854
@@ -2397,6 +2542,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 65
+      MaterialAssetPath: ""
   - Entity: 10884179544651589937
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_15_-5856
@@ -2411,6 +2557,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 66
+      MaterialAssetPath: ""
   - Entity: 10910469308049830504
     TagComponent:
       Tag: node_Eye_R_Sclera_-5724
@@ -2425,6 +2572,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 67
+      MaterialAssetPath: ""
   - Entity: 8896937182056023351
     TagComponent:
       Tag: node_Eye_R_Lens_-5942
@@ -2439,6 +2587,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 68
+      MaterialAssetPath: ""
   - Entity: 8446583823234714549
     TagComponent:
       Tag: node_Eye_R_Side1_-5726
@@ -2453,6 +2602,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 69
+      MaterialAssetPath: ""
   - Entity: 17919487566573860708
     TagComponent:
       Tag: node_Eye_R_Side2_-5728
@@ -2467,6 +2617,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 70
+      MaterialAssetPath: ""
   - Entity: 11581359171460588284
     TagComponent:
       Tag: node_Eye_R_UpperEyelid_-5730
@@ -2481,6 +2632,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 71
+      MaterialAssetPath: ""
   - Entity: 11922704628387596217
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_00_-5890
@@ -2495,6 +2647,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 72
+      MaterialAssetPath: ""
   - Entity: 10467086124216561452
     TagComponent:
       Tag: node_Eye_R_EyelidSegment_07_-5892
@@ -2509,6 +2662,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 73
+      MaterialAssetPath: ""
   - Entity: 9567017074690907661
     TagComponent:
       Tag: node_mesh_Adam_mask_-5716
@@ -2523,6 +2677,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 74
+      MaterialAssetPath: ""
   - Entity: 9319896430388579199
     TagComponent:
       Tag: node_mesh_Adam_mask_-5716
@@ -2537,6 +2692,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 75
+      MaterialAssetPath: ""
   - Entity: 13108726356478377660
     TagComponent:
       Tag: node_mesh_Adam_spine_-5718
@@ -2551,6 +2707,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 76
+      MaterialAssetPath: ""
   - Entity: 1939532828742708183
     TagComponent:
       Tag: node_mesh_Adam_spine_-5718
@@ -2565,6 +2722,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 77
+      MaterialAssetPath: ""
   - Entity: 6040693030586929172
     TagComponent:
       Tag: node_Object001_-5720
@@ -2579,6 +2737,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 78
+      MaterialAssetPath: ""
   - Entity: 276294356897492076
     TagComponent:
       Tag: node_Object001_-5720
@@ -2593,6 +2752,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 79
+      MaterialAssetPath: ""
   - Entity: 10703306772755535202
     TagComponent:
       Tag: node_Object001_-5720
@@ -2607,6 +2767,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 80
+      MaterialAssetPath: ""
   - Entity: 15468069411793715623
     TagComponent:
       Tag: node_Object001_-5720
@@ -2621,6 +2782,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 81
+      MaterialAssetPath: ""
   - Entity: 655995719355908370
     TagComponent:
       Tag: node_Object001_-5720
@@ -2635,6 +2797,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 82
+      MaterialAssetPath: ""
   - Entity: 4146204036034150384
     TagComponent:
       Tag: node_Object001_-5720
@@ -2649,6 +2812,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 83
+      MaterialAssetPath: ""
   - Entity: 11873200981400455789
     TagComponent:
       Tag: Sandbox
@@ -2702,6 +2866,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: assets/models/NewMaterial.rxnmat
   - Entity: 17097807209004231782
     TagComponent:
       Tag: 1
@@ -2742,6 +2907,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 5640142119864444196
     TagComponent:
       Tag: 1 (Clone)
@@ -2782,6 +2948,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 13330526667008083430
     TagComponent:
       Tag: 1 (Clone) (Clone)
@@ -2822,6 +2989,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 11674365850342597159
     TagComponent:
       Tag: 1 (Clone) (Clone) (Clone)
@@ -2862,6 +3030,7 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
   - Entity: 7028309828933853095
     TagComponent:
       Tag: Platforms
@@ -2917,3 +3086,878 @@ Entities:
     StaticMeshComponent:
       AssetPath: assets/models/cubee/1.obj
       SubmeshIndex: 0
+      MaterialAssetPath: ""
+  - Entity: 7396092255954753259
+    TagComponent:
+      Tag: CubeRude
+    TransformComponent:
+      Translation: [5.701496, 2.9908788, 2.505496]
+      Rotation: [0, -0, 0]
+      Scale: [0.0059700003, 0.0059700003, 0.0059700003]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 254346882202382271
+        - 12817001990273699899
+        - 11531110366120472731
+        - 18266367203678085871
+        - 13759639925880751557
+        - 8661065278367010695
+        - 6989106239556007934
+        - 929104386310163152
+        - 2290404526397267787
+        - 10272015636448709298
+        - 1180772086155116718
+        - 3419570131338953199
+        - 2455555932195308835
+        - 9985132244715222553
+        - 3235610526839849037
+        - 12687968326720431844
+        - 4763372499449922290
+        - 1577149902728000125
+        - 4352916646619626531
+        - 11843529255280810690
+        - 6317301756387949103
+        - 8583501318785801583
+        - 16079033077376839093
+        - 16623842768329615111
+        - 6027080440977279624
+        - 4123110804868650736
+        - 2051093853966246500
+        - 8199613351046596519
+        - 2123907299748267761
+        - 11509681280056814570
+        - 15429506395783724912
+        - 333561458547011160
+        - 17217514133841271034
+        - 7317436518914627428
+        - 2656665616680700996
+        - 5007097809049318321
+        - 4807361093009645086
+        - 304529362229084321
+        - 12735767900703055478
+        - 16663607208726749735
+        - 18225890113327258777
+        - 13588567731822793426
+        - 6953431857583933642
+        - 15587255764016599012
+        - 15601078887139775861
+        - 10826899096890833416
+        - 12382328415978436627
+        - 744985887038248283
+        - 16224551567343881305
+        - 10447609657953972410
+        - 3096555360745992284
+        - 5989591290218181533
+        - 861148539479413761
+        - 9139923088943866162
+  - Entity: 254346882202382271
+    TagComponent:
+      Tag: Cube.008
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 0
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12817001990273699899
+    TagComponent:
+      Tag: Cylinder.011
+    TransformComponent:
+      Translation: [0.005647871, -124.001015, -0.6148186]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 1
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 11531110366120472731
+    TagComponent:
+      Tag: Cylinder.014
+    TransformComponent:
+      Translation: [-0.008417457, 5.682274, 0.7852575]
+      Rotation: [0.48947397, 1.5499823, 0.48947406]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 2
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 18266367203678085871
+    TagComponent:
+      Tag: Cylinder.020
+    TransformComponent:
+      Translation: [38.25651, 10.0228195, 98.70145]
+      Rotation: [-3.123224, 0.009785084, -1.5707062]
+      Scale: [100, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 3
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 13759639925880751557
+    TagComponent:
+      Tag: Cube.013
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 4
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 8661065278367010695
+    TagComponent:
+      Tag: Sphere.005
+    TransformComponent:
+      Translation: [38.18169, 9.919846, 108.39338]
+      Rotation: [0.009786738, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 5
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6989106239556007934
+    TagComponent:
+      Tag: Cube.014
+    TransformComponent:
+      Translation: [-0.0035280702, -21.921959, 0.38406566]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 6
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 929104386310163152
+    TagComponent:
+      Tag: Plane.001
+    TransformComponent:
+      Translation: [1.8425794, 10.508514, -99.94448]
+      Rotation: [0.009786738, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 7
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2290404526397267787
+    TagComponent:
+      Tag: Cube.015
+    TransformComponent:
+      Translation: [0.00047763248, -66.48392, -0.051991176]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 8
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10272015636448709298
+    TagComponent:
+      Tag: Cylinder.023
+    TransformComponent:
+      Translation: [-97.05328, -74.765564, -45.57456]
+      Rotation: [0.47262827, 1.5469198, 0.4846922]
+      Scale: [99.99999, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 9
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 1180772086155116718
+    TagComponent:
+      Tag: Cylinder.024
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 10
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 3419570131338953199
+    TagComponent:
+      Tag: Cylinder.016
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [1.5805802, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 11
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2455555932195308835
+    TagComponent:
+      Tag: Cylinder.013
+    TransformComponent:
+      Translation: [0.007935239, -149.43593, -0.8637098]
+      Rotation: [-1.5610094, -0.018369501, -8.9795176e-05]
+      Scale: [100.00001, 100.00003, 115.08406]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 12
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 9985132244715222553
+    TagComponent:
+      Tag: Cylinder.025
+    TransformComponent:
+      Translation: [-0.0033416748, -24.15682, 0.3621943]
+      Rotation: [-1.5610095, -0.018369518, -8.999863e-05]
+      Scale: [100.00001, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 13
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 3235610526839849037
+    TagComponent:
+      Tag: Sphere.007
+    TransformComponent:
+      Translation: [-0.0033416748, -24.15682, 0.3621943]
+      Rotation: [-1.5610095, -0.018369518, -8.999863e-05]
+      Scale: [100.00001, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 14
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12687968326720431844
+    TagComponent:
+      Tag: Sphere.006
+    TransformComponent:
+      Translation: [47.38591, 118.82097, 9.8020525]
+      Rotation: [-1.5674418, 0.04387704, -1.0405846]
+      Scale: [99.99999, 99.99999, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 15
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4763372499449922290
+    TagComponent:
+      Tag: Cylinder.026
+    TransformComponent:
+      Translation: [47.38591, 118.82097, 9.8020525]
+      Rotation: [-1.5674418, 0.04387704, -1.0405846]
+      Scale: [99.99999, 99.99999, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 16
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 1577149902728000125
+    TagComponent:
+      Tag: Cylinder.027
+    TransformComponent:
+      Translation: [255.51532, 158.24942, 15.256085]
+      Rotation: [-1.6126105, 0.061558425, -1.9735991]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 17
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4352916646619626531
+    TagComponent:
+      Tag: Cube.016
+    TransformComponent:
+      Translation: [255.51532, 158.24942, 15.256085]
+      Rotation: [-1.6126105, 0.061558425, -1.9735991]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 18
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 11843529255280810690
+    TagComponent:
+      Tag: Cube.020
+    TransformComponent:
+      Translation: [255.51532, 158.24942, 15.256085]
+      Rotation: [-1.6126105, 0.061558425, -1.9735991]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 19
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6317301756387949103
+    TagComponent:
+      Tag: Cylinder.030
+    TransformComponent:
+      Translation: [301.94495, 138.5101, 15.376951]
+      Rotation: [-2.519938, 1.4948664, 1.66387]
+      Scale: [99.99999, 99.999985, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 20
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 8583501318785801583
+    TagComponent:
+      Tag: Cube.026
+    TransformComponent:
+      Translation: [301.94495, 138.5101, 15.376951]
+      Rotation: [-1.615073, 0.06170452, -2.1007438]
+      Scale: [100.00001, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 21
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16079033077376839093
+    TagComponent:
+      Tag: Cube.028
+    TransformComponent:
+      Translation: [221.48099, 175.36107, 14.87665]
+      Rotation: [-1.6112567, 0.06057726, -1.9005169]
+      Scale: [100, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 22
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16623842768329615111
+    TagComponent:
+      Tag: Cylinder.040
+    TransformComponent:
+      Translation: [221.48099, 175.36107, 14.87665]
+      Rotation: [-2.5534196, 1.4979632, 1.8304752]
+      Scale: [99.999985, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 23
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6027080440977279624
+    TagComponent:
+      Tag: Cylinder.038
+    TransformComponent:
+      Translation: [227.466, 166.96072, 15.327484]
+      Rotation: [-2.5652122, 1.4970217, 1.8196049]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 24
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4123110804868650736
+    TagComponent:
+      Tag: Cube.025
+    TransformComponent:
+      Translation: [227.466, 166.96072, 15.327484]
+      Rotation: [-1.6110543, 0.06183881, -1.8996141]
+      Scale: [99.999985, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 25
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2051093853966246500
+    TagComponent:
+      Tag: Cube.027
+    TransformComponent:
+      Translation: [301.2105, 140.12115, 15.774849]
+      Rotation: [-1.6146072, 0.062608376, -2.0774233]
+      Scale: [99.999985, 99.99999, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 26
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 8199613351046596519
+    TagComponent:
+      Tag: Cylinder.039
+    TransformComponent:
+      Translation: [301.2105, 140.12115, 15.774849]
+      Rotation: [-2.5321252, 1.494398, 1.6753497]
+      Scale: [99.99999, 99.999985, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 27
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2123907299748267761
+    TagComponent:
+      Tag: Cube.018
+    TransformComponent:
+      Translation: [255.45412, 158.26038, 15.413239]
+      Rotation: [-1.6125635, 0.061958086, -1.9734457]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 28
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 11509681280056814570
+    TagComponent:
+      Tag: Cylinder.037
+    TransformComponent:
+      Translation: [255.45412, 158.26038, 15.413239]
+      Rotation: [-2.5491734, 1.4960895, 1.7618606]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 29
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 15429506395783724912
+    TagComponent:
+      Tag: Cube.019
+    TransformComponent:
+      Translation: [331.75308, 123.62332, 15.871073]
+      Rotation: [-1.6163721, 0.062722825, -2.1632297]
+      Scale: [99.99999, 99.99999, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 30
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 333561458547011160
+    TagComponent:
+      Tag: Cylinder.031
+    TransformComponent:
+      Translation: [331.75308, 123.62332, 15.871073]
+      Rotation: [-2.514004, 1.4932816, 1.6073825]
+      Scale: [99.99999, 99.99998, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 31
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 17217514133841271034
+    TagComponent:
+      Tag: BezierCurve.003
+    TransformComponent:
+      Translation: [241.40997, 165.08093, 2.997765]
+      Rotation: [-0.041815467, 0.06156051, -1.973598]
+      Scale: [100.00001, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 32
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 7317436518914627428
+    TagComponent:
+      Tag: Cylinder.017
+    TransformComponent:
+      Translation: [-0.003288269, -24.156845, 0.36219466]
+      Rotation: [1.5805774, -0.018370444, -8.983342e-05]
+      Scale: [99.999985, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 33
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2656665616680700996
+    TagComponent:
+      Tag: Sphere.004
+    TransformComponent:
+      Translation: [-0.003288269, -24.156845, 0.36219466]
+      Rotation: [1.5805774, -0.018370444, -8.983342e-05]
+      Scale: [99.999985, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 34
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 5007097809049318321
+    TagComponent:
+      Tag: Sphere.003
+    TransformComponent:
+      Translation: [-53.105186, 123.6786, 5.0244627]
+      Rotation: [1.5503001, -0.043606434, 1.0899563]
+      Scale: [100, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 35
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4807361093009645086
+    TagComponent:
+      Tag: Cylinder.018
+    TransformComponent:
+      Translation: [-53.105186, 123.6786, 5.0244627]
+      Rotation: [1.5503001, -0.043606434, 1.0899563]
+      Scale: [100, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 36
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 304529362229084321
+    TagComponent:
+      Tag: Cylinder.019
+    TransformComponent:
+      Translation: [-246.30582, 158.16788, 2.2342935]
+      Rotation: [1.5243621, -0.02842453, 1.9486741]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 37
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12735767900703055478
+    TagComponent:
+      Tag: Cube.009
+    TransformComponent:
+      Translation: [-246.298, 158.17023, 2.2385507]
+      Rotation: [1.524363, -0.028432548, 1.948653]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 38
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16663607208726749735
+    TagComponent:
+      Tag: Cube.017
+    TransformComponent:
+      Translation: [-246.30582, 158.16788, 2.2342935]
+      Rotation: [1.5243621, -0.02842453, 1.9486741]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 39
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 18225890113327258777
+    TagComponent:
+      Tag: Cube.011
+    TransformComponent:
+      Translation: [-272.8388, 148.51367, 2.247116]
+      Rotation: [1.5253338, -0.028519887, 2.0196912]
+      Scale: [99.999985, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 40
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 13588567731822793426
+    TagComponent:
+      Tag: Cylinder.032
+    TransformComponent:
+      Translation: [-272.8388, 148.51367, 2.247116]
+      Rotation: [1.0102495, -1.5171323, -2.1327994]
+      Scale: [100, 100, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 41
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6953431857583933642
+    TagComponent:
+      Tag: Cylinder.029
+    TransformComponent:
+      Translation: [-100.06261, 191.88022, 2.3391752]
+      Rotation: [1.0573959, -1.5122858, -2.584541]
+      Scale: [100, 99.99998, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 42
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 15587255764016599012
+    TagComponent:
+      Tag: Cube.024
+    TransformComponent:
+      Translation: [-100.06261, 191.88022, 2.3391752]
+      Rotation: [1.5198079, -0.02871936, 1.6151798]
+      Scale: [99.999985, 100.00001, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 43
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 15601078887139775861
+    TagComponent:
+      Tag: Cylinder.033
+    TransformComponent:
+      Translation: [-119.63522, 177.51584, 2.4690752]
+      Rotation: [1.0560367, -1.5124083, -2.5733323]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 44
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10826899096890833416
+    TagComponent:
+      Tag: Cube.021
+    TransformComponent:
+      Translation: [-119.63522, 177.51584, 2.4690752]
+      Rotation: [1.5199555, -0.028719885, 1.6250279]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 45
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12382328415978436627
+    TagComponent:
+      Tag: Cube.023
+    TransformComponent:
+      Translation: [-331.5021, 127.02515, 2.2904243]
+      Rotation: [1.5267138, -0.028792027, 2.1222072]
+      Scale: [99.999985, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 46
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 744985887038248283
+    TagComponent:
+      Tag: Cylinder.036
+    TransformComponent:
+      Translation: [-331.5021, 127.02515, 2.2904243]
+      Rotation: [0.99185836, -1.5181487, -2.0119069]
+      Scale: [99.99999, 99.99999, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 47
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16224551567343881305
+    TagComponent:
+      Tag: Cylinder.034
+    TransformComponent:
+      Translation: [-157.66257, 176.08655, 2.33875]
+      Rotation: [1.0487045, -1.5136461, -2.4702437]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 48
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10447609657953972410
+    TagComponent:
+      Tag: Cube.022
+    TransformComponent:
+      Translation: [-157.66257, 176.08655, 2.33875]
+      Rotation: [1.5212423, -0.02848541, 1.72076]
+      Scale: [100.00001, 100.00002, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 49
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 3096555360745992284
+    TagComponent:
+      Tag: Cube.012
+    TransformComponent:
+      Translation: [-272.97717, 151.28076, 2.1994448]
+      Rotation: [1.524905, -0.028431738, 1.9878975]
+      Scale: [99.99999, 100.000015, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 50
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 5989591290218181533
+    TagComponent:
+      Tag: Cylinder.035
+    TransformComponent:
+      Translation: [-272.97717, 151.28076, 2.1994448]
+      Rotation: [1.0158216, -1.5168132, -2.1701672]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 51
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 861148539479413761
+    TagComponent:
+      Tag: BezierCurve.001
+    TransformComponent:
+      Translation: [-231.83133, 164.28702, -9.969943]
+      Rotation: [3.0951612, -0.028426135, 1.9486746]
+      Scale: [99.99999, 99.99999, 100.000015]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 52
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 9139923088943866162
+    TagComponent:
+      Tag: Cylinder.015
+    TransformComponent:
+      Translation: [0.007607967, -145.85046, -0.828625]
+      Rotation: [-1.5610094, -0.018369501, -8.9795176e-05]
+      Scale: [100.00001, 100.00003, 106.169]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 53
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat

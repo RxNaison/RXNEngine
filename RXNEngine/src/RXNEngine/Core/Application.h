@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Base.h"
-
+#include "RXNEngine/Core/Log.h"
+#include "RXNEngine/Core/Assert.h"
 #include "Window.h"
 #include "RXNEngine/Core/LayerStack.h"
 #include "RXNEngine/Events/Event.h"
@@ -10,6 +11,7 @@
 #include "RXNEngine/Core/Subsystem.h"
 #include <unordered_map>
 #include <typeindex>
+#include <stdexcept>
 
 namespace RXNEngine {
 
@@ -60,7 +62,10 @@ namespace RXNEngine {
 		Ref<T> GetSubsystem()
 		{
 			auto it = m_Subsystems.find(typeid(T));
-			RXN_CORE_ASSERT(it != m_Subsystems.end(), "Requested Subsystem is not registered!");
+
+			if (it == m_Subsystems.end())
+				throw std::runtime_error("Requested Subsystem is not registered!");
+
 			return std::static_pointer_cast<T>(it->second);
 		}
 	private:

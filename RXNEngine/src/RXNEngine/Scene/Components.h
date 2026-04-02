@@ -77,6 +77,7 @@ namespace RXNEngine {
 		uint32_t SubmeshIndex = 0;
 
 		Ref<Material> MaterialTableOverride = nullptr;
+		std::string MaterialAssetPath = "";
 
 		StaticMeshComponent() = default;
 		StaticMeshComponent(const StaticMeshComponent&) = default;

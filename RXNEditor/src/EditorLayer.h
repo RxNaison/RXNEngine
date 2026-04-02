@@ -4,6 +4,7 @@
 #include "SceneHierarchyPanel.h"
 #include "ContentBrowserPanel.h"
 #include "EnvironmentPanel.h"
+#include "MaterialEditorPanel.h"
 #include "RXNEngine/Asset/ModelImporter.h"
 
 using namespace RXNEngine;
@@ -55,6 +56,7 @@ namespace RXNEditor {
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
 		EnvironmentPanel m_EnvironmentPanel;
+		MaterialEditorPanel m_MaterialEditorPanel;
 
 		glm::vec2 m_ViewportBounds[2];
 		bool m_ViewportFocused = false;

@@ -38,7 +38,7 @@ namespace RXNEngine {
         const char* magic = "RXN\0";
         out.write(magic, 4);
 
-        uint32_t version = 2;
+        uint32_t version = 3;
         out.write((char*)&version, sizeof(uint32_t));
 
         const auto& vertices = mesh->GetVertices();
@@ -73,18 +73,7 @@ namespace RXNEngine {
         out.write((char*)&matCount, sizeof(uint32_t));
 
         for (const auto& mat : materials)
-        {
-            auto params = mat->GetParameters();
-            out.write((char*)&params, sizeof(Material::Parameters));
-
-            WriteString(out, mat->GetAlbedoMap() ? mat->GetAlbedoMap()->GetPath() : "");
-            WriteString(out, mat->GetNormalMap() ? mat->GetNormalMap()->GetPath() : "");
-            WriteString(out, mat->GetMetalnessRoughnessMap() ? mat->GetMetalnessRoughnessMap()->GetPath() : "");
-            WriteString(out, mat->GetAOMap() ? mat->GetAOMap()->GetPath() : "");
-
-            bool isTransparent = mat->IsTransparent();
-            out.write((char*)&isTransparent, sizeof(bool));
-        }
+            WriteString(out, mat->GetAssetPath());
 
         out.close();
     }
@@ -100,7 +89,7 @@ namespace RXNEngine {
 
         uint32_t version;
         in.read((char*)&version, sizeof(uint32_t));
-        if (version != 2)
+        if (version != 3)
         {
             RXN_CORE_WARN("Old model format detected. It will be re-imported.");
             return nullptr;
@@ -137,39 +126,19 @@ namespace RXNEngine {
 
 		auto assetManager = Application::Get().GetSubsystem<AssetManager>();
 
-        Ref<Shader> defaultPBR = assetManager->GetShader("res/shaders/pbr.glsl");
-
         for (uint32_t i = 0; i < matCount; i++)
         {
-            Ref<Material> mat = Material::CreateDefault(defaultPBR);
+            std::string matPath = ReadString(in);
 
-            Material::Parameters params;
-            in.read((char*)&params, sizeof(Material::Parameters));
-
-            mat->SetAlbedoColor(params.AlbedoColor);
-            mat->SetMetalness(params.Metalness);
-            mat->SetRoughness(params.Roughness);
-            mat->SetEmissiveColor(params.EmissiveColor);
-            mat->SetAO(params.AO);
-
-            std::string path;
-            if (!(path = ReadString(in)).empty())
-                mat->SetAlbedoMap(assetManager->GetTexture(path));
-
-            if (!(path = ReadString(in)).empty())
-                mat->SetNormalMap(assetManager->GetTexture(path));
-
-            if (!(path = ReadString(in)).empty())
-                mat->SetMetalnessRoughnessMap(assetManager->GetTexture(path));
-
-            if (!(path = ReadString(in)).empty())
-                mat->SetAOMap(assetManager->GetTexture(path));
-
-            bool isTransparent = false;
-            in.read((char*)&isTransparent, sizeof(bool));
-            mat->SetTransparent(isTransparent);
-
-            materials[i] = mat;
+            if (!matPath.empty())
+            {
+                materials[i] = assetManager->GetMaterial(matPath);
+            }
+            else
+            {
+                Ref<Shader> defaultPBR = assetManager->GetShader("res/shaders/pbr.glsl");
+                materials[i] = Material::CreateDefault(defaultPBR);
+            }
         }
 
         return CreateRef<StaticMesh>(vertices, indices, submeshes, materials);

@@ -6,6 +6,7 @@
 #include "RXNEngine/Scene/Components.h"
 #include "RXNEngine/Scene/Entity.h"
 #include "RXNEngine/Serialization/ModelSerializer.h"
+#include "RXNEngine/Serialization/MaterialSerializer.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -120,7 +121,7 @@ namespace RXNEngine {
 		if (!LoadModelData(filepath, data, settings))
 			return nullptr;
 
-		Ref<StaticMesh> mesh = BuildMeshFromData(data);
+		Ref<StaticMesh> mesh = BuildMeshFromData(data, filepath);
 
 		ModelSerializer::Serialize(cachePath, mesh);
 
@@ -259,9 +260,20 @@ namespace RXNEngine {
 			aiMaterial* aiMat = scene->mMaterials[i];
 			MaterialDesc desc;
 
+			aiString matName;
+			if (aiMat->Get(AI_MATKEY_NAME, matName) == AI_SUCCESS)
+				desc.Name = matName.C_Str();
+			else
+				desc.Name = "Material_" + std::to_string(i);
+
+			std::replace(desc.Name.begin(), desc.Name.end(), '/', '_');
+			std::replace(desc.Name.begin(), desc.Name.end(), '\\', '_');
+			std::replace(desc.Name.begin(), desc.Name.end(), ':', '_');
+
 			desc.AlbedoPath = GetMaterialTexturePath(aiMat, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, scene, directory);
 			desc.NormalPath = GetMaterialTexturePath(aiMat, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, scene, directory);
-			desc.MetalRoughPath = GetMaterialTexturePath(aiMat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory);
+			desc.MetalPath = GetMaterialTexturePath(aiMat, { aiTextureType_METALNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory);
+			desc.RoughPath = GetMaterialTexturePath(aiMat, { aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory);
 			desc.AOPath = GetMaterialTexturePath(aiMat, { aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP, aiTextureType_AMBIENT }, scene, directory);
 			desc.EmissivePath = GetMaterialTexturePath(aiMat, { aiTextureType_EMISSIVE }, scene, directory);
 
@@ -276,7 +288,9 @@ namespace RXNEngine {
 
 			float roughness = 0.5f;
 			float metalness = 0.0f;
-			if (!desc.MetalRoughPath.empty()) metalness = 1.0f;
+
+			if (!desc.MetalPath.empty())
+				metalness = 1.0f;
 
 			if (aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != AI_SUCCESS)
 			{
@@ -288,6 +302,7 @@ namespace RXNEngine {
 
 			if (aiMat->Get(AI_MATKEY_METALLIC_FACTOR, metalness) != AI_SUCCESS)
 				metalness = 0.0f;
+
 			desc.Metalness = metalness;
 
 			float opacity = 1.0f;
@@ -317,41 +332,62 @@ namespace RXNEngine {
 		return true;
 	}
 
-	Ref<StaticMesh> ModelImporter::BuildMeshFromData(const ImporterData& data)
+	Ref<StaticMesh> ModelImporter::BuildMeshFromData(const ImporterData& data, const std::string& modelFilepath)
 	{
-		OPTICK_EVENT("ModelImporter::BuildMeshFromData (GPU)");
+		OPTICK_EVENT();
 
 		auto assetManager = Application::Get().GetSubsystem<AssetManager>();
-
 		Ref<Shader> defaultPBR = assetManager->GetShader("res/shaders/pbr.glsl");
 		std::vector<Ref<Material>> finalMaterials;
 
+		std::string directory = modelFilepath.substr(0, modelFilepath.find_last_of('/'));
+		if (directory == modelFilepath)
+			directory = modelFilepath.substr(0, modelFilepath.find_last_of('\\'));
+
 		for (const auto& desc : data.Materials)
 		{
-			Ref<Material> rxnMat = Material::CreateDefault(defaultPBR);
+			std::string matPath = directory + "/" + desc.Name + ".rxnmat";
 
-			if (!desc.AlbedoPath.empty())
-				rxnMat->SetAlbedoMap(assetManager->GetTexture(desc.AlbedoPath));
+			if (std::filesystem::exists(matPath))
+			{
+				finalMaterials.push_back(assetManager->GetMaterial(matPath));
+			}
+			else
+			{
+				Ref<Material> rxnMat = Material::CreateDefault(defaultPBR);
+				MaterialParameters rxnMatParams = rxnMat->GetParameters();
 
-			if (!desc.NormalPath.empty())
-				rxnMat->SetNormalMap(assetManager->GetTexture(desc.NormalPath));
+				if (!desc.AlbedoPath.empty())
+					rxnMat->SetAlbedoMap(assetManager->GetTexture(desc.AlbedoPath), desc.AlbedoPath);
 
-			if (!desc.MetalRoughPath.empty())
-				rxnMat->SetMetalnessRoughnessMap(assetManager->GetTexture(desc.MetalRoughPath));
+				if (!desc.NormalPath.empty())
+					rxnMat->SetNormalMap(assetManager->GetTexture(desc.NormalPath), desc.NormalPath);
 
-			if (!desc.AOPath.empty())
-				rxnMat->SetAOMap(assetManager->GetTexture(desc.AOPath));
+				if (!desc.MetalPath.empty())
+					rxnMat->SetMetalnessMap(assetManager->GetTexture(desc.MetalPath), desc.MetalPath);
 
-			if (!desc.EmissivePath.empty())
-				rxnMat->SetEmissiveMap(assetManager->GetTexture(desc.EmissivePath));
+				if (!desc.RoughPath.empty())
+					rxnMat->SetRoughnessMap(assetManager->GetTexture(desc.RoughPath), desc.RoughPath);
 
-			rxnMat->SetAlbedoColor(desc.AlbedoColor);
-			rxnMat->SetEmissiveColor(desc.EmissiveColor);
-			rxnMat->SetRoughness(desc.Roughness);
-			rxnMat->SetMetalness(desc.Metalness);
-			rxnMat->SetTransparent(desc.Transparent);
+				if (!desc.AOPath.empty())
+					rxnMat->SetAOMap(assetManager->GetTexture(desc.AOPath), desc.AOPath);
 
-			finalMaterials.push_back(rxnMat);
+				if (!desc.EmissivePath.empty())
+					rxnMat->SetEmissiveMap(assetManager->GetTexture(desc.EmissivePath), desc.EmissivePath);
+
+				rxnMatParams.AlbedoColor = desc.AlbedoColor;
+				rxnMatParams.EmissiveColor = desc.EmissiveColor;
+				rxnMatParams.Roughness = desc.Roughness;
+				rxnMatParams.Metalness = desc.Metalness;
+				rxnMat->SetTransparent(desc.Transparent);
+
+				rxnMat->SetParameters(rxnMatParams);
+
+				MaterialSerializer serializer(rxnMat);
+				serializer.Serialize(matPath);
+
+				finalMaterials.push_back(assetManager->GetMaterial(matPath));
+			}
 		}
 
 		return CreateRef<StaticMesh>(data.Vertices, data.Indices, data.Submeshes, finalMaterials);

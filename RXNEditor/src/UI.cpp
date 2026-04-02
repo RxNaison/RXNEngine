@@ -3,7 +3,7 @@
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace RXNEngine {
+namespace RXNEditor {
 
     bool UI::DrawFloatControl(const std::string& label, float& value, float speed, float min, float max, float columnWidth)
     {

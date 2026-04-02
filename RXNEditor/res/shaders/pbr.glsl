@@ -45,7 +45,7 @@ flat in int v_EntityID;
 // --- MATERIAL UNIFORMS (Must match C++ Material::Bind) ---
 uniform sampler2D u_AlbedoMap;
 uniform sampler2D u_NormalMap;
-uniform sampler2D u_MetallicMap;
+uniform sampler2D u_MetalnessMap;
 uniform sampler2D u_RoughnessMap;
 uniform sampler2D u_AOMap;
 uniform sampler2D u_EmissiveMap;
@@ -209,7 +209,7 @@ void main()
     float alpha = albedoSample.a * u_AlbedoColor.a; 
 
     // Combine Texture * Uniform for Modulated Control
-    float metallic  = texture(u_MetallicMap, v_TexCoord).b * u_Metalness; 
+    float metallic  = texture(u_MetalnessMap, v_TexCoord).b * u_Metalness; 
     float roughness = texture(u_RoughnessMap, v_TexCoord).g * u_Roughness;
     float ao        = texture(u_AOMap, v_TexCoord).r * u_AO; // GLTF uses Red channel for AO usually
 

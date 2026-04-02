@@ -5,128 +5,12 @@
 #include "RXNEngine/Scene/Components.h"
 #include "RXNEngine/Core/UUID.h"
 #include "RXNEngine/Asset/AssetManager.h"
+#include "RXNEngine/Serialization/YamlHelpers.h"
 
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
-namespace YAML {
-
-	template<>
-	struct convert<glm::vec2>
-	{
-		static Node encode(const glm::vec2& rhs)
-		{
-			Node node;
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			node.SetStyle(EmitterStyle::Flow);
-			return node;
-		}
-
-		static bool decode(const Node& node, glm::vec2& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 2)
-				return false;
-
-			rhs.x = node[0].as<float>();
-			rhs.y = node[1].as<float>();
-			return true;
-		}
-	};
-
-	template<>
-	struct convert<glm::vec3>
-	{
-		static Node encode(const glm::vec3& rhs)
-		{
-			Node node;
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			node.push_back(rhs.z);
-			node.SetStyle(EmitterStyle::Flow);
-			return node;
-		}
-
-		static bool decode(const Node& node, glm::vec3& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 3)
-				return false;
-
-			rhs.x = node[0].as<float>();
-			rhs.y = node[1].as<float>();
-			rhs.z = node[2].as<float>();
-			return true;
-		}
-	};
-
-	template<>
-	struct convert<glm::vec4>
-	{
-		static Node encode(const glm::vec4& rhs)
-		{
-			Node node;
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			node.push_back(rhs.z);
-			node.push_back(rhs.w);
-			node.SetStyle(EmitterStyle::Flow);
-			return node;
-		}
-
-		static bool decode(const Node& node, glm::vec4& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 4)
-				return false;
-
-			rhs.x = node[0].as<float>();
-			rhs.y = node[1].as<float>();
-			rhs.z = node[2].as<float>();
-			rhs.w = node[3].as<float>();
-			return true;
-		}
-	};
-
-	template<>
-	struct convert<RXNEngine::UUID>
-	{
-		static Node encode(const RXNEngine::UUID& uuid)
-		{
-			Node node;
-			node.push_back((uint64_t)uuid);
-			return node;
-		}
-
-		static bool decode(const Node& node, RXNEngine::UUID& uuid)
-		{
-			uuid = node.as<uint64_t>();
-			return true;
-		}
-	};
-
-}
-
 namespace RXNEngine {
-
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
-		return out;
-	}
-
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
-		return out;
-	}
-
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
-		return out;
-	}
 
 	static std::string GetRelativePath(const std::string& path)
 	{
@@ -226,6 +110,7 @@ namespace RXNEngine {
 
 			out << YAML::Key << "AssetPath" << YAML::Value << GetRelativePath(mc.AssetPath);
 			out << YAML::Key << "SubmeshIndex" << YAML::Value << mc.SubmeshIndex;
+			out << YAML::Key << "MaterialAssetPath" << YAML::Value << GetRelativePath(mc.MaterialAssetPath);
 
 			out << YAML::EndMap;
 		}
@@ -521,6 +406,16 @@ namespace RXNEngine {
 
 					if (staticMeshComponent["SubmeshIndex"])
 						mc.SubmeshIndex = staticMeshComponent["SubmeshIndex"].as<uint32_t>();
+
+					if (staticMeshComponent["MaterialAssetPath"])
+					{
+						std::string matPath = staticMeshComponent["MaterialAssetPath"].as<std::string>();
+						if (!matPath.empty())
+						{
+							mc.MaterialAssetPath = matPath;
+							mc.MaterialTableOverride = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(matPath);
+						}
+					}
 				}
 
 				auto directionalLightComponent = entity["DirectionalLightComponent"];
