@@ -8,7 +8,6 @@
 #include "RXNEngine/Serialization/YamlHelpers.h"
 
 #include <fstream>
-#include <yaml-cpp/yaml.h>
 
 namespace RXNEngine {
 
@@ -28,7 +27,7 @@ namespace RXNEngine {
 	{
 	}
 
-	static void SerializeEntity(YAML::Emitter& out, Entity entity)
+	void SceneSerializer::SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
 		RXN_CORE_ASSERT(entity.HasComponent<IDComponent>());
 
@@ -242,6 +241,224 @@ namespace RXNEngine {
 		out << YAML::EndMap; // Entity
 	}
 
+	void SceneSerializer::DeserializeComponentsToEntity(YAML::Node& entity, Entity deserializedEntity)
+	{
+		auto transformComponent = entity["TransformComponent"];
+		if (transformComponent)
+		{
+			auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+
+			if (transformComponent["Translation"])
+				tc.Translation = transformComponent["Translation"].as<glm::vec3>();
+
+			if (transformComponent["Rotation"])
+				tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
+
+			if (transformComponent["Scale"])
+				tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+		}
+
+		auto relationshipComponent = entity["RelationshipComponent"];
+		if (relationshipComponent)
+		{
+			auto& rc = deserializedEntity.GetComponent<RelationshipComponent>();
+
+			if (relationshipComponent["ParentHandle"])
+				rc.ParentHandle = relationshipComponent["ParentHandle"].as<uint64_t>();
+
+			if (auto children = relationshipComponent["Children"])
+			{
+				for (auto child : children)
+					rc.Children.push_back(child.as<uint64_t>());
+			}
+		}
+
+		auto cameraComponent = entity["CameraComponent"];
+		if (cameraComponent)
+		{
+			auto& cc = deserializedEntity.AddComponent<CameraComponent>();
+
+			if (auto cameraProps = cameraComponent["Camera"])
+			{
+				if (cameraProps["ProjectionType"])
+					cc.Camera.SetProjectionType((SceneCamera::ProjectionMode)cameraProps["ProjectionType"].as<int>());
+				if (cameraProps["PerspectiveFOV"])
+					cc.Camera.SetPerspectiveFOV(cameraProps["PerspectiveFOV"].as<float>());
+				if (cameraProps["PerspectiveNear"])
+					cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
+				if (cameraProps["PerspectiveFar"])
+					cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
+
+				if (cameraProps["OrthographicSize"])
+					cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
+				if (cameraProps["OrthographicNear"])
+					cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
+				if (cameraProps["OrthographicFar"])
+					cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
+			}
+
+			if (cameraComponent["FixedAspectRatio"]) cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+		}
+
+		auto staticMeshComponent = entity["StaticMeshComponent"];
+		if (staticMeshComponent)
+		{
+			auto& mc = deserializedEntity.AddComponent<StaticMeshComponent>();
+
+			if (staticMeshComponent["AssetPath"])
+			{
+				std::string assetPath = staticMeshComponent["AssetPath"].as<std::string>();
+				mc.AssetPath = assetPath;
+				mc.Mesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(assetPath);
+			}
+
+			if (staticMeshComponent["SubmeshIndex"])
+				mc.SubmeshIndex = staticMeshComponent["SubmeshIndex"].as<uint32_t>();
+
+			if (staticMeshComponent["MaterialAssetPath"])
+			{
+				std::string matPath = staticMeshComponent["MaterialAssetPath"].as<std::string>();
+				if (!matPath.empty())
+				{
+					mc.MaterialAssetPath = matPath;
+					mc.MaterialTableOverride = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(matPath);
+				}
+			}
+		}
+
+		auto directionalLightComponent = entity["DirectionalLightComponent"];
+		if (directionalLightComponent)
+		{
+			auto& dlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
+
+			if (directionalLightComponent["Color"])
+				dlc.Color = directionalLightComponent["Color"].as<glm::vec3>();
+			if (directionalLightComponent["Intensity"])
+				dlc.Intensity = directionalLightComponent["Intensity"].as<float>();
+		}
+
+		auto pointLightComponent = entity["PointLightComponent"];
+		if (pointLightComponent)
+		{
+			auto& plc = deserializedEntity.AddComponent<PointLightComponent>();
+
+			if (pointLightComponent["Color"])
+				plc.Color = pointLightComponent["Color"].as<glm::vec3>();
+			if (pointLightComponent["Intensity"])
+				plc.Intensity = pointLightComponent["Intensity"].as<float>();
+			if (pointLightComponent["Radius"])
+				plc.Radius = pointLightComponent["Radius"].as<float>();
+			if (pointLightComponent["Falloff"])
+				plc.Falloff = pointLightComponent["Falloff"].as<float>();
+		}
+
+		auto rigidbodyComponent = entity["RigidbodyComponent"];
+		if (rigidbodyComponent)
+		{
+			auto& rb = deserializedEntity.AddComponent<RigidbodyComponent>();
+
+			if (rigidbodyComponent["Type"])
+				rb.Type = (RigidbodyComponent::BodyType)rigidbodyComponent["Type"].as<int>();
+			if (rigidbodyComponent["Mass"])
+				rb.Mass = rigidbodyComponent["Mass"].as<float>();
+			if (rigidbodyComponent["LinearDrag"])
+				rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
+			if (rigidbodyComponent["AngularDrag"])
+				rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
+			if (rigidbodyComponent["FixedRotation"])
+				rb.FixedRotation = rigidbodyComponent["FixedRotation"].as<bool>();
+			if (rigidbodyComponent["UseCCD"])
+				rb.UseCCD = rigidbodyComponent["UseCCD"].as<bool>();
+			if (rigidbodyComponent["CCDVelocityThreshold"])
+				rb.CCDVelocityThreshold = rigidbodyComponent["CCDVelocityThreshold"].as<float>();
+		}
+
+		auto boxColliderComponent = entity["BoxColliderComponent"];
+		if (boxColliderComponent)
+		{
+			auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
+
+			if (boxColliderComponent["HalfExtents"])
+				bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
+			if (boxColliderComponent["Offset"])
+				bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+			if (boxColliderComponent["StaticFriction"])
+				bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
+			if (boxColliderComponent["DynamicFriction"])
+				bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
+			if (boxColliderComponent["Restitution"])
+				bc.Restitution = boxColliderComponent["Restitution"].as<float>();
+			if (boxColliderComponent["IsTrigger"])
+				bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
+		}
+
+		auto sphereColliderComponent = entity["SphereColliderComponent"];
+		if (sphereColliderComponent)
+		{
+			auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
+
+			if (sphereColliderComponent["Radius"])
+				sc.Radius = sphereColliderComponent["Radius"].as<float>();
+			if (sphereColliderComponent["Offset"])
+				sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
+			if (sphereColliderComponent["StaticFriction"])
+				sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
+			if (sphereColliderComponent["DynamicFriction"])
+				sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
+			if (sphereColliderComponent["Restitution"])
+				sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
+			if (sphereColliderComponent["IsTrigger"])
+				sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
+		}
+
+		auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
+		if (capsuleColliderComponent)
+		{
+			auto& cc = deserializedEntity.AddComponent<CapsuleColliderComponent>();
+
+			if (capsuleColliderComponent["Radius"])
+				cc.Radius = capsuleColliderComponent["Radius"].as<float>();
+			if (capsuleColliderComponent["Height"])
+				cc.Height = capsuleColliderComponent["Height"].as<float>();
+			if (capsuleColliderComponent["Offset"])
+				cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
+			if (capsuleColliderComponent["StaticFriction"])
+				cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
+			if (capsuleColliderComponent["DynamicFriction"])
+				cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
+			if (capsuleColliderComponent["Restitution"])
+				cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
+			if (capsuleColliderComponent["IsTrigger"])
+				cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
+		}
+
+		auto meshColliderComponent = entity["MeshColliderComponent"];
+		if (meshColliderComponent)
+		{
+			auto& mc = deserializedEntity.AddComponent<MeshColliderComponent>();
+			if (meshColliderComponent["IsConvex"])
+				mc.IsConvex = meshColliderComponent["IsConvex"].as<bool>();
+			if (meshColliderComponent["OverrideAssetPath"])
+				mc.OverrideAssetPath = meshColliderComponent["OverrideAssetPath"].as<std::string>();
+			if (meshColliderComponent["StaticFriction"])
+				mc.StaticFriction = meshColliderComponent["StaticFriction"].as<float>();
+			if (meshColliderComponent["DynamicFriction"])
+				mc.DynamicFriction = meshColliderComponent["DynamicFriction"].as<float>();
+			if (meshColliderComponent["Restitution"])
+				mc.Restitution = meshColliderComponent["Restitution"].as<float>();
+			if (meshColliderComponent["IsTrigger"])
+				mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
+		}
+
+		auto scriptComponent = entity["ScriptComponent"];
+		if (scriptComponent)
+		{
+			auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+			if (scriptComponent["ClassName"]) sc.ClassName = scriptComponent["ClassName"].as<std::string>();
+		}
+
+	}
+
 	void SceneSerializer::Serialize(const std::string& filepath)
 	{
 		YAML::Emitter out;
@@ -323,8 +540,9 @@ namespace RXNEngine {
 		{
 			for (auto entity : entities)
 			{
-				// Hard requirement: An entity block must have an ID to be valid
-				if (!entity["Entity"]) continue;
+				if (!entity["Entity"])
+					continue;
+
 				uint64_t uuid = entity["Entity"].as<uint64_t>();
 
 				std::string name;
@@ -335,219 +553,7 @@ namespace RXNEngine {
 				RXN_CORE_TRACE("Deserialized entity with ID = {0}, name = {1}", uuid, name);
 				Entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name);
 
-				auto transformComponent = entity["TransformComponent"];
-				if (transformComponent)
-				{
-					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
-
-					if (transformComponent["Translation"])
-						tc.Translation = transformComponent["Translation"].as<glm::vec3>();
-
-					if (transformComponent["Rotation"])
-						tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
-
-					if (transformComponent["Scale"])
-						tc.Scale = transformComponent["Scale"].as<glm::vec3>();
-				}
-
-				auto relationshipComponent = entity["RelationshipComponent"];
-				if (relationshipComponent)
-				{
-					auto& rc = deserializedEntity.GetComponent<RelationshipComponent>();
-
-					if (relationshipComponent["ParentHandle"])
-						rc.ParentHandle = relationshipComponent["ParentHandle"].as<uint64_t>();
-
-					if (auto children = relationshipComponent["Children"])
-					{
-						for (auto child : children)
-							rc.Children.push_back(child.as<uint64_t>());
-					}
-				}
-
-				auto cameraComponent = entity["CameraComponent"];
-				if (cameraComponent)
-				{
-					auto& cc = deserializedEntity.AddComponent<CameraComponent>();
-
-					if (auto cameraProps = cameraComponent["Camera"])
-					{
-						if (cameraProps["ProjectionType"])
-							cc.Camera.SetProjectionType((SceneCamera::ProjectionMode)cameraProps["ProjectionType"].as<int>());
-						if (cameraProps["PerspectiveFOV"])
-							cc.Camera.SetPerspectiveFOV(cameraProps["PerspectiveFOV"].as<float>());
-						if (cameraProps["PerspectiveNear"])
-							cc.Camera.SetPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-						if (cameraProps["PerspectiveFar"])
-							cc.Camera.SetPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
-
-						if (cameraProps["OrthographicSize"])
-							cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
-						if (cameraProps["OrthographicNear"])
-							cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
-						if (cameraProps["OrthographicFar"])
-							cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
-					}
-
-					if (cameraComponent["FixedAspectRatio"]) cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
-				}
-
-				auto staticMeshComponent = entity["StaticMeshComponent"];
-				if (staticMeshComponent)
-				{
-					auto& mc = deserializedEntity.AddComponent<StaticMeshComponent>();
-
-					if (staticMeshComponent["AssetPath"])
-					{
-						std::string assetPath = staticMeshComponent["AssetPath"].as<std::string>();
-						mc.AssetPath = assetPath;
-						mc.Mesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(assetPath);
-					}
-
-					if (staticMeshComponent["SubmeshIndex"])
-						mc.SubmeshIndex = staticMeshComponent["SubmeshIndex"].as<uint32_t>();
-
-					if (staticMeshComponent["MaterialAssetPath"])
-					{
-						std::string matPath = staticMeshComponent["MaterialAssetPath"].as<std::string>();
-						if (!matPath.empty())
-						{
-							mc.MaterialAssetPath = matPath;
-							mc.MaterialTableOverride = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(matPath);
-						}
-					}
-				}
-
-				auto directionalLightComponent = entity["DirectionalLightComponent"];
-				if (directionalLightComponent)
-				{
-					auto& dlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
-
-					if (directionalLightComponent["Color"])
-						dlc.Color = directionalLightComponent["Color"].as<glm::vec3>();
-					if (directionalLightComponent["Intensity"])
-						dlc.Intensity = directionalLightComponent["Intensity"].as<float>();
-				}
-
-				auto pointLightComponent = entity["PointLightComponent"];
-				if (pointLightComponent)
-				{
-					auto& plc = deserializedEntity.AddComponent<PointLightComponent>();
-
-					if (pointLightComponent["Color"])
-						plc.Color = pointLightComponent["Color"].as<glm::vec3>();
-					if (pointLightComponent["Intensity"])
-						plc.Intensity = pointLightComponent["Intensity"].as<float>();
-					if (pointLightComponent["Radius"])
-						plc.Radius = pointLightComponent["Radius"].as<float>();
-					if (pointLightComponent["Falloff"])
-						plc.Falloff = pointLightComponent["Falloff"].as<float>();
-				}
-
-				auto rigidbodyComponent = entity["RigidbodyComponent"];
-				if (rigidbodyComponent)
-				{
-					auto& rb = deserializedEntity.AddComponent<RigidbodyComponent>();
-
-					if (rigidbodyComponent["Type"])
-						rb.Type = (RigidbodyComponent::BodyType)rigidbodyComponent["Type"].as<int>();
-					if (rigidbodyComponent["Mass"])
-						rb.Mass = rigidbodyComponent["Mass"].as<float>();
-					if (rigidbodyComponent["LinearDrag"])
-						rb.LinearDrag = rigidbodyComponent["LinearDrag"].as<float>();
-					if (rigidbodyComponent["AngularDrag"])
-						rb.AngularDrag = rigidbodyComponent["AngularDrag"].as<float>();
-					if (rigidbodyComponent["FixedRotation"])
-						rb.FixedRotation = rigidbodyComponent["FixedRotation"].as<bool>();
-					if (rigidbodyComponent["UseCCD"])
-						rb.UseCCD = rigidbodyComponent["UseCCD"].as<bool>();
-					if (rigidbodyComponent["CCDVelocityThreshold"])
-						rb.CCDVelocityThreshold = rigidbodyComponent["CCDVelocityThreshold"].as<float>();
-				}
-
-				auto boxColliderComponent = entity["BoxColliderComponent"];
-				if (boxColliderComponent)
-				{
-					auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
-
-					if (boxColliderComponent["HalfExtents"])
-						bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
-					if (boxColliderComponent["Offset"])
-						bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
-					if (boxColliderComponent["StaticFriction"])
-						bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
-					if (boxColliderComponent["DynamicFriction"])
-						bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
-					if (boxColliderComponent["Restitution"])
-						bc.Restitution = boxColliderComponent["Restitution"].as<float>();
-					if (boxColliderComponent["IsTrigger"])
-						bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
-				}
-
-				auto sphereColliderComponent = entity["SphereColliderComponent"];
-				if (sphereColliderComponent)
-				{
-					auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
-
-					if (sphereColliderComponent["Radius"])
-						sc.Radius = sphereColliderComponent["Radius"].as<float>();
-					if (sphereColliderComponent["Offset"])
-						sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
-					if (sphereColliderComponent["StaticFriction"])
-						sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
-					if (sphereColliderComponent["DynamicFriction"])
-						sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
-					if (sphereColliderComponent["Restitution"])
-						sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
-					if (sphereColliderComponent["IsTrigger"])
-						sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
-				}
-
-				auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
-				if (capsuleColliderComponent)
-				{
-					auto& cc = deserializedEntity.AddComponent<CapsuleColliderComponent>();
-
-					if (capsuleColliderComponent["Radius"])
-						cc.Radius = capsuleColliderComponent["Radius"].as<float>();
-					if (capsuleColliderComponent["Height"])
-						cc.Height = capsuleColliderComponent["Height"].as<float>();
-					if (capsuleColliderComponent["Offset"])
-						cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
-					if (capsuleColliderComponent["StaticFriction"])
-						cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
-					if (capsuleColliderComponent["DynamicFriction"])
-						cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
-					if (capsuleColliderComponent["Restitution"])
-						cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
-					if (capsuleColliderComponent["IsTrigger"])
-						cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
-				}
-
-				auto meshColliderComponent = entity["MeshColliderComponent"];
-				if (meshColliderComponent)
-				{
-					auto& mc = deserializedEntity.AddComponent<MeshColliderComponent>();
-					if (meshColliderComponent["IsConvex"])
-						mc.IsConvex = meshColliderComponent["IsConvex"].as<bool>();
-					if (meshColliderComponent["OverrideAssetPath"])
-						mc.OverrideAssetPath = meshColliderComponent["OverrideAssetPath"].as<std::string>();
-					if (meshColliderComponent["StaticFriction"])
-						mc.StaticFriction = meshColliderComponent["StaticFriction"].as<float>();
-					if (meshColliderComponent["DynamicFriction"])
-						mc.DynamicFriction = meshColliderComponent["DynamicFriction"].as<float>();
-					if (meshColliderComponent["Restitution"])
-						mc.Restitution = meshColliderComponent["Restitution"].as<float>();
-					if (meshColliderComponent["IsTrigger"])
-						mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
-				}
-
-				auto scriptComponent = entity["ScriptComponent"];
-				if (scriptComponent)
-				{
-					auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
-					if (scriptComponent["ClassName"]) sc.ClassName = scriptComponent["ClassName"].as<std::string>();
-				}
+				DeserializeComponentsToEntity(entity, deserializedEntity);
 
 				if (primaryCameraID != UUID::Null && uuid == (uint64_t)primaryCameraID)
 				{

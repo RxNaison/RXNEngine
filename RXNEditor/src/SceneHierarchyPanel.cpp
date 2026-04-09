@@ -9,6 +9,7 @@
 #include "RXNEngine/Asset/ModelImporter.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
+#include "RXNEngine/Serialization/PrefabSerializer.h"
 
 namespace RXNEditor {
 
@@ -62,6 +63,12 @@ namespace RXNEditor {
                     {
                         if (m_MeshDropCallback)
                             m_MeshDropCallback(path);
+                    }
+                    else if (path.ends_with(".rxnpb"))
+                    {
+                        Entity prefabRoot = PrefabSerializer::Deserialize(m_Context, path);
+                        if (prefabRoot)
+							m_SelectedEntity = prefabRoot;
                     }
                 }
                 ImGui::EndDragDropTarget();
@@ -189,6 +196,16 @@ namespace RXNEditor {
             {
                 Entity child = m_Context->CreateEntity("New Child");
                 m_Context->ParentEntity(child, entity);
+            }
+
+            if (ImGui::MenuItem("Save as Prefab..."))
+            {
+                std::string savePath = FileDialogs::SaveFile("Prefab (*.rxnpb)\0*.rxnpb\0");
+                if (!savePath.empty())
+                {
+                    PrefabSerializer::Serialize(entity, savePath);
+                    RXN_CORE_INFO("Saved Prefab to {0}", savePath);
+                }
             }
 
             ImGui::EndPopup();

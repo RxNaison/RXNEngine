@@ -188,7 +188,51 @@ namespace RXNEngine {
         OPTICK_EVENT();
 
         if (m_IsRunning && entity.HasComponent<ScriptComponent>())
-			Application::Get().GetSubsystem<ScriptEngine>()->OnDestroyEntity(entity);
+            Application::Get().GetSubsystem<ScriptEngine>()->OnDestroyEntity(entity);
+
+        if (entity.HasComponent<RigidbodyComponent>())
+        {
+            auto& rb = entity.GetComponent<RigidbodyComponent>();
+            if (rb.RuntimeActor)
+            {
+                physx::PxRigidActor* actor = (physx::PxRigidActor*)rb.RuntimeActor;
+
+                auto physicsWorld = GetSubsystem<PhysicsWorld>();
+                if (physicsWorld && physicsWorld->GetScene())
+                    physicsWorld->GetScene()->removeActor(*actor);
+
+                actor->release();
+                rb.RuntimeActor = nullptr;
+            }
+        }
+
+        if (entity.HasComponent<BoxColliderComponent>())
+        {
+            auto& bc = entity.GetComponent<BoxColliderComponent>();
+            if (bc.RuntimeShape) { ((physx::PxShape*)bc.RuntimeShape)->release(); bc.RuntimeShape = nullptr; }
+            if (bc.RuntimeMaterial) { ((physx::PxMaterial*)bc.RuntimeMaterial)->release(); bc.RuntimeMaterial = nullptr; }
+        }
+
+        if (entity.HasComponent<SphereColliderComponent>())
+        {
+            auto& sc = entity.GetComponent<SphereColliderComponent>();
+            if (sc.RuntimeShape) { ((physx::PxShape*)sc.RuntimeShape)->release(); sc.RuntimeShape = nullptr; }
+            if (sc.RuntimeMaterial) { ((physx::PxMaterial*)sc.RuntimeMaterial)->release(); sc.RuntimeMaterial = nullptr; }
+        }
+
+        if (entity.HasComponent<CapsuleColliderComponent>())
+        {
+            auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+            if (cc.RuntimeShape) { ((physx::PxShape*)cc.RuntimeShape)->release(); cc.RuntimeShape = nullptr; }
+            if (cc.RuntimeMaterial) { ((physx::PxMaterial*)cc.RuntimeMaterial)->release(); cc.RuntimeMaterial = nullptr; }
+        }
+
+        if (entity.HasComponent<MeshColliderComponent>())
+        {
+            auto& mc = entity.GetComponent<MeshColliderComponent>();
+            if (mc.RuntimeShape) { ((physx::PxShape*)mc.RuntimeShape)->release(); mc.RuntimeShape = nullptr; }
+            if (mc.RuntimeMaterial) { ((physx::PxMaterial*)mc.RuntimeMaterial)->release(); mc.RuntimeMaterial = nullptr; }
+        }
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
