@@ -147,6 +147,7 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* get_field_value_fn)(uint64_t entityID, const char* fieldName, void* outBuffer);
     typedef void (CORECLR_DELEGATE_CALLTYPE* set_field_value_fn)(uint64_t entityID, const char* fieldName, const void* inBuffer);
     typedef void (CORECLR_DELEGATE_CALLTYPE* on_collision_fn)(uint64_t entityID, uint64_t otherEntityID);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* clear_instances_fn)();
 
 
     struct ScriptEngineData
@@ -174,6 +175,8 @@ namespace RXNEngine {
 
         on_collision_fn OnTriggerEnter = nullptr;
         on_collision_fn OnTriggerExit = nullptr;
+
+        clear_instances_fn ClearInstances = nullptr;
 
         Scene* SceneContext = nullptr;
         std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
@@ -235,6 +238,7 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnCollisionExit, m_Data->OnCollisionExit);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerEnter, m_Data->OnTriggerEnter);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerExit, m_Data->OnTriggerExit);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ClearInstances, m_Data->ClearInstances);
 
         InternalCalls nativeFunctions;
         ScriptInterop::RegisterFunctions(&nativeFunctions);
@@ -328,6 +332,10 @@ namespace RXNEngine {
     {
         m_Data->SceneContext = nullptr;
         m_Data->EntityInstances.clear();
+
+        if (m_Data && m_Data->ClearInstances)
+            m_Data->ClearInstances();
+
         RXN_CORE_INFO("ScriptEngine: Runtime stopped, Scene context cleared.");
     }
 

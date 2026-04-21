@@ -22,6 +22,15 @@ namespace RXNScriptHost
         }
     }
 
+    class ScriptInstanceInfo
+    {
+        public object Instance;
+        public Action? UpdateDelegate;
+        public Action<float>? FixedUpdateDelegate;
+
+        public ScriptInstanceInfo(object instance) { Instance = instance; }
+    }
+
     public static class Host
     {
         private static GameScriptALC? s_ALC = null;
@@ -29,7 +38,7 @@ namespace RXNScriptHost
 
         private static Assembly? s_AppAssembly = null;
 
-        private static Dictionary<ulong, object> s_EntityInstances = new();
+        private static Dictionary<ulong, ScriptInstanceInfo> s_EntityInstances = new();
 
         private static uint GetScriptFieldType(Type type)
         {
@@ -111,7 +120,6 @@ namespace RXNScriptHost
         public static void InstantiateScript(ulong entityID, IntPtr classNamePtr)
         {
             if (s_AppAssembly == null) return;
-
             string? className = Marshal.PtrToStringUTF8(classNamePtr);
             if (className == null) return;
 
@@ -124,7 +132,17 @@ namespace RXNScriptHost
                     var idProperty = scriptType.BaseType?.GetProperty("ID", BindingFlags.Public | BindingFlags.Instance);
                     idProperty?.SetValue(instance, entityID);
 
-                    s_EntityInstances[entityID] = instance;
+                    ScriptInstanceInfo info = new ScriptInstanceInfo(instance);
+
+                    MethodInfo? updateMethod = scriptType.GetMethod("InternalUpdate", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                    if (updateMethod != null)
+                        info.UpdateDelegate = (Action)Delegate.CreateDelegate(typeof(Action), instance, updateMethod);
+
+                    MethodInfo? fixedUpdateMethod = scriptType.GetMethod("OnFixedUpdate", BindingFlags.Instance | BindingFlags.Public);
+                    if (fixedUpdateMethod != null && fixedUpdateMethod.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
+                        info.FixedUpdateDelegate = (Action<float>)Delegate.CreateDelegate(typeof(Action<float>), instance, fixedUpdateMethod);
+
+                    s_EntityInstances[entityID] = info;
                 }
             }
             else
@@ -136,24 +154,26 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void InvokeOnCreate(ulong entityID)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                MethodInfo? onCreate = instance.GetType().GetMethod("OnCreate");
-                onCreate?.Invoke(instance, null);
+                var scriptInstance = info.Instance;
+
+                MethodInfo? onCreate = scriptInstance.GetType().GetMethod("OnCreate");
+                onCreate?.Invoke(scriptInstance, null);
             }
         }
 
         [UnmanagedCallersOnly]
         public static void InvokeOnDestroy(ulong entityID)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var method = instance.GetType().GetMethod("OnDestroy", BindingFlags.Public | BindingFlags.Instance);
+                var scriptInstance = info.Instance;
+
+                var method = scriptInstance.GetType().GetMethod("OnDestroy", BindingFlags.Public | BindingFlags.Instance);
 
                 if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
-                {
-                    method.Invoke(instance, null);
-                }
+                    method.Invoke(scriptInstance, null);
 
                 s_EntityInstances.Remove(entityID);
             }
@@ -162,25 +182,15 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void InvokeOnUpdate(ulong entityID, float deltaTime)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
-            {
-                MethodInfo? internalUpdate = instance.GetType().GetMethod("InternalUpdate", BindingFlags.Instance | BindingFlags.NonPublic);
-                internalUpdate?.Invoke(instance, null);
-            }
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
+                info.UpdateDelegate?.Invoke();
         }
 
         [UnmanagedCallersOnly]
         public static void InvokeOnFixedUpdate(ulong entityID, float fixedTimeStep)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
-            {
-                var method = instance.GetType().GetMethod("OnFixedUpdate", BindingFlags.Public | BindingFlags.Instance);
-
-                if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
-                {
-                    method.Invoke(instance, new object[] { fixedTimeStep });
-                }
-            }
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
+                info.FixedUpdateDelegate?.Invoke(fixedTimeStep);
         }
 
         [UnmanagedCallersOnly]
@@ -244,12 +254,14 @@ namespace RXNScriptHost
         public static void GetFieldValue(ulong entityID, IntPtr fieldNamePtr, IntPtr outBuffer)
         {
             string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
-            if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var field = instance.GetType().GetField(fieldName);
+                var scriptInstance = info.Instance;
+
+                var field = scriptInstance.GetType().GetField(fieldName);
                 if (field != null)
                 {
-                    object? value = field.GetValue(instance);
+                    object? value = field.GetValue(scriptInstance);
 
                     if (value == null)
                     {
@@ -278,27 +290,29 @@ namespace RXNScriptHost
         public static void SetFieldValue(ulong entityID, IntPtr fieldNamePtr, IntPtr inBuffer)
         {
             string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
-            if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (fieldName != null && s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var field = instance.GetType().GetField(fieldName);
+                var scriptInstance = info.Instance;
+
+                var field = scriptInstance.GetType().GetField(fieldName);
                 if (field != null)
                 {
                     if (field.FieldType == s_CoreAssembly?.GetType("RXNEngine.Entity"))
                     {
                         ulong targetID = (ulong)Marshal.ReadInt64(inBuffer);
-                        if (targetID == 0) field.SetValue(instance, null);
+                        if (targetID == 0) field.SetValue(scriptInstance, null);
                         else
                         {
                             object? newEntity = Activator.CreateInstance(field.FieldType, true);
                             var idProp = field.FieldType.GetProperty("ID", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                             idProp?.SetValue(newEntity, targetID);
-                            field.SetValue(instance, newEntity);
+                            field.SetValue(scriptInstance, newEntity);
                         }
                     }
                     else
                     {
                         object value = Marshal.PtrToStructure(inBuffer, field.FieldType)!;
-                        field.SetValue(instance, value);
+                        field.SetValue(scriptInstance, value);
                     }
                 }
             }
@@ -307,9 +321,11 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void OnCollisionEnter(ulong entityID, ulong otherEntityID)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var method = instance.GetType().GetMethod("OnCollisionEnter", BindingFlags.Public | BindingFlags.Instance);
+                var scriptInstance = info.Instance;
+
+                var method = scriptInstance.GetType().GetMethod("OnCollisionEnter", BindingFlags.Public | BindingFlags.Instance);
 
                 if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
                 {
@@ -317,7 +333,7 @@ namespace RXNScriptHost
                     object? otherEntity = Activator.CreateInstance(entityType!, true);
                     entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
 
-                    method.Invoke(instance, new object[] { otherEntity });
+                    method.Invoke(scriptInstance, new object[] { otherEntity });
                 }
             }
         }
@@ -325,9 +341,11 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void OnCollisionExit(ulong entityID, ulong otherEntityID)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var method = instance.GetType().GetMethod("OnCollisionExit", BindingFlags.Public | BindingFlags.Instance);
+                var scriptInstance = info.Instance;
+
+                var method = scriptInstance.GetType().GetMethod("OnCollisionExit", BindingFlags.Public | BindingFlags.Instance);
 
                 if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
                 {
@@ -335,7 +353,7 @@ namespace RXNScriptHost
                     object? otherEntity = Activator.CreateInstance(entityType!, true);
                     entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
 
-                    method.Invoke(instance, new object[] { otherEntity });
+                    method.Invoke(scriptInstance, new object[] { otherEntity });
                 }
             }
         }
@@ -343,9 +361,11 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void OnTriggerEnter(ulong entityID, ulong otherEntityID)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var method = instance.GetType().GetMethod("OnTriggerEnter", BindingFlags.Public | BindingFlags.Instance);
+                var scriptInstance = info.Instance;
+
+                var method = scriptInstance.GetType().GetMethod("OnTriggerEnter", BindingFlags.Public | BindingFlags.Instance);
 
                 if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
                 {
@@ -353,7 +373,7 @@ namespace RXNScriptHost
                     object? otherEntity = Activator.CreateInstance(entityType!, true);
                     entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
 
-                    method.Invoke(instance, new object[] { otherEntity });
+                    method.Invoke(scriptInstance, new object[] { otherEntity });
                 }
             }
         }
@@ -361,9 +381,11 @@ namespace RXNScriptHost
         [UnmanagedCallersOnly]
         public static void OnTriggerExit(ulong entityID, ulong otherEntityID)
         {
-            if (s_EntityInstances.TryGetValue(entityID, out object? instance))
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
             {
-                var method = instance.GetType().GetMethod("OnTriggerExit", BindingFlags.Public | BindingFlags.Instance);
+                var scriptInstance = info.Instance;
+
+                var method = scriptInstance.GetType().GetMethod("OnTriggerExit", BindingFlags.Public | BindingFlags.Instance);
 
                 if (method != null && method.DeclaringType != s_CoreAssembly?.GetType("RXNEngine.Entity"))
                 {
@@ -371,9 +393,15 @@ namespace RXNScriptHost
                     object? otherEntity = Activator.CreateInstance(entityType!, true);
                     entityType!.GetProperty("ID")?.SetValue(otherEntity, otherEntityID);
 
-                    method.Invoke(instance, new object[] { otherEntity });
+                    method.Invoke(scriptInstance, new object[] { otherEntity });
                 }
             }
+        }
+
+        [UnmanagedCallersOnly]
+        public static void ClearInstances()
+        {
+            s_EntityInstances.Clear();
         }
     }
 }
