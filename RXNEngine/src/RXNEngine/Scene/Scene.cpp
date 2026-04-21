@@ -1279,10 +1279,14 @@ namespace RXNEngine {
         {
             physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
 
-            glm::quat rotation = glm::quat(tc.Rotation);
+            glm::mat4 worldTransform = GetWorldTransform(entity);
+            glm::vec3 worldTranslation, worldRotation, worldScale;
+            Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
+
+            glm::quat rotation = glm::quat(worldRotation);
 
             physx::PxTransform physxTransform(
-                physx::PxVec3(tc.Translation.x, tc.Translation.y, tc.Translation.z),
+                physx::PxVec3(worldTranslation.x, worldTranslation.y, worldTranslation.z),
                 physx::PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
             );
 
