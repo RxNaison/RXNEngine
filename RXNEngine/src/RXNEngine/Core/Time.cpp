@@ -5,17 +5,22 @@
 
 Time::Time()
 {
-    m_LastFrameTime = (float)((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency());
+    m_LastFrameTime = SDL_GetPerformanceCounter();
 }
 
 void Time::OnFrameStart()
 {
-    float currentTime = (float)((double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency());
-    m_DeltaTime = currentTime - m_LastFrameTime;
-    m_LastFrameTime = currentTime;
+    uint64_t currentCounter = SDL_GetPerformanceCounter();
+
+    uint64_t counterDelta = currentCounter - m_LastFrameTime;
+    m_LastFrameTime = currentCounter;
+
+    m_DeltaTime = (float)((double)counterDelta / (double)SDL_GetPerformanceFrequency());
 
     if (m_DeltaTime > m_MaxDeltaTime)
+    {
         m_DeltaTime = m_MaxDeltaTime;
+    }
 
     m_Accumulator += m_DeltaTime;
 }

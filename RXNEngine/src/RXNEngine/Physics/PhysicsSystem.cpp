@@ -17,8 +17,11 @@ namespace RXNEngine {
         m_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *m_Foundation, physx::PxTolerancesScale(), true, m_Pvd);
         RXN_CORE_ASSERT(m_Physics, "PxCreatePhysics Failed!");
 
-        m_Dispatcher = physx::PxDefaultCpuDispatcherCreate(2);
-        RXN_CORE_INFO("PhysX Core Initialized Successfully!");
+        uint32_t threadCount = std::thread::hardware_concurrency();
+        uint32_t physxThreads = (threadCount > 2) ? threadCount - 2 : 1;
+
+        m_Dispatcher = physx::PxDefaultCpuDispatcherCreate(physxThreads);
+        RXN_CORE_INFO("PhysX Core Initialized Successfully with {0} worker threads!", physxThreads);
     }
 
     void PhysicsSystem::Shutdown()

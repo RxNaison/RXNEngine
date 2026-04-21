@@ -32,6 +32,6 @@ private:
     float m_MaxDeltaTime = 0.25f;
     const float m_FixedDeltaTime = 0.02f;
 
-    float m_LastFrameTime = 0.0f;
+    uint64_t m_LastFrameTime = 0;
     float m_Accumulator = 0.0f;
 };
