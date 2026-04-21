@@ -3,7 +3,7 @@
 
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
-#include "RXNengine/Core/Application.h"
+#include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
 
 namespace RXNEngine {
@@ -101,6 +101,8 @@ namespace RXNEngine {
     {
         m_Meshes.clear();
         m_Shaders.clear();
+        m_Textures.clear();
+        m_Materials.clear();
     }
 
     void AssetManager::LoadMeshAsync(const std::string& path, uint64_t entityID)
