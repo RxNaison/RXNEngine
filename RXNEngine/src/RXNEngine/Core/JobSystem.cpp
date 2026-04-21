@@ -107,7 +107,8 @@ namespace RXNEngine {
             }
             else
             {
-                std::this_thread::yield();
+                std::unique_lock<std::mutex> lock(m_WaitMutex);
+                m_WaitCondition.wait(lock, [this]() { return m_FinishedLabel.load() >= m_CurrentLabel.load(); });
             }
         }
     }
@@ -142,9 +143,12 @@ namespace RXNEngine {
                 m_JobQueue.pop();
             }
 
-            job();
-
-            m_FinishedLabel.fetch_add(1);
+            if (job)
+            {
+                job();
+                m_FinishedLabel.fetch_add(1);
+                m_WaitCondition.notify_all();
+            }
         }
     }
 

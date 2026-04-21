@@ -44,9 +44,12 @@ namespace RXNEngine {
         std::mutex m_QueueMutex;
         std::condition_variable m_WakeCondition;
 
+        std::mutex m_WaitMutex;
+        std::condition_variable m_WaitCondition;
+
         std::atomic<uint64_t> m_CurrentLabel = 0;
         std::atomic<uint64_t> m_FinishedLabel = 0;
-        bool m_IsRunning = false;
+        std::atomic<bool> m_IsRunning{ false };
     };
 
 }
