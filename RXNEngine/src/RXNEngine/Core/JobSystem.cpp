@@ -147,6 +147,11 @@ namespace RXNEngine {
             {
                 job();
                 m_FinishedLabel.fetch_add(1);
+
+                {
+                    std::lock_guard<std::mutex> waitLock(m_WaitMutex);
+                }
+
                 m_WaitCondition.notify_all();
             }
         }

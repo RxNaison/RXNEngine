@@ -180,7 +180,7 @@ namespace RXNEngine {
 
     void Scene::DestroyEntity(Entity entity)
     {
-        m_EntitiesToDestroy.push_back(entity);
+        m_EntitiesToDestroy.insert((entt::entity)entity);
     }
 
     void Scene::RemoveEntity(Entity entity)
@@ -814,8 +814,11 @@ namespace RXNEngine {
 
         renderSys->EndScene();
 
-        for (auto& entity : m_EntitiesToDestroy)
-            RemoveEntity(entity);
+        for (auto entityID : m_EntitiesToDestroy)
+        {
+            if (m_Registry.valid(entityID))
+                RemoveEntity({ entityID, this });
+        }
 
         m_EntitiesToDestroy.clear();
     }
@@ -864,8 +867,11 @@ namespace RXNEngine {
             jobSys->Wait();
         }
 
-        for (auto& entity : m_EntitiesToDestroy)
-            RemoveEntity(entity);
+        for (auto entityID : m_EntitiesToDestroy)
+        {
+            if (m_Registry.valid(entityID))
+                RemoveEntity({ entityID, this });
+        }
 
         m_EntitiesToDestroy.clear();
 

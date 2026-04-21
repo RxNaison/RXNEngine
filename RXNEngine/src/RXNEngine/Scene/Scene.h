@@ -99,7 +99,7 @@ namespace RXNEngine {
 		bool m_IsSimulating = false;
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
-		std::vector<Entity> m_EntitiesToDestroy;
+		std::unordered_set<entt::entity> m_EntitiesToDestroy;
 
 		std::unordered_map<std::type_index, Ref<Subsystem>> m_Subsystems;
 		std::vector<Ref<Subsystem>> m_SubsystemList;
