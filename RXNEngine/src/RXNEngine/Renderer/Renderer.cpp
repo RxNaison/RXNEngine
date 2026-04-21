@@ -587,32 +587,38 @@ namespace RXNEngine {
         RenderCommand::SetDepthMask(true);
         RenderCommand::SetBlend(false);
 
-        std::sort(m_Data->OpaqueQueue.begin(), m_Data->OpaqueQueue.end(),
-            [](const RenderCommandPacket& a, const RenderCommandPacket& b)
-            {
-                if (a.SortKey != b.SortKey)
-                    return a.SortKey < b.SortKey;
+        std::vector<const RenderCommandPacket*> opaquePointers;
+        opaquePointers.reserve(m_Data->OpaqueQueue.size());
+        for (const auto& packet : m_Data->OpaqueQueue)
+            opaquePointers.push_back(&packet);
 
-                return a.DistanceToCamera < b.DistanceToCamera;
+        std::sort(opaquePointers.begin(), opaquePointers.end(), [](const RenderCommandPacket* a, const RenderCommandPacket* b)
+            {
+                if (a->SortKey != b->SortKey)
+                    return a->SortKey < b->SortKey;
+                return a->DistanceToCamera < b->DistanceToCamera;
             });
 
-        ExecuteQueue(m_Data->OpaqueQueue);
+        ExecuteQueue(opaquePointers);
 
         RenderCommand::SetDepthMask(false);
         RenderCommand::SetBlend(true);
 
         RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
 
-        std::sort(m_Data->TransparentQueue.begin(), m_Data->TransparentQueue.end(),
-            [](const RenderCommandPacket& a, const RenderCommandPacket& b)
-            {
-                if (glm::abs(a.DistanceToCamera - b.DistanceToCamera) < 0.001f)
-                    return a.EntityID < b.EntityID;
+        std::vector<const RenderCommandPacket*> transparentPointers;
+        transparentPointers.reserve(m_Data->TransparentQueue.size());
+        for (const auto& packet : m_Data->TransparentQueue)
+            transparentPointers.push_back(&packet);
 
-                return a.DistanceToCamera > b.DistanceToCamera;
+        std::sort(transparentPointers.begin(), transparentPointers.end(), [](const RenderCommandPacket* a, const RenderCommandPacket* b)
+            {
+                if (glm::abs(a->DistanceToCamera - b->DistanceToCamera) < 0.001f)
+                    return a->EntityID < b->EntityID;
+                return a->DistanceToCamera > b->DistanceToCamera;
             });
 
-        ExecuteQueue(m_Data->TransparentQueue);
+        ExecuteQueue(transparentPointers);
 
         RenderCommand::SetDepthMask(true);
         RenderCommand::SetBlend(false);
@@ -629,13 +635,13 @@ namespace RXNEngine {
         }
     }
 
-    void Renderer::ExecuteQueue(const std::vector<RenderCommandPacket>& queue)
+    void Renderer::ExecuteQueue(const std::vector<const RenderCommandPacket*>& queue)
     {
         OPTICK_EVENT();
 
         if (queue.empty()) return;
 
-        auto batchStart = queue.begin();
+        const RenderCommandPacket* batchStart = queue.front();
 
         static InstanceData currentBatchData[MaxInstances];
         uint32_t transformCount = 0;
@@ -644,25 +650,27 @@ namespace RXNEngine {
         currentBatchData[transformCount].EntityID = batchStart->EntityID;
         transformCount++;
 
-        for (auto it = queue.begin() + 1; it != queue.end(); ++it)
+        for (size_t i = 1; i < queue.size(); ++i)
         {
-            bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
-            bool isSameMaterial = (it->Material == batchStart->Material);
+            const RenderCommandPacket* current = queue[i];
+
+            bool isSameMesh = (current->Mesh == batchStart->Mesh && current->SubmeshIndex == batchStart->SubmeshIndex);
+            bool isSameMaterial = (current->Material == batchStart->Material);
 
             if (isSameMesh && isSameMaterial && transformCount < MaxInstances)
             {
-                currentBatchData[transformCount].Transform = it->Transform;
-                currentBatchData[transformCount].EntityID = it->EntityID;
+                currentBatchData[transformCount].Transform = current->Transform;
+                currentBatchData[transformCount].EntityID = current->EntityID;
                 transformCount++;
             }
             else
             {
                 FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount);
 
-                batchStart = it;
+                batchStart = current;
                 transformCount = 0;
-                currentBatchData[transformCount].Transform = it->Transform;
-                currentBatchData[transformCount].EntityID = it->EntityID;
+                currentBatchData[transformCount].Transform = current->Transform;
+                currentBatchData[transformCount].EntityID = current->EntityID;
                 transformCount++;
             }
         }

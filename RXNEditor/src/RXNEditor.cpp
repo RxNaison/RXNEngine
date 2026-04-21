@@ -19,7 +19,7 @@ namespace RXNEngine {
 	Application* CreateApplication()
 	{
 		RXNEngine::WindowProps props;
-		props.Title = "RXN Engine Editor";
+		props.Title = "RXNEngine Editor";
 		props.Width = 1600;
 		props.Height = 900;
 		props.Mode = RXNEngine::WindowMode::Maximized;

@@ -89,7 +89,7 @@ namespace RXNEngine {
         void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
             const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget);
 
-        void ExecuteQueue(const std::vector<RenderCommandPacket>& queue);
+        void ExecuteQueue(const std::vector<const RenderCommandPacket*>& queue);
         void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count);
         void Flush();
         void FlushShadows();
