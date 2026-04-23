@@ -27,5 +27,5 @@ uniform samplerCube u_Skybox;
 
 void main()
 {
-    FragColor = texture(u_Skybox, v_TexCoord);
+    FragColor = min(texture(u_Skybox, v_TexCoord), vec4(1000.0));
 }

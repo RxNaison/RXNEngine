@@ -46,7 +46,8 @@ void main()
 
     hdrColor += bloomColor * u_BloomIntensity;
 
-    vec3 mapped = hdrColor * u_Exposure;
+    vec3 mapped = min(hdrColor * u_Exposure, vec3(1000.0));
+
     mapped = ACESFilm(mapped);
     mapped = pow(mapped, vec3(1.0 / u_Gamma));
 

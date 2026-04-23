@@ -144,10 +144,12 @@ vec3 GetNormalFromMap()
     vec2 st2 = dFdy(v_TexCoord);
 
     vec3 N = normalize(v_Normal);
-    vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);
+    
+    vec3 T_unnorm = Q1 * st2.t - Q2 * st1.t;
+    if (length(T_unnorm) < 0.0001) return N; 
+    
+    vec3 T = normalize(T_unnorm);
     vec3 B = -normalize(cross(N, T));
-
-    if (length(T) < 0.0001 || length(B) < 0.0001) return N;
 
     mat3 TBN = mat3(T, B, N);
     return normalize(TBN * tangentNormal);
@@ -302,6 +304,7 @@ void main()
     
     // COMBINE
     vec3 color = ambient + Lo + emissive;
+    color = min(color, vec3(1000.0));
 
     o_Color = vec4(color, alpha);
 }
