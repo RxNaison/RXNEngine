@@ -56,6 +56,9 @@ namespace RXNEngine {
         std::vector<RenderCommandPacket> OpaqueQueue;
         std::vector<RenderCommandPacket> TransparentQueue;
         std::vector<RenderCommandPacket> ShadowQueue;
+
+        std::vector<InstanceData> BatchBuffer;
+
         glm::mat4 ViewProjectionMatrix;
         glm::mat4 ViewMatrix;
         glm::vec3 CameraPosition;
@@ -171,8 +174,10 @@ namespace RXNEngine {
     void Renderer::Init()
     {
         m_Data = new RendererData();
+        m_Data->BatchBuffer.resize(MaxInstances);
 
         RenderCommand::Init();
+
         m_Data->OpaqueQueue.reserve(1000);
         m_Data->InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
         m_Data->InstanceVertexBuffer->SetLayout({
@@ -643,7 +648,7 @@ namespace RXNEngine {
 
         const RenderCommandPacket* batchStart = queue.front();
 
-        static InstanceData currentBatchData[MaxInstances];
+        InstanceData* currentBatchData = m_Data->BatchBuffer.data();
         uint32_t transformCount = 0;
 
         currentBatchData[transformCount].Transform = batchStart->Transform;
@@ -728,7 +733,7 @@ namespace RXNEngine {
         if (!m_Data->ShadowQueue.empty())
         {
             auto batchStart = m_Data->ShadowQueue.begin();
-            static InstanceData batchData[MaxInstances];
+            InstanceData* batchData = m_Data->BatchBuffer.data();
             uint32_t transformCount = 0;
 
             batchData[transformCount].Transform = batchStart->Transform;
@@ -793,7 +798,7 @@ namespace RXNEngine {
                 if (queue.empty()) return;
 
                 auto batchStart = queue.begin();
-                static InstanceData batchData[MaxInstances];
+                InstanceData* batchData = m_Data->BatchBuffer.data();
                 uint32_t transformCount = 0;
 
                 batchData[transformCount].Transform = batchStart->Transform;
