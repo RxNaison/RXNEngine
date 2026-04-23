@@ -20,7 +20,7 @@ in vec3 v_WorldPos;
 
 uniform samplerCube u_EnvironmentMap;
 uniform float u_Roughness;
-const float u_Resolution = 512.0;
+uniform float u_Resolution; 
 
 const float PI = 3.14159265359;
 

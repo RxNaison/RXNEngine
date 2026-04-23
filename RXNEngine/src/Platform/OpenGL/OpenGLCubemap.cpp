@@ -313,6 +313,8 @@ namespace RXNEngine {
 		prefilterShader->SetInt("u_EnvironmentMap", 0);
 		prefilterShader->SetMat4("u_Projection", captureProjection);
 
+		prefilterShader->SetFloat("u_Resolution", (float)res);
+
 		glBindTextureUnit(0, m_RendererID);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
