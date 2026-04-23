@@ -18,28 +18,31 @@ namespace RXNEngine {
 
     void SceneRenderer::Init()
     {
+        uint32_t width = m_ViewportWidth > 0 ? m_ViewportWidth : 1;
+        uint32_t height = m_ViewportHeight > 0 ? m_ViewportHeight : 1;
+
         RenderTargetSpecification geoSpec;
         geoSpec.Attachments = { RenderTargetTextureFormat::RGBA16F, RenderTargetTextureFormat::Depth };
-        geoSpec.Width = 1280;
-        geoSpec.Height = 720;
+        geoSpec.Width = width;
+        geoSpec.Height = height;
         m_GeoPass = RenderTarget::Create(geoSpec);
 
         RenderTargetSpecification finalSpec;
         finalSpec.Attachments = { RenderTargetTextureFormat::RGBA8 };
-        finalSpec.Width = 1280;
-        finalSpec.Height = 720;
+        finalSpec.Width = width;
+        finalSpec.Height = height;
         m_FinalPass = RenderTarget::Create(finalSpec);
 
         RenderTargetSpecification pickSpec;
         pickSpec.Attachments = { RenderTargetTextureFormat::RED_INTEGER, RenderTargetTextureFormat::Depth };
-        pickSpec.Width = 1280;
-        pickSpec.Height = 720;
+        pickSpec.Width = width;
+        pickSpec.Height = height;
         m_PickingPass = RenderTarget::Create(pickSpec);
 
         RenderTargetSpecification maskSpec;
         maskSpec.Attachments = { RenderTargetTextureFormat::RGBA8 };
-        maskSpec.Width = 1280;
-        maskSpec.Height = 720;
+        maskSpec.Width = width;
+        maskSpec.Height = height;
         m_OutlineMaskPass = RenderTarget::Create(maskSpec);
 
 
