@@ -33,6 +33,19 @@ namespace RXNEngine {
 		vertexBuffer->Bind();
 
 		const auto& layout = vertexBuffer->GetLayout();
+
+		bool isInstancedBuffer = layout.GetElements().size() > 0 && layout.GetElements()[0].Instanced;
+		uint32_t bindingIndex = isInstancedBuffer ? 1 : 0;
+
+		if (isInstancedBuffer)
+		{
+			m_VertexBufferIndex = 4;
+		}
+
+		GLint bufferID;
+		glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &bufferID);
+		glBindVertexBuffer(bindingIndex, bufferID, 0, layout.GetStride());
+
 		for (const auto& element : layout)
 		{
 			switch (element.Type)
@@ -43,17 +56,17 @@ namespace RXNEngine {
 				case ShaderDataType::Float4:
 				{
 					glEnableVertexAttribArray(m_VertexBufferIndex);
-					glVertexAttribPointer(m_VertexBufferIndex,
+
+					glVertexAttribFormat(m_VertexBufferIndex,
 						element.GetComponentCount(),
 						GL_FLOAT,
 						element.Normalized ? GL_TRUE : GL_FALSE,
-						layout.GetStride(),
-						(const void*)element.Offset);
+						element.Offset);
+
+					glVertexAttribBinding(m_VertexBufferIndex, bindingIndex);
 
 					if (element.Instanced)
-						glVertexAttribDivisor(m_VertexBufferIndex, 1);
-					else
-						glVertexAttribDivisor(m_VertexBufferIndex, 0);
+						glVertexBindingDivisor(bindingIndex, 1);
 
 					m_VertexBufferIndex++;
 					break;
@@ -65,17 +78,17 @@ namespace RXNEngine {
 					for (uint8_t i = 0; i < count; i++)
 					{
 						glEnableVertexAttribArray(m_VertexBufferIndex);
-						glVertexAttribPointer(m_VertexBufferIndex,
+
+						glVertexAttribFormat(m_VertexBufferIndex,
 							count,
 							GL_FLOAT,
 							element.Normalized ? GL_TRUE : GL_FALSE,
-							layout.GetStride(),
-							(const void*)(element.Offset + sizeof(float) * count * i));
+							element.Offset + sizeof(float) * count * i);
+
+						glVertexAttribBinding(m_VertexBufferIndex, bindingIndex);
 
 						if (element.Instanced)
-							glVertexAttribDivisor(m_VertexBufferIndex, 1);
-						else
-							glVertexAttribDivisor(m_VertexBufferIndex, 0);
+							glVertexBindingDivisor(bindingIndex, 1);
 
 						m_VertexBufferIndex++;
 					}
@@ -88,16 +101,16 @@ namespace RXNEngine {
 				case ShaderDataType::Bool:
 				{
 					glEnableVertexAttribArray(m_VertexBufferIndex);
-					glVertexAttribIPointer(m_VertexBufferIndex,
+
+					glVertexAttribIFormat(m_VertexBufferIndex,
 						element.GetComponentCount(),
 						GL_INT,
-						layout.GetStride(),
-						(const void*)element.Offset);
+						element.Offset);
+
+					glVertexAttribBinding(m_VertexBufferIndex, bindingIndex);
 
 					if (element.Instanced)
-						glVertexAttribDivisor(m_VertexBufferIndex, 1);
-					else
-						glVertexAttribDivisor(m_VertexBufferIndex, 0);
+						glVertexBindingDivisor(bindingIndex, 1);
 
 					m_VertexBufferIndex++;
 					break;

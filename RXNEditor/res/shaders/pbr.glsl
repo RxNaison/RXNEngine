@@ -54,7 +54,7 @@ uniform vec4 u_AlbedoColor;
 uniform vec3 u_EmissiveColor;
 uniform float u_Metalness;
 uniform float u_Roughness;
-uniform float u_AO; // Strength multiplier
+uniform float u_AO;
 
 uniform int u_UseNormalMap;
 
@@ -62,7 +62,7 @@ uniform int u_UseNormalMap;
 uniform vec3 u_CameraPosition;
 
 // Shadows
-layout(binding = 8) uniform sampler2DArray u_ShadowMap; 
+layout(binding = 8) uniform sampler2DArrayShadow u_ShadowMap; 
 layout (std140, binding = 2) uniform ShadowData
 {
     mat4 u_LightSpaceMatrices[4];
@@ -188,16 +188,21 @@ float ShadowCalculation(vec3 fragPosWorld)
     float cascadeMultiplier = float(layer + 1);
     float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias) * cascadeMultiplier;
 
-    float shadow = 0.0;
+    float visibility = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
-    for(int x = -1; x <= 1; ++x) {
-        for(int y = -1; y <= 1; ++y) {
-            float pcfDepth = texture(u_ShadowMap, vec3(projCoords.xy + vec2(x, y) * texelSize, layer)).r; 
-            shadow += (projCoords.z - bias) > pcfDepth ? 1.0 : 0.0;        
-        }    
+    
+    // automatically gives 16-tap smoothing due to hardware bilinear interpolation
+    vec2 offsets[4] = vec2[](
+        vec2(-0.5, -0.5), vec2(0.5, -0.5),
+        vec2(-0.5,  0.5), vec2(0.5,  0.5)
+    );
+
+    for(int i = 0; i < 4; ++i) {
+        visibility += texture(u_ShadowMap, vec4(projCoords.xy + offsets[i] * texelSize, float(layer), projCoords.z - bias));
     }
-    shadow /= 9.0;
-    return shadow;
+    
+    visibility /= 4.0;
+    return 1.0 - visibility;
 }
 
 // ----------------------------------------------------------------------------

@@ -52,20 +52,18 @@ void main()
     mapped = pow(mapped, vec3(1.0 / u_Gamma));
 
     float centerMask = texture(u_OutlineTexture, v_TexCoord).r;
+    float outline = 0.0;
     
-    float a = texture(u_OutlineTexture, v_TexCoord + vec2(u_TexelSize.x, 0.0)).r;
-    float b = texture(u_OutlineTexture, v_TexCoord + vec2(-u_TexelSize.x, 0.0)).r;
-    float c = texture(u_OutlineTexture, v_TexCoord + vec2(0.0, u_TexelSize.y)).r;
-    float d = texture(u_OutlineTexture, v_TexCoord + vec2(0.0, -u_TexelSize.y)).r;
-    
-    float e = texture(u_OutlineTexture, v_TexCoord + vec2(u_TexelSize.x, u_TexelSize.y)).r;
-    float f = texture(u_OutlineTexture, v_TexCoord + vec2(-u_TexelSize.x, -u_TexelSize.y)).r;
-    float g = texture(u_OutlineTexture, v_TexCoord + vec2(u_TexelSize.x, -u_TexelSize.y)).r;
-    float h = texture(u_OutlineTexture, v_TexCoord + vec2(-u_TexelSize.x, u_TexelSize.y)).r;
-
-    float maxNeighbor = max(max(max(a, b), max(c, d)), max(max(e, f), max(g, h)));
-    
-    float outline = max(maxNeighbor - centerMask, 0.0);
+    if (centerMask < 0.5)
+    {
+        float a = texture(u_OutlineTexture, v_TexCoord + vec2(u_TexelSize.x, 0.0)).r;
+        float b = texture(u_OutlineTexture, v_TexCoord + vec2(-u_TexelSize.x, 0.0)).r;
+        float c = texture(u_OutlineTexture, v_TexCoord + vec2(0.0, u_TexelSize.y)).r;
+        float d = texture(u_OutlineTexture, v_TexCoord + vec2(0.0, -u_TexelSize.y)).r;
+        
+        float maxNeighbor = max(max(a, b), max(c, d));
+        outline = max(maxNeighbor - centerMask, 0.0);
+    }
 
     if (outline > 0.0)
     {

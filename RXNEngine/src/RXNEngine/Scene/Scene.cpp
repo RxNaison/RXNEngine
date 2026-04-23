@@ -76,6 +76,8 @@ namespace RXNEngine {
         int EntityID;
         bool IsVisibleToCamera;
         bool IsVisibleToShadows;
+        glm::vec3 BoundingCenter;
+        float BoundingRadius;
     };
 
     template<typename T>
@@ -583,6 +585,9 @@ namespace RXNEngine {
                     cmd.Transform = transform;
                     cmd.EntityID = (int)(uint32_t)e;
 
+                    cmd.BoundingCenter = center;
+                    cmd.BoundingRadius = radius;
+
                     cmd.IsVisibleToCamera = isVisible;
                     cmd.IsVisibleToShadows = isVisibleToShadows;
 
@@ -601,7 +606,7 @@ namespace RXNEngine {
                 renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
 
             if (cmd.IsVisibleToShadows)
-                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
+                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID, cmd.BoundingCenter, cmd.BoundingRadius);
         }
 
         if (showColliders)
@@ -715,6 +720,9 @@ namespace RXNEngine {
                     cmd.Transform = transform;
                     cmd.EntityID = (int)(uint32_t)e;
 
+                    cmd.BoundingCenter = center;
+                    cmd.BoundingRadius = radius;
+
                     cmd.IsVisibleToCamera = isVisible;
                     cmd.IsVisibleToShadows = isVisibleToShadows;
 
@@ -733,7 +741,7 @@ namespace RXNEngine {
                 renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
 
             if (cmd.IsVisibleToShadows)
-                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID);
+                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID, cmd.BoundingCenter, cmd.BoundingRadius);
         }
 
         if (m_Skybox)

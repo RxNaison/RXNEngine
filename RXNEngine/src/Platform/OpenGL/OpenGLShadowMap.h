@@ -9,7 +9,7 @@ namespace RXNEngine {
 		virtual ~OpenGLShadowMap();
 
 		virtual void Init(uint32_t size) override;
-		virtual void BindWrite() override;
+		virtual void BindWriteLayer(uint32_t layer) override;
 		virtual void BindRead(uint32_t slot) override;
 
 		virtual uint32_t GetSize() const override { return m_Size; }

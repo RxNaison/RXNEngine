@@ -225,45 +225,8 @@ namespace RXNEngine {
 	void OpenGLRendererAPI::DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& instanceData, uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex)
 	{
 		vertexArray->Bind();
-		instanceData->Bind();
 
-		const auto& layout = instanceData->GetLayout();
-
-		uint32_t attribIndex = 4;
-
-		for (const auto& element : layout)
-		{
-			switch (element.Type)
-			{
-				case ShaderDataType::Float4:
-				case ShaderDataType::Float3:
-				case ShaderDataType::Float2:
-				case ShaderDataType::Float:
-				{
-					glEnableVertexAttribArray(attribIndex);
-					glVertexAttribPointer(attribIndex, element.GetComponentCount(), GL_FLOAT,
-						element.Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)element.Offset);
-
-					glVertexAttribDivisor(attribIndex, 1);
-					attribIndex++;
-					break;
-				}
-				case ShaderDataType::Int:
-				case ShaderDataType::Int2:
-				case ShaderDataType::Int3:
-				case ShaderDataType::Int4:
-				case ShaderDataType::Bool:
-				{
-					glEnableVertexAttribArray(attribIndex);
-					glVertexAttribIPointer(attribIndex, element.GetComponentCount(), GL_INT,
-						layout.GetStride(), (const void*)element.Offset);
-
-					glVertexAttribDivisor(attribIndex, 1);
-					attribIndex++;
-					break;
-				}
-			}
-		}
+		glBindVertexBuffer(1, instanceData->GetRendererID(), 0, instanceData->GetLayout().GetStride());
 
 		uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
 		const void* offset = (const void*)(sizeof(uint32_t) * baseIndex);

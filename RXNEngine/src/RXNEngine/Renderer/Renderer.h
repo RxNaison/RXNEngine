@@ -23,6 +23,9 @@ namespace RXNEngine {
 
         uint64_t SortKey = 0;
         int EntityID = -1;
+
+        glm::vec3 BoundingCenter = { 0.0f, 0.0f, 0.0f };
+        float BoundingRadius = 0.0f;
     };
 
     struct InstanceData
@@ -78,7 +81,7 @@ namespace RXNEngine {
         void ExecutePickingPass(const Ref<Shader>& pickingShader);
 
         bool IsSphereVisibleToShadows(const glm::vec3& center, float radius);
-        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID);
+        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius);
 
         RendererStatistics GetStats();
         void ResetStats();

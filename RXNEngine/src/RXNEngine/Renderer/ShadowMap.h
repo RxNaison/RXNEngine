@@ -10,7 +10,7 @@ namespace RXNEngine {
 		virtual ~ShadowMap() = default;
 
 		virtual void Init(uint32_t size) = 0;
-		virtual void BindWrite() = 0;
+		virtual void BindWriteLayer(uint32_t layer) = 0;
 		virtual void BindRead(uint32_t slot) = 0;
 
 		virtual uint32_t GetSize() const = 0;

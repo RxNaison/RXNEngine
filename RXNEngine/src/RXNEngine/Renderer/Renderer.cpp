@@ -726,70 +726,86 @@ namespace RXNEngine {
     {
         OPTICK_EVENT();
 
-        m_Data->ShadowData.ShadowTarget->BindWrite();
-        RenderCommand::Clear();
-
         m_Data->ShadowData.ShadowShader->Bind();
 
-        auto& matrices = m_Data->ShadowData.BufferLocal.LightSpaceMatrices;
-        for (int i = 0; i < 4; i++)
+        for (uint32_t cascade = 0; cascade < 4; cascade++)
         {
-            m_Data->ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrices[" + std::to_string(i) + "]", matrices[i]);
-        }
+            m_Data->ShadowData.ShadowTarget->BindWriteLayer(cascade);
 
-        if (!m_Data->ShadowQueue.empty())
-        {
-            auto batchStart = m_Data->ShadowQueue.begin();
+            const glm::mat4& M = m_Data->ShadowData.BufferLocal.LightSpaceMatrices[cascade];
+            m_Data->ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrix", M);
+
+            if (m_Data->ShadowQueue.empty()) continue;
+
             InstanceData* batchData = m_Data->BatchBuffer.data();
             uint32_t transformCount = 0;
+            const RenderCommandPacket* batchStart = nullptr;
 
-            batchData[transformCount].Transform = batchStart->Transform;
-            batchData[transformCount].EntityID = batchStart->EntityID;
-            transformCount++;
-
-            for (auto it = m_Data->ShadowQueue.begin() + 1; it != m_Data->ShadowQueue.end(); ++it)
+            for (const auto& packet : m_Data->ShadowQueue)
             {
-                bool isSameMesh = (it->Mesh == batchStart->Mesh && it->SubmeshIndex == batchStart->SubmeshIndex);
+                glm::vec4 centerNDC = M * glm::vec4(packet.BoundingCenter, 1.0f);
+                float rX = packet.BoundingRadius * glm::length(glm::vec3(M[0][0], M[1][0], M[2][0]));
+                float rY = packet.BoundingRadius * glm::length(glm::vec3(M[0][1], M[1][1], M[2][1]));
+                float rZ = packet.BoundingRadius * glm::length(glm::vec3(M[0][2], M[1][2], M[2][2]));
+
+                if (!(glm::abs(centerNDC.x) <= 1.0f + rX &&
+                    glm::abs(centerNDC.y) <= 1.0f + rY &&
+                    centerNDC.z >= -1.0f - rZ &&
+                    centerNDC.z <= 1.0f + rZ))
+                {
+                    continue;
+                }
+
+                if (!batchStart)
+                {
+                    batchStart = &packet;
+                    batchData[transformCount].Transform = packet.Transform;
+                    batchData[transformCount].EntityID = packet.EntityID;
+                    transformCount++;
+                    continue;
+                }
+
+                bool isSameMesh = (packet.Mesh == batchStart->Mesh && packet.SubmeshIndex == batchStart->SubmeshIndex);
 
                 if (isSameMesh && transformCount < MaxInstances)
                 {
-                    batchData[transformCount].Transform = it->Transform;
-                    batchData[transformCount].EntityID = it->EntityID;
+                    batchData[transformCount].Transform = packet.Transform;
+                    batchData[transformCount].EntityID = packet.EntityID;
                     transformCount++;
                 }
                 else
                 {
                     m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
                     batchStart->Mesh->GetVertexArray()->Bind();
-
                     const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-
                     RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-                    m_Data->Stats.DrawCalls++;
-                    m_Data->Stats.Instances += transformCount;
-                    m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                    if (cascade == 0) {
+                        m_Data->Stats.DrawCalls++;
+                        m_Data->Stats.Instances += transformCount;
+                        m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                    }
 
-                    batchStart = it;
+                    batchStart = &packet;
                     transformCount = 0;
-                    batchData[transformCount].Transform = it->Transform;
-                    batchData[transformCount].EntityID = it->EntityID;
+                    batchData[transformCount].Transform = packet.Transform;
+                    batchData[transformCount].EntityID = packet.EntityID;
                     transformCount++;
                 }
             }
 
-            if (transformCount > 0)
+            if (transformCount > 0 && batchStart)
             {
                 m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
                 batchStart->Mesh->GetVertexArray()->Bind();
-
                 const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-
                 RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-                m_Data->Stats.DrawCalls++;
-                m_Data->Stats.Instances += transformCount;
-                m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                if (cascade == 0) {
+                    m_Data->Stats.DrawCalls++;
+                    m_Data->Stats.Instances += transformCount;
+                    m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                }
             }
         }
     }
@@ -874,13 +890,16 @@ namespace RXNEngine {
         return false;
     }
 
-    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID)
+    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius)
     {
         RenderCommandPacket packet;
         packet.Mesh = mesh;
         packet.SubmeshIndex = submeshIndex;
         packet.Transform = transform;
         packet.EntityID = entityID;
+
+        packet.BoundingCenter = boundingCenter;
+        packet.BoundingRadius = boundingRadius;
 
         m_Data->ShadowQueue.push_back(packet);
     }
