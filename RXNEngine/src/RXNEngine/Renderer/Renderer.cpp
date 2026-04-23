@@ -158,9 +158,17 @@ namespace RXNEngine {
                 minZ = std::min(minZ, trf.z); maxZ = std::max(maxZ, trf.z);
             }
 
-            float zMult = 10.0f;
-            if (minZ < 0) minZ *= zMult; else minZ /= zMult;
-            if (maxZ < 0) maxZ /= zMult; else maxZ *= zMult;
+            minZ -= 200.0f;
+            maxZ += 200.0f;
+
+            float shadowMapRes = 4096.0f;
+            float unitsPerTexelX = (maxX - minX) / shadowMapRes;
+            float unitsPerTexelY = (maxY - minY) / shadowMapRes;
+
+            minX = std::floor(minX / unitsPerTexelX) * unitsPerTexelX;
+            maxX = std::floor(maxX / unitsPerTexelX) * unitsPerTexelX;
+            minY = std::floor(minY / unitsPerTexelY) * unitsPerTexelY;
+            maxY = std::floor(maxY / unitsPerTexelY) * unitsPerTexelY;
 
             const glm::mat4 lightProjection = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
 
@@ -720,7 +728,6 @@ namespace RXNEngine {
 
         m_Data->ShadowData.ShadowTarget->BindWrite();
         RenderCommand::Clear();
-        RenderCommand::SetCullFace(RendererAPI::CullFace::Front);
 
         m_Data->ShadowData.ShadowShader->Bind();
 
@@ -785,8 +792,6 @@ namespace RXNEngine {
                 m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
             }
         }
-
-        RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
     }
 
     void Renderer::ExecutePickingPass(const Ref<Shader>& pickingShader)
@@ -853,11 +858,12 @@ namespace RXNEngine {
     {
         for (int i = 0; i < 4; i++)
         {
-            glm::vec4 centerNDC = m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i] * glm::vec4(center, 1.0f);
+            const glm::mat4& M = m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i];
+            glm::vec4 centerNDC = M * glm::vec4(center, 1.0f);
 
-            float rX = radius * glm::abs(m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i][0][0]);
-            float rY = radius * glm::abs(m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i][1][1]);
-            float rZ = radius * glm::abs(m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i][2][2]);
+            float rX = radius * glm::length(glm::vec3(M[0][0], M[1][0], M[2][0]));
+            float rY = radius * glm::length(glm::vec3(M[0][1], M[1][1], M[2][1]));
+            float rZ = radius * glm::length(glm::vec3(M[0][2], M[1][2], M[2][2]));
 
             if (glm::abs(centerNDC.x) <= 1.0f + rX && glm::abs(centerNDC.y) <= 1.0f + rY &&
                 centerNDC.z >= -1.0f - rZ && centerNDC.z <= 1.0f + rZ)

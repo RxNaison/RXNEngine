@@ -170,23 +170,24 @@ float ShadowCalculation(vec3 fragPosWorld)
     }
     if (layer == -1) layer = 3;
 
-    vec4 fragPosLightSpace = u_LightSpaceMatrices[layer] * vec4(fragPosWorld, 1.0);
+    vec3 normal = normalize(v_Normal);
+    vec3 lightDir = normalize(-u_DirLightDirection.xyz);
+
+    float normalOffsetScale = 0.01 * float(layer + 1);
+    
+    vec3 shadowPos = fragPosWorld + normal * normalOffsetScale * max(1.0 - dot(normal, lightDir), 0.00);
+
+    vec4 fragPosLightSpace = u_LightSpaceMatrices[layer] * vec4(shadowPos, 1.0);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
     if (projCoords.z > 1.0) return 0.0;
 
-    vec3 normal = normalize(v_Normal);
-    vec3 lightDir = normalize(-u_DirLightDirection.xyz);
-    
-    float minBias = 0.00005;
-    float maxBias = 0.0005;
-
-    float cascadeMultiplier = float(layer + 1) * 0.5;
-
+    float minBias = 0.00001;
+    float maxBias = 0.0001;
+    float cascadeMultiplier = float(layer + 1);
     float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias) * cascadeMultiplier;
 
-    // PCF
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
     for(int x = -1; x <= 1; ++x) {
