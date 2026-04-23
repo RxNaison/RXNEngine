@@ -16,7 +16,7 @@ namespace RXNEngine {
 
 	class Entity;
 
-	class Scene
+	class Scene : public SubsystemRegistry
 	{
 	public:
 		Scene();
@@ -61,24 +61,6 @@ namespace RXNEngine {
 		bool IsRunning() { return m_IsRunning; }
 		bool IsSimulating() { return m_IsSimulating; }
 
-		template<typename T, typename... Args>
-		void AddSubsystem(Args&&... args)
-		{
-			static_assert(std::is_base_of<Subsystem, T>::value, "System must inherit from RXNEngine::Subsystem!");
-			Ref<T> subsystem = CreateRef<T>(std::forward<Args>(args)...);
-			subsystem->Init();
-			m_Subsystems[typeid(T)] = subsystem;
-			m_SubsystemList.push_back(subsystem);
-		}
-
-		template<typename T>
-		Ref<T> GetSubsystem()
-		{
-			auto it = m_Subsystems.find(typeid(T));
-			RXN_CORE_ASSERT(it != m_Subsystems.end(), "Requested Subsystem is not registered!");
-			return std::static_pointer_cast<T>(it->second);
-		}
-
 	private:
 		void UpdateWorldTransforms();
 		void OnCameraComponentAdded(entt::registry& registry, entt::entity entity);
@@ -100,9 +82,6 @@ namespace RXNEngine {
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 		std::unordered_set<entt::entity> m_EntitiesToDestroy;
-
-		std::unordered_map<std::type_index, Ref<Subsystem>> m_Subsystems;
-		std::vector<Ref<Subsystem>> m_SubsystemList;
 
 		friend class Entity;
 		friend class SceneSerializer;

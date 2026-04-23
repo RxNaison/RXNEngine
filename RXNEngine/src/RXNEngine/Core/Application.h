@@ -15,7 +15,7 @@
 
 namespace RXNEngine {
 
-	class Application
+	class Application : public SubsystemRegistry
 	{
 	public:
 		Application(const WindowProps& props = WindowProps());
@@ -35,39 +35,6 @@ namespace RXNEngine {
 
 		void Close() { m_Running = false; }
 
-		template<typename T, typename... Args>
-		void AddSubsystem(Args&&... args)
-		{
-			static_assert(std::is_base_of<Subsystem, T>::value, "System must inherit from RXNEngine::Subsystem!");
-
-			Ref<T> subsystem = CreateRef<T>(std::forward<Args>(args)...);
-			subsystem->Init();
-
-			m_Subsystems[typeid(T)] = subsystem;
-			m_SubsystemList.push_back(subsystem);
-		}
-
-		template<typename TInterface>
-		void AddSubsystem(Ref<TInterface> instance)
-		{
-			static_assert(std::is_base_of<Subsystem, TInterface>::value, "System must inherit from RXNEngine::Subsystem!");
-
-			instance->Init();
-
-			m_Subsystems[typeid(TInterface)] = instance;
-			m_SubsystemList.push_back(instance);
-		}
-
-		template<typename T>
-		Ref<T> GetSubsystem()
-		{
-			auto it = m_Subsystems.find(typeid(T));
-
-			if (it == m_Subsystems.end())
-				throw std::runtime_error("Requested Subsystem is not registered!");
-
-			return std::static_pointer_cast<T>(it->second);
-		}
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -77,9 +44,6 @@ namespace RXNEngine {
 		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 		bool m_Minimized = false;
-
-		std::unordered_map<std::type_index, Ref<Subsystem>> m_Subsystems;
-		std::vector<Ref<Subsystem>> m_SubsystemList;
 
 		LayerStack m_LayerStack;
 

@@ -44,16 +44,7 @@ namespace RXNEngine {
 		}
 
 		if (m_Subsystems.find(typeid(JobSystem)) != m_Subsystems.end())
-			GetSubsystem<JobSystem>()->Shutdown();
-
-		for (auto it = m_SubsystemList.rbegin(); it != m_SubsystemList.rend(); ++it)
-		{
-			if ((*it) != m_Subsystems[typeid(JobSystem)])
-				(*it)->Shutdown();
-		}
-
-		m_Subsystems.clear();
-		m_SubsystemList.clear();
+			GetSubsystem<JobSystem>()->Shutdown();			
 	}
 
 	void Application::PushLayer(Layer* layer)

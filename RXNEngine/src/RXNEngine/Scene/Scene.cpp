@@ -152,11 +152,6 @@ namespace RXNEngine {
 
     Scene::~Scene()
     {
-        for (auto it = m_SubsystemList.rbegin(); it != m_SubsystemList.rend(); ++it)
-            (*it)->Shutdown();
-
-        m_Subsystems.clear();
-        m_SubsystemList.clear();
     }
 
     Entity Scene::CreateEntity(const std::string& name)
