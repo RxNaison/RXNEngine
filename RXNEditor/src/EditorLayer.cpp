@@ -58,14 +58,14 @@ namespace RXNEditor {
             case SceneState::Edit:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_SceneRenderer->RenderEditor(*m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                m_SceneRenderer->RenderEditor(deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
                 Application::Get().GetSubsystem<ScriptEngine>()->ReloadIfModified(deltaTime);
                 break;
             }
             case SceneState::Simulate:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_SceneRenderer->RenderEditor(*m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                m_SceneRenderer->RenderEditor(deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
                 break;
             }
             case SceneState::Play:

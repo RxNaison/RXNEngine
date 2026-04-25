@@ -260,6 +260,7 @@ namespace RXNEditor {
             ShowAddComponentEntry<StaticMeshComponent>("Mesh", m_SelectedEntity);
             ShowAddComponentEntry<DirectionalLightComponent>("Directional Light", m_SelectedEntity);
             ShowAddComponentEntry<PointLightComponent>("Point Light", m_SelectedEntity);
+            ShowAddComponentEntry<SpotLightComponent>("Spot Light", m_SelectedEntity);
             ShowAddComponentEntry<RigidbodyComponent>("Rigidbody", m_SelectedEntity);
             ShowAddComponentEntry<BoxColliderComponent>("Box Collider", m_SelectedEntity);
             ShowAddComponentEntry<SphereColliderComponent>("Sphere Collider", m_SelectedEntity);
@@ -435,6 +436,63 @@ namespace RXNEditor {
                 UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
             });
 
+        DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
+            {
+                UI::DrawColor3Control("Color", component.Color);
+                UI::DrawFloatControl("Intensity", component.Intensity, 0.1f, 0.0f, 100.0f);
+                UI::DrawFloatControl("Radius", component.Radius, 0.1f, 0.0f, 1000.0f);
+                UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Inner Angle", component.InnerAngle, 0.1f, 0.0f, 90.0f);
+                UI::DrawFloatControl("Outer Angle", component.OuterAngle, 0.1f, 0.0f, 90.0f);
+
+                ImGui::Separator();
+                ImGui::Text("Cookie Texture");
+                ImGui::SameLine(100.0f);
+
+                bool hasCookie = (component.CookieTexture != nullptr || component.CookieVideo != nullptr);
+                std::string cookieLabel = hasCookie ? component.CookieAssetPath.substr(component.CookieAssetPath.find_last_of("/\\") + 1) : "None";
+
+                ImGui::Button(cookieLabel.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
+
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string path = (const char*)payload->Data;
+
+                        if (path.ends_with(".png") || path.ends_with(".jpg"))
+                        {
+                            component.CookieAssetPath = path;
+                            component.IsVideo = false;
+                            component.CookieVideo = nullptr;
+                            component.CookieTexture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(path);
+                        }
+                        else if (path.ends_with(".mpg") || path.ends_with(".mpeg"))
+                        {
+                            component.CookieAssetPath = path;
+                            component.IsVideo = true;
+                            component.CookieTexture = nullptr;
+                            component.CookieVideo = CreateRef<VideoTexture>(path);
+                        }
+                    }
+
+                    ImGui::EndDragDropTarget();
+                }
+
+                if (hasCookie)
+                {
+                    UI::DrawFloatControl("Cookie Size", component.CookieSize, 0.05f, 0.1f, 10.0f);
+
+                    if (ImGui::Button("Remove Cookie", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+                    {
+                        component.CookieAssetPath = "";
+                        component.CookieTexture = nullptr;
+                        component.CookieVideo = nullptr;
+                        component.IsVideo = false;
+                    }
+                }
+            });
+
         DrawComponent<RigidbodyComponent>("Rigidbody", entity, [](auto& component)
             {
                 const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
@@ -528,10 +586,9 @@ namespace RXNEditor {
                 auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
 
                 bool classExists = scriptSys->EntityClassExists(component.ClassName);
+
                 if (!classExists && !component.ClassName.empty())
-                {
                     ImGui::TextColored(ImVec4(0.9f, 0.2f, 0.2f, 1.0f), "Warning: Class does not exist in loaded Assembly!");
-                }
 
                 if (scriptSys->EntityClassExists(component.ClassName))
                 {

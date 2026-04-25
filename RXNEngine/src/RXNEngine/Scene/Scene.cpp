@@ -588,10 +588,44 @@ namespace RXNEngine {
                 lightEnv.PointLights.push_back(pl);
             }
         }
+        {
+            auto group = m_Registry.group<SpotLightComponent>();
+            for (auto entity : group)
+            {
+                auto light = group.get<SpotLightComponent>(entity);
+                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+
+                SpotLight sl;
+                sl.Position = glm::vec3(worldTransform[3]);
+                sl.Direction = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+
+                glm::vec3 up = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+
+                glm::mat4 lightView = glm::lookAt(sl.Position, sl.Position + sl.Direction, up);
+                glm::mat4 lightProj = glm::perspective(glm::radians(light.OuterAngle * 2.0f), 1.0f, 0.1f, light.Radius);
+                sl.LightSpaceMatrix = lightProj * lightView;
+
+                sl.Color = light.Color;
+                sl.Intensity = light.Intensity;
+                sl.Radius = light.Radius;
+                sl.Falloff = light.Falloff;
+                sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
+                sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
+
+                sl.CookieTexture = light.IsVideo ?
+                    (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;
+
+                sl.CookieSize = light.CookieSize;
+
+                lightEnv.SpotLights.push_back(sl);
+            }
+        }
+
         auto renderSys = Application::Get().GetSubsystem<Renderer>();
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
 
+        lightEnv.EnvironmentIntensity = m_SkyboxIntensity;
         renderSys->BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
 
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
@@ -723,9 +757,51 @@ namespace RXNEngine {
             }
         }
 
+        auto spotLightView = m_Registry.view<SpotLightComponent>();
+        for (auto e : spotLightView)
+        {
+            auto& sl = spotLightView.get<SpotLightComponent>(e);
+            if (sl.IsVideo && sl.CookieVideo)
+                sl.CookieVideo->Update(deltaTime);
+        }
+
+        {
+            auto group = m_Registry.group<SpotLightComponent>();
+            for (auto entity : group)
+            {
+                auto light = group.get<SpotLightComponent>(entity);
+                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
+
+                SpotLight sl;
+                sl.Position = glm::vec3(worldTransform[3]);
+                sl.Direction = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+
+                glm::vec3 up = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+
+                glm::mat4 lightView = glm::lookAt(sl.Position, sl.Position + sl.Direction, up);
+                glm::mat4 lightProj = glm::perspective(glm::radians(light.OuterAngle * 2.0f), 1.0f, 0.1f, light.Radius);
+                sl.LightSpaceMatrix = lightProj * lightView;
+
+                sl.Color = light.Color;
+                sl.Intensity = light.Intensity;
+                sl.Radius = light.Radius;
+                sl.Falloff = light.Falloff;
+                sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
+                sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
+
+                sl.CookieTexture = light.IsVideo ?
+                    (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;
+
+                sl.CookieSize = light.CookieSize;
+
+                lightEnv.SpotLights.push_back(sl);
+            }
+        }
+
         auto renderSys = Application::Get().GetSubsystem<Renderer>();
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
 
+        lightEnv.EnvironmentIntensity = m_SkyboxIntensity;
         renderSys->BeginScene(camera, lightEnv, m_Skybox, renderTarget);
 
         glm::mat4 viewProj = camera.GetViewProjection();
@@ -883,6 +959,14 @@ namespace RXNEngine {
     void Scene::OnUpdateRuntime(float deltaTime)
     {
         OPTICK_EVENT();
+
+        auto spotLightView = m_Registry.view<SpotLightComponent>();
+        for (auto e : spotLightView)
+        {
+            auto& sl = spotLightView.get<SpotLightComponent>(e);
+            if (sl.IsVideo && sl.CookieVideo)
+                sl.CookieVideo->Update(deltaTime);
+        }
 
         auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
@@ -1082,6 +1166,14 @@ namespace RXNEngine {
             scriptSys->OnCreateEntity(entity);
         }
 
+        auto spotLightView = m_Registry.view<SpotLightComponent>();
+        for (auto e : spotLightView)
+        {
+            auto& sl = spotLightView.get<SpotLightComponent>(e);
+            if (sl.IsVideo && sl.CookieVideo)
+                sl.CookieVideo->Rewind();
+        }
+
         m_IsRunning = true;
     }
 
@@ -1089,6 +1181,14 @@ namespace RXNEngine {
     {
         OnSimulationStop();
         Application::Get().GetSubsystem<ScriptEngine>()->OnRuntimeStop();
+
+        auto spotLightView = m_Registry.view<SpotLightComponent>();
+        for (auto e : spotLightView)
+        {
+            auto& sl = spotLightView.get<SpotLightComponent>(e);
+            if (sl.IsVideo && sl.CookieVideo)
+                sl.CookieVideo->Rewind();
+        }
 
         m_IsRunning = false;
     }

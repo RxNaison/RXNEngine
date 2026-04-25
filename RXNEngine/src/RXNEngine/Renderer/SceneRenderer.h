@@ -44,8 +44,9 @@ namespace RXNEngine {
         void SetViewportSize(uint32_t width, uint32_t height);
 
         void SetScene(Ref<Scene>& scene) { m_Scene = scene; }
+        Ref<Scene>& GetScene() { return m_Scene; }
 
-        void RenderEditor(EditorCamera& camera, Entity selectedEntity = {});
+        void RenderEditor(float deltaTime, EditorCamera& camera, Entity selectedEntity = {});
         void RenderRuntime();
 
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }

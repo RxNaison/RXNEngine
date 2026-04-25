@@ -168,6 +168,45 @@ namespace RXNEngine
         }
     }
 
+    public class SpotLightComponent : Component
+    {
+        public SpotLightData Data
+        {
+            get
+            {
+                unsafe
+                {
+                    SpotLightData res;
+                    ((delegate* unmanaged<ulong, SpotLightData*, void>)Interop.NativeFunctions.NativeSpotLight_Get)(EntityHandle.ID, &res);
+                    return res;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    ((delegate* unmanaged<ulong, SpotLightData*, void>)Interop.NativeFunctions.NativeSpotLight_Set)(EntityHandle.ID, &value);
+                }
+            }
+        }
+
+        // --- Video Controls ---
+        public void PlayVideo()
+        {
+            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoPlay)(EntityHandle.ID); }
+        }
+
+        public void PauseVideo()
+        {
+            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoPause)(EntityHandle.ID); }
+        }
+
+        public void RewindVideo()
+        {
+            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoRewind)(EntityHandle.ID); }
+        }
+    }
+
     public class ScriptComponent : Component
     {
         public string ScriptPath

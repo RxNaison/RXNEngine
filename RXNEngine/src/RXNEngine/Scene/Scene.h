@@ -53,6 +53,8 @@ namespace RXNEngine {
 		void SetPrimaryCameraEntity(Entity entity);
 
 		void SetSkybox(Ref<Cubemap>& skybox) { m_Skybox = skybox; }
+		float GetSkyboxIntensity() const { return m_SkyboxIntensity; }
+		void SetSkyboxIntensity(float intensity) { m_SkyboxIntensity = intensity; }
 
 		const entt::registry& GetRaw() { return m_Registry; }
 

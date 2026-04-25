@@ -5,6 +5,7 @@
 #include "RXNEngine/Asset/StaticMesh.h"
 #include "RXNEngine/Renderer/Light.h"
 #include "SceneCamera.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VideoTexture.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -104,6 +105,22 @@ namespace RXNEngine {
 		float Intensity = 1.0f;
 		float Radius = 10.0f;
 		float Falloff = 1.0f;
+	};
+
+	struct SpotLightComponent
+	{
+		glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
+		float Intensity = 1.0f;
+		float Radius = 10.0f;
+		float Falloff = 1.0f;
+		float InnerAngle = 12.5f; // In degrees
+		float OuterAngle = 17.5f; // In degrees
+
+		Ref<Texture2D> CookieTexture = nullptr;
+		Ref<VideoTexture> CookieVideo = nullptr;
+		std::string CookieAssetPath = "";
+		bool IsVideo = false;
+		float CookieSize = 1.0f;
 	};
 
 	class ScriptableEntity;
@@ -247,6 +264,7 @@ namespace RXNEngine {
 		CameraComponent,
 		DirectionalLightComponent,
 		PointLightComponent,
+		SpotLightComponent,
 		NativeScriptComponent,
 		ScriptComponent,
 		RigidbodyComponent,

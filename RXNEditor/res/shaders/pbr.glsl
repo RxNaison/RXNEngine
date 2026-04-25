@@ -75,6 +75,8 @@ layout(binding = 10) uniform samplerCube u_IrradianceMap;
 layout(binding = 11) uniform samplerCube u_PrefilterMap;
 layout(binding = 12) uniform sampler2D   u_BRDFLUT;
 
+layout(binding = 16) uniform sampler2D u_LightCookies[8];
+
 // Lighting UBO
 struct PointLight {
     vec4 PositionIntensity; 
@@ -82,11 +84,23 @@ struct PointLight {
     vec4 Falloff;           
 };
 
+struct SpotLight {
+    vec4 PositionIntensity; 
+    vec4 DirectionRadius;
+    vec4 ColorCutoff;
+    vec4 Falloff;
+    mat4 LightSpaceMatrix;
+};
+
 layout(std140, binding = 1) uniform LightData {
     vec4 u_DirLightDirection; 
     vec4 u_DirLightColor;
     uint u_PointLightCount;
+    uint u_SpotLightCount;
+    float u_EnvironmentIntensity;
+    uint u_Padding;
     PointLight u_PointLights[100];
+    SpotLight  u_SpotLights[100];
 };
 
 const float PI = 3.14159265359;
@@ -183,8 +197,8 @@ float ShadowCalculation(vec3 fragPosWorld)
 
     if (projCoords.z > 1.0) return 0.0;
 
-    float minBias = 0.00001;
-    float maxBias = 0.0001;
+    float minBias = 0.00003;
+    float maxBias = 0.0003;
     float cascadeMultiplier = float(layer + 1);
     float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias) * cascadeMultiplier;
 
@@ -290,7 +304,76 @@ void main()
             float NdotL = max(dot(N, L), 0.0);        
             Lo += (kD * albedo / PI + specular) * radiance * NdotL;
         }
-    }   
+    }
+
+// Spot Lights
+    for(int i = 0; i < int(u_SpotLightCount); ++i)
+    {
+        vec3 lightPos = u_SpotLights[i].PositionIntensity.xyz;
+        float distance = length(lightPos - v_WorldPos);
+        float radius = u_SpotLights[i].DirectionRadius.w;
+
+        if (distance < radius)
+        {
+            vec3 L = normalize(lightPos - v_WorldPos);
+            vec3 lightDir = normalize(u_SpotLights[i].DirectionRadius.xyz);
+            
+            float theta = dot(L, -lightDir); 
+            float innerCutOff = u_SpotLights[i].ColorCutoff.w;
+            float outerCutOff = u_SpotLights[i].Falloff.y;
+            float epsilon = innerCutOff - outerCutOff;
+            float intensityMultiplier = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
+
+            if (intensityMultiplier > 0.0)
+            {
+                vec3 cookieColor = vec3(1.0);
+                int cookieIndex = int(u_SpotLights[i].Falloff.z);
+                
+                if (cookieIndex >= 16 && cookieIndex < 24)
+                {
+                    int arrayIndex = cookieIndex - 16;
+                    
+                    vec4 lightSpacePos = u_SpotLights[i].LightSpaceMatrix * vec4(v_WorldPos, 1.0);
+                    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+                    projCoords = projCoords * 0.5 + 0.5;
+                    
+                    float cookieSize = u_SpotLights[i].Falloff.w;
+                    vec2 cookieUV = (projCoords.xy - 0.5) / cookieSize + 0.5;
+
+                    if (lightSpacePos.w > 0.0 && 
+                        cookieUV.x >= 0.0 && cookieUV.x <= 1.0 && 
+                        cookieUV.y >= 0.0 && cookieUV.y <= 1.0) 
+                    {
+                        cookieColor = texture(u_LightCookies[arrayIndex], cookieUV).rgb;
+                    } 
+                    else 
+                    {
+                        cookieColor = vec3(0.0);
+                    }
+                }
+
+                vec3 H = normalize(V + L);
+                float intensity = u_SpotLights[i].PositionIntensity.w;
+                float attenuation = 1.0 / (distance * distance);
+                vec3 radiance = u_SpotLights[i].ColorCutoff.rgb * intensity * attenuation * intensityMultiplier * cookieColor;
+
+                float NDF = DistributionGGX(N, H, roughness);   
+                float G   = GeometrySmith(N, V, L, roughness);      
+                vec3 F    = FresnelSchlick(max(dot(H, V), 0.0), F0);
+                    
+                vec3 numerator    = NDF * G * F; 
+                float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; 
+                vec3 specular = numerator / denominator;
+                
+                vec3 kS = F;
+                vec3 kD = vec3(1.0) - kS;
+                kD *= 1.0 - metallic;   
+
+                float NdotL = max(dot(N, L), 0.0);        
+                Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+            }
+        }
+    }
 
     // IBL (AMBIENT)
     vec3 F_IBL = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
@@ -306,7 +389,7 @@ void main()
     vec2 brdf  = texture(u_BRDFLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specularIBL = prefilteredColor * (F_IBL * brdf.x + brdf.y);
 
-    vec3 ambient = (kD_IBL * diffuseIBL + specularIBL) * ao;
+    vec3 ambient = (kD_IBL * diffuseIBL + specularIBL) * ao * u_EnvironmentIntensity;
     
     // COMBINE
     vec3 color = ambient + Lo + emissive;

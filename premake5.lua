@@ -21,6 +21,7 @@ IncludeDir["PhysX"] = "RXNEngine/vendor/PhysX/physx/include"
 IncludeDir["PxShared"] = "RXNEngine/vendor/PhysX/pxshared/include"
 IncludeDir["Optick"] = "RXNEngine/vendor/optick/src"
 IncludeDir["CoreCLR"] = "RXNEngine/vendor/coreclr/include"
+IncludeDir["pl_mpeg"] = "RXNEngine/vendor/pl_mpeg/include"
 
 PhysXBinDir = "RXNEngine/vendor/PhysX/physx/bin/win.x86_64.vc143.md"
 
@@ -84,7 +85,8 @@ project "RXNEngine"
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.PxShared}",
         "%{IncludeDir.Optick}",
-        "%{IncludeDir.CoreCLR}"
+        "%{IncludeDir.CoreCLR}",
+        "%{IncludeDir.pl_mpeg}"
     }
 
     links { "Glad", "Imgui", "opengl32.lib" }

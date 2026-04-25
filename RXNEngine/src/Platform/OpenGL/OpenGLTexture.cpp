@@ -176,7 +176,8 @@ namespace RXNEngine {
 		RXN_CORE_ASSERT(size == m_Width * m_Height * bytesPerPixel, "Data must be entire texture!");
 		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
 
-		glGenerateTextureMipmap(m_RendererID);
+		if (m_Specification.GenerateMips)
+			glGenerateTextureMipmap(m_RendererID);
 	}
 
 	void OpenGLTexture2D::Bind(uint32_t slot) const

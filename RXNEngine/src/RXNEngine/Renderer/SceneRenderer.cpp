@@ -116,7 +116,7 @@ namespace RXNEngine {
         }
     }
 
-    void SceneRenderer::RenderEditor(EditorCamera& camera, Entity selectedEntity)
+    void SceneRenderer::RenderEditor(float deltaTime, EditorCamera& camera, Entity selectedEntity)
     {
         OPTICK_EVENT();
 
@@ -159,7 +159,7 @@ namespace RXNEngine {
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
         RenderCommand::Clear();
 
-        m_Scene->OnRenderEditor(0.0f, camera, m_GeoPass, m_Settings.ShowColliders);
+        m_Scene->OnRenderEditor(deltaTime, camera, m_GeoPass, m_Settings.ShowColliders);
 
         m_GeoPass->Bind();
 

@@ -24,6 +24,11 @@ namespace RXNEditor {
 		UI::DrawFloatControl("Bloom Intensity", m_Context->GetSettings().BloomIntensity, 0.1f, 0.0f, 100.0f, 110.0f);
 
 		UI::DrawCheckbox("Show Colliders", m_Context->GetSettings().ShowColliders);
+
+		float intensity = m_Context->GetScene()->GetSkyboxIntensity();
+		if (UI::DrawFloatControl("Skybox Intensity", intensity, 0.05f, 0.0f, 10.0f))
+			m_Context->GetScene()->SetSkyboxIntensity(intensity);
+
 		ImGui::End();
 	}
 }

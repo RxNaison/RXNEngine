@@ -17,7 +17,10 @@ namespace RXNEngine {
         glm::vec4 DirLightColor;
 
         uint32_t PointLightCount;
-        uint32_t Padding[3];      // align to 16 bytes
+        uint32_t SpotLightCount;
+
+        float EnvironmentIntensity;
+        uint32_t Padding; // align to 16 bytes
 
         struct PointLightGPU
         {
@@ -25,6 +28,15 @@ namespace RXNEngine {
             glm::vec4 Color;     // w = Radius
             glm::vec4 Falloff;   // x = Falloff, yzw = Padding
         } PointLights[100];
+
+        struct SpotLightGPU
+        {
+            glm::vec4 Position;  // w = Intensity
+            glm::vec4 Direction; // w = Radius
+            glm::vec4 Color;     // w = Inner CutOff
+            glm::vec4 Falloff;   // x = Falloff, y = Outer Cutoff, w = Texture size
+            glm::mat4 LightSpaceMatrix;
+        } SpotLights[100];
     };
 
     struct ShadowData
@@ -357,6 +369,31 @@ namespace RXNEngine {
             m_Data->LightBufferLocal.PointLights[i].Position = glm::vec4(light.Position, light.Intensity);
             m_Data->LightBufferLocal.PointLights[i].Color = glm::vec4(light.Color, light.Radius);
             m_Data->LightBufferLocal.PointLights[i].Falloff = glm::vec4(light.Falloff, 0.0f, 0.0f, 0.0f);
+        }
+
+        m_Data->LightBufferLocal.SpotLightCount = std::min((uint32_t)lights.SpotLights.size(), 100u);
+        m_Data->LightBufferLocal.EnvironmentIntensity = lights.EnvironmentIntensity;
+
+        uint32_t currentCookieSlot = 16;
+
+        for (uint32_t i = 0; i < m_Data->LightBufferLocal.SpotLightCount; i++)
+        {
+            const auto& light = lights.SpotLights[i];
+
+            int cookieIndex = -1;
+            if (light.CookieTexture && currentCookieSlot < 24)
+            {
+                RenderCommand::BindTextureID(currentCookieSlot, light.CookieTexture->GetRendererID());
+                cookieIndex = currentCookieSlot;
+                currentCookieSlot++;
+            }
+
+            m_Data->LightBufferLocal.SpotLights[i].Position = glm::vec4(light.Position, light.Intensity);
+            m_Data->LightBufferLocal.SpotLights[i].Direction = glm::vec4(light.Direction, light.Radius);
+            m_Data->LightBufferLocal.SpotLights[i].Color = glm::vec4(light.Color, light.CutOff);
+
+            m_Data->LightBufferLocal.SpotLights[i].Falloff = glm::vec4(light.Falloff, light.OuterCutOff, (float)cookieIndex, light.CookieSize);
+            m_Data->LightBufferLocal.SpotLights[i].LightSpaceMatrix = light.LightSpaceMatrix;
         }
 
         m_Data->LightUniformBuffer->SetData(&m_Data->LightBufferLocal, sizeof(LightDataGPU));

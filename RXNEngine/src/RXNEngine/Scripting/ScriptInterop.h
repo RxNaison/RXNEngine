@@ -71,6 +71,12 @@ namespace RXNEngine {
         void* NativePointLight_Get = nullptr;
         void* NativePointLight_Set = nullptr;
 
+        void* NativeSpotLight_Get = nullptr;
+        void* NativeSpotLight_Set = nullptr;
+        void* NativeSpotLight_VideoPlay = nullptr;
+        void* NativeSpotLight_VideoPause = nullptr;
+        void* NativeSpotLight_VideoRewind = nullptr;
+
         void* NativeScript_Get = nullptr;
         void* NativeScript_Set = nullptr;
 

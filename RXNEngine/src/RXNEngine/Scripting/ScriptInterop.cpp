@@ -35,10 +35,22 @@ namespace RXNEngine {
             }
         };
 
-        struct TransformDataInterop {
+        struct TransformDataInterop
+        {
             glm::vec3 Translation;
             glm::vec3 Rotation;
             glm::vec3 Scale;
+        };
+
+        struct SpotLightDataInterop
+        {
+            glm::vec3 Color;
+            float Intensity;
+            float Radius;
+            float Falloff;
+            float InnerAngle;
+            float OuterAngle;
+            float CookieSize;
         };
     }
 
@@ -283,6 +295,7 @@ namespace RXNEngine {
         if (type == "CameraComponent") return entity.HasComponent<CameraComponent>() ? 1 : 0;
         if (type == "DirectionalLightComponent") return entity.HasComponent<DirectionalLightComponent>() ? 1 : 0;
         if (type == "PointLightComponent") return entity.HasComponent<PointLightComponent>() ? 1 : 0;
+        if (type == "SpotLightComponent") return entity.HasComponent<SpotLightComponent>() ? 1 : 0;
         if (type == "ScriptComponent") return entity.HasComponent<ScriptComponent>() ? 1 : 0;
         if (type == "RigidbodyComponent") return entity.HasComponent<RigidbodyComponent>() ? 1 : 0;
         if (type == "BoxColliderComponent") return entity.HasComponent<BoxColliderComponent>() ? 1 : 0;
@@ -305,6 +318,7 @@ namespace RXNEngine {
         else if (type == "CameraComponent") entity.AddComponent<CameraComponent>();
         else if (type == "DirectionalLightComponent") entity.AddComponent<DirectionalLightComponent>();
         else if (type == "PointLightComponent") entity.AddComponent<PointLightComponent>();
+        else if (type == "SpotLightComponent") entity.AddComponent<SpotLightComponent>();
         else if (type == "ScriptComponent") entity.AddComponent<ScriptComponent>();
         else if (type == "RigidbodyComponent") entity.AddComponent<RigidbodyComponent>();
         else if (type == "BoxColliderComponent") entity.AddComponent<BoxColliderComponent>();
@@ -405,6 +419,51 @@ namespace RXNEngine {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         entity.GetComponent<PointLightComponent>() = *inComponent;
     }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSpotLight_Get(uint64_t entityID, SpotLightDataInterop* outData)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        auto& sl = entity.GetComponent<SpotLightComponent>();
+        outData->Color = sl.Color;
+        outData->Intensity = sl.Intensity;
+        outData->Radius = sl.Radius;
+        outData->Falloff = sl.Falloff;
+        outData->InnerAngle = sl.InnerAngle;
+        outData->OuterAngle = sl.OuterAngle;
+        outData->CookieSize = sl.CookieSize;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSpotLight_Set(uint64_t entityID, SpotLightDataInterop* inData)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        auto& sl = entity.GetComponent<SpotLightComponent>();
+        sl.Color = inData->Color;
+        sl.Intensity = inData->Intensity;
+        sl.Radius = inData->Radius;
+        sl.Falloff = inData->Falloff;
+        sl.InnerAngle = inData->InnerAngle;
+        sl.OuterAngle = inData->OuterAngle;
+        sl.CookieSize = inData->CookieSize;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSpotLight_VideoPlay(uint64_t entityID) {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        auto& sl = entity.GetComponent<SpotLightComponent>();
+        if (sl.IsVideo && sl.CookieVideo) sl.CookieVideo->Play();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSpotLight_VideoPause(uint64_t entityID) {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        auto& sl = entity.GetComponent<SpotLightComponent>();
+        if (sl.IsVideo && sl.CookieVideo) sl.CookieVideo->Pause();
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSpotLight_VideoRewind(uint64_t entityID) {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        auto& sl = entity.GetComponent<SpotLightComponent>();
+        if (sl.IsVideo && sl.CookieVideo) sl.CookieVideo->Rewind();
+    }
+
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Get(uint64_t entityID, char* outBuffer, uint32_t maxLength)
     {
@@ -594,6 +653,12 @@ namespace RXNEngine {
 
         outCalls->NativePointLight_Get = (void*)NativePointLight_Get;
         outCalls->NativePointLight_Set = (void*)NativePointLight_Set;
+
+        outCalls->NativeSpotLight_Get = (void*)NativeSpotLight_Get;
+        outCalls->NativeSpotLight_Set = (void*)NativeSpotLight_Set;
+        outCalls->NativeSpotLight_VideoPlay = (void*)NativeSpotLight_VideoPlay;
+        outCalls->NativeSpotLight_VideoPause = (void*)NativeSpotLight_VideoPause;
+        outCalls->NativeSpotLight_VideoRewind = (void*)NativeSpotLight_VideoRewind;
 
         outCalls->NativeScript_Get = (void*)NativeScript_Get;
         outCalls->NativeScript_Set = (void*)NativeScript_Set;

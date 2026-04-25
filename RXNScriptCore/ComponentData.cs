@@ -26,6 +26,18 @@ namespace RXNEngine
         public float Falloff;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpotLightData
+    {
+        public Vector3 Color;
+        public float Intensity;
+        public float Radius;
+        public float Falloff;
+        public float InnerAngle;
+        public float OuterAngle;
+        public float CookieSize;
+    }
+
     public enum BodyType { Static = 0, Dynamic, Kinematic }
 
     [StructLayout(LayoutKind.Sequential)]

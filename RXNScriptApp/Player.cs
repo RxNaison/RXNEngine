@@ -32,6 +32,8 @@ public class Player : Entity
     private float m_Gravity = -19.62f;
     private bool m_IsGrounded = false;
 
+    private bool m_IsVideoPlaying = false;
+
     public override void OnCreate()
     {
         Input.SetCursorMode(CursorMode.Locked);
@@ -181,6 +183,31 @@ public class Player : Entity
                 m_IsLocked = true;
             }
             Thread.Sleep(50); 
+        }
+
+        if (Input.IsKeyDown(KeyCode.P))
+        {
+            var spotLight = FindEntityByName("Projector")?.GetComponent<SpotLightComponent>();
+
+            if (spotLight != null)
+            {
+                m_IsVideoPlaying = !m_IsVideoPlaying;
+
+                if (m_IsVideoPlaying) spotLight.PlayVideo();
+                else spotLight.PauseVideo();
+
+                Thread.Sleep(150);
+            }
+        }
+
+        if (Input.IsKeyDown(KeyCode.R))
+        {
+            var spotLight = FindEntityByName("Projector")?.GetComponent<SpotLightComponent>();
+            if (spotLight != null)
+            {
+                spotLight.RewindVideo();
+                spotLight.PlayVideo();
+            }
         }
     }
 

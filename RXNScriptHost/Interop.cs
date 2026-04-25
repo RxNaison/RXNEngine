@@ -63,6 +63,12 @@ namespace RXNScriptHost
         public IntPtr PointLight_Get;
         public IntPtr PointLight_Set;
 
+        public IntPtr NativeSpotLight_Get;
+        public IntPtr NativeSpotLight_Set;
+        public IntPtr NativeSpotLight_VideoPlay;
+        public IntPtr NativeSpotLight_VideoPause;
+        public IntPtr NativeSpotLight_VideoRewind;
+
         public IntPtr Entity_Script_Get;
         public IntPtr Entity_Script_Set;
 

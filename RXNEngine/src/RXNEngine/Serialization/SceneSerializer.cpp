@@ -140,6 +140,26 @@ namespace RXNEngine {
 			out << YAML::EndMap; // PointLightComponent
 		}
 
+		if (entity.HasComponent<SpotLightComponent>())
+		{
+			out << YAML::Key << "SpotLightComponent";
+			out << YAML::BeginMap;
+
+			auto& sl = entity.GetComponent<SpotLightComponent>();
+			out << YAML::Key << "Color" << YAML::Value << sl.Color;
+			out << YAML::Key << "Intensity" << YAML::Value << sl.Intensity;
+			out << YAML::Key << "Radius" << YAML::Value << sl.Radius;
+			out << YAML::Key << "Falloff" << YAML::Value << sl.Falloff;
+			out << YAML::Key << "InnerAngle" << YAML::Value << sl.InnerAngle;
+			out << YAML::Key << "OuterAngle" << YAML::Value << sl.OuterAngle;
+
+			out << YAML::Key << "CookieAssetPath" << YAML::Value << sl.CookieAssetPath;
+			out << YAML::Key << "IsVideo" << YAML::Value << sl.IsVideo;
+			out << YAML::Key << "CookieSize" << YAML::Value << sl.CookieSize;
+
+			out << YAML::EndMap;
+		}
+
 		if (entity.HasComponent<RigidbodyComponent>())
 		{
 			out << YAML::Key << "RigidbodyComponent";
@@ -364,6 +384,45 @@ namespace RXNEngine {
 				plc.Radius = pointLightComponent["Radius"].as<float>();
 			if (pointLightComponent["Falloff"])
 				plc.Falloff = pointLightComponent["Falloff"].as<float>();
+		}
+
+		auto spotLightComponent = entity["SpotLightComponent"];
+		if (spotLightComponent)
+		{
+			auto& sl = deserializedEntity.AddComponent<SpotLightComponent>();
+
+			if (spotLightComponent["Color"])
+				sl.Color = spotLightComponent["Color"].as<glm::vec3>();
+			if (spotLightComponent["Intensity"])
+				sl.Intensity = spotLightComponent["Intensity"].as<float>();
+			if (spotLightComponent["Radius"])
+				sl.Radius = spotLightComponent["Radius"].as<float>();
+			if (spotLightComponent["Falloff"])
+				sl.Falloff = spotLightComponent["Falloff"].as<float>();
+			if (spotLightComponent["InnerAngle"])
+				sl.InnerAngle = spotLightComponent["InnerAngle"].as<float>();
+			if (spotLightComponent["OuterAngle"])
+				sl.OuterAngle = spotLightComponent["OuterAngle"].as<float>();
+
+			if (spotLightComponent["IsVideo"])
+				sl.IsVideo = spotLightComponent["IsVideo"].as<bool>();
+
+			if (spotLightComponent["CookieAssetPath"])
+			{
+				std::string path = spotLightComponent["CookieAssetPath"].as<std::string>();
+				if (!path.empty())
+				{
+					sl.CookieAssetPath = path;
+
+					if (sl.IsVideo)
+						sl.CookieVideo = CreateRef<VideoTexture>(path);
+					else
+						sl.CookieTexture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(path);
+				}
+			}
+
+			if (spotLightComponent["CookieSize"])
+				sl.CookieSize = spotLightComponent["CookieSize"].as<float>();
 		}
 
 		auto rigidbodyComponent = entity["RigidbodyComponent"];
