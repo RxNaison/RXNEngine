@@ -224,6 +224,19 @@ namespace RXNEngine {
 		MeshColliderComponent(const MeshColliderComponent&) = default;
 	};
 
+	struct CharacterControllerComponent
+	{
+		float SlopeLimitDegrees = 45.0f;
+		float StepOffset = 0.3f;
+		float Radius = 0.5f;
+		float Height = 1.0f;
+
+		void* RuntimeController = nullptr;
+
+		CharacterControllerComponent() = default;
+		CharacterControllerComponent(const CharacterControllerComponent&) = default;
+	};
+
 	template<typename... Component>
 	struct ComponentGroup {};
 
@@ -240,6 +253,7 @@ namespace RXNEngine {
 		BoxColliderComponent,
 		SphereColliderComponent,
 		CapsuleColliderComponent,
-		MeshColliderComponent
+		MeshColliderComponent,
+		CharacterControllerComponent
 	>;
 }

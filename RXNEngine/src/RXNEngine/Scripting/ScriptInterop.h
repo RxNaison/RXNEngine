@@ -85,6 +85,8 @@ namespace RXNEngine {
 
         void* NativeCapsuleCollider_Get = nullptr;
         void* NativeCapsuleCollider_Set = nullptr;
+
+        void* NativeCharacterController_Move = nullptr;
     };
 
     class ScriptInterop

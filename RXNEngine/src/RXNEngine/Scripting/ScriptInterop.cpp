@@ -288,6 +288,7 @@ namespace RXNEngine {
         if (type == "BoxColliderComponent") return entity.HasComponent<BoxColliderComponent>() ? 1 : 0;
         if (type == "SphereColliderComponent") return entity.HasComponent<SphereColliderComponent>() ? 1 : 0;
         if (type == "CapsuleColliderComponent") return entity.HasComponent<CapsuleColliderComponent>() ? 1 : 0;
+        if (type == "CharacterControllerComponent") return entity.HasComponent<CharacterControllerComponent>() ? 1 : 0;
 
         return 0;
     }
@@ -309,6 +310,7 @@ namespace RXNEngine {
         else if (type == "BoxColliderComponent") entity.AddComponent<BoxColliderComponent>();
         else if (type == "SphereColliderComponent") entity.AddComponent<SphereColliderComponent>();
         else if (type == "CapsuleColliderComponent") entity.AddComponent<CapsuleColliderComponent>();
+        else if (type == "CharacterControllerComponent") entity.AddComponent<CharacterControllerComponent>();
         else
         {
             RXN_CORE_WARN("ScriptInterop: Attempted to add unknown component type '{0}'!", type);
@@ -501,6 +503,35 @@ namespace RXNEngine {
         bc.RuntimeShape = tempShape;
         bc.RuntimeMaterial = tempMat;
     }
+
+    extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeCharacterController_Move(uint64_t entityID, glm::vec3* displacement, float deltaTime)
+    {
+        Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
+        if (!scene) return 0;
+
+        Entity entity = scene->GetEntityByUUID(entityID);
+        if (!entity || !entity.HasComponent<CharacterControllerComponent>()) return 0;
+
+        auto& cct = entity.GetComponent<CharacterControllerComponent>();
+        if (cct.RuntimeController)
+        {
+            physx::PxController* controller = (physx::PxController*)cct.RuntimeController;
+            physx::PxVec3 disp(displacement->x, displacement->y, displacement->z);
+
+            auto physicsWorld = scene->GetSubsystem<PhysicsWorld>();
+            physicsWorld->LockWrite();
+
+            physx::PxControllerCollisionFlags flags = controller->move(disp, 0.001f, deltaTime, physx::PxControllerFilters());
+            physicsWorld->UnlockWrite();
+
+            const physx::PxExtendedVec3& pos = controller->getPosition();
+            entity.GetComponent<TransformComponent>().Translation = glm::vec3((float)pos.x, (float)pos.y, (float)pos.z);
+
+            return (uint8_t)flags;
+        }
+        return 0;
+    }
+
 #pragma endregion
 
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
@@ -578,6 +609,8 @@ namespace RXNEngine {
 
         outCalls->NativeCapsuleCollider_Get = (void*)NativeCapsuleCollider_Get;
         outCalls->NativeCapsuleCollider_Set = (void*)NativeCapsuleCollider_Set;
+
+		outCalls->NativeCharacterController_Move = (void*)NativeCharacterController_Move;
 
     }
 

@@ -266,6 +266,7 @@ namespace RXNEditor {
             ShowAddComponentEntry<CapsuleColliderComponent>("Capsule Collider", m_SelectedEntity);
             ShowAddComponentEntry<MeshColliderComponent>("Mesh Collider", m_SelectedEntity);
             ShowAddComponentEntry<ScriptComponent>("Script Component", m_SelectedEntity, m_SelectedEntity.GetComponent<TagComponent>().Tag);
+            ShowAddComponentEntry<CharacterControllerComponent>("Character Controller", m_SelectedEntity);
 
             ImGui::EndPopup();
         }
@@ -494,6 +495,14 @@ namespace RXNEditor {
                 UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
                 UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
                 UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+            });
+
+        DrawComponent<CharacterControllerComponent>("Character Controller", entity, [](auto& component)
+            {
+                UI::DrawFloatControl("Slope Limit (Deg)", component.SlopeLimitDegrees, 1.0f, 0.0f, 90.0f);
+                UI::DrawFloatControl("Step Offset", component.StepOffset, 0.05f, 0.0f, 5.0f);
+                UI::DrawFloatControl("Radius", component.Radius, 0.05f, 0.0f, 10.0f);
+                UI::DrawFloatControl("Height", component.Height, 0.05f, 0.0f, 10.0f);
             });
 
         DrawComponent<ScriptComponent>("Script", entity, [&](auto& component)

@@ -288,4 +288,24 @@ namespace RXNEngine
         }
     }
 
+    [Flags]
+    public enum CollisionFlags : byte
+    {
+        None = 0,
+        Sides = 1 << 0,
+        Up = 1 << 1,
+        Down = 1 << 2
+    }
+
+    public class CharacterControllerComponent : Component
+    {
+        public CollisionFlags Move(Vector3 displacement, float deltaTime)
+        {
+            unsafe
+            {
+                var func = (delegate* unmanaged<ulong, Vector3*, float, byte>)Interop.NativeFunctions.CharacterController_Move;
+                return (CollisionFlags)func(EntityHandle.ID, &displacement, deltaTime);
+            }
+        }
+    }
 }

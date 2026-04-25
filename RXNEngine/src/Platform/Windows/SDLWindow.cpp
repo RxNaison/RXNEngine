@@ -74,6 +74,8 @@ namespace RXNEngine {
 
     void SDLWindow::OnUpdate()
     {
+        OPTICK_EVENT();
+
         SDL_Event e;
         while (SDL_PollEvent(&e))
         {

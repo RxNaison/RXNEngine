@@ -206,29 +206,71 @@ namespace RXNEngine {
         if (entity.HasComponent<BoxColliderComponent>())
         {
             auto& bc = entity.GetComponent<BoxColliderComponent>();
-            if (bc.RuntimeShape) { ((physx::PxShape*)bc.RuntimeShape)->release(); bc.RuntimeShape = nullptr; }
-            if (bc.RuntimeMaterial) { ((physx::PxMaterial*)bc.RuntimeMaterial)->release(); bc.RuntimeMaterial = nullptr; }
+            if (bc.RuntimeShape)
+            {
+                ((physx::PxShape*)bc.RuntimeShape)->release();
+                bc.RuntimeShape = nullptr;
+            }
+            if (bc.RuntimeMaterial)
+            {
+                ((physx::PxMaterial*)bc.RuntimeMaterial)->release();
+                bc.RuntimeMaterial = nullptr;
+            }
         }
 
         if (entity.HasComponent<SphereColliderComponent>())
         {
             auto& sc = entity.GetComponent<SphereColliderComponent>();
-            if (sc.RuntimeShape) { ((physx::PxShape*)sc.RuntimeShape)->release(); sc.RuntimeShape = nullptr; }
-            if (sc.RuntimeMaterial) { ((physx::PxMaterial*)sc.RuntimeMaterial)->release(); sc.RuntimeMaterial = nullptr; }
+            if (sc.RuntimeShape)
+            {
+                ((physx::PxShape*)sc.RuntimeShape)->release();
+                sc.RuntimeShape = nullptr;
+            }
+            if (sc.RuntimeMaterial)
+            {
+                ((physx::PxMaterial*)sc.RuntimeMaterial)->release();
+                sc.RuntimeMaterial = nullptr;
+            }
         }
 
         if (entity.HasComponent<CapsuleColliderComponent>())
         {
             auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-            if (cc.RuntimeShape) { ((physx::PxShape*)cc.RuntimeShape)->release(); cc.RuntimeShape = nullptr; }
-            if (cc.RuntimeMaterial) { ((physx::PxMaterial*)cc.RuntimeMaterial)->release(); cc.RuntimeMaterial = nullptr; }
+            if (cc.RuntimeShape) 
+            {
+                ((physx::PxShape*)cc.RuntimeShape)->release();
+                cc.RuntimeShape = nullptr;
+            }
+            if (cc.RuntimeMaterial) 
+            {
+                ((physx::PxMaterial*)cc.RuntimeMaterial)->release();
+                cc.RuntimeMaterial = nullptr;
+            }
         }
 
         if (entity.HasComponent<MeshColliderComponent>())
         {
             auto& mc = entity.GetComponent<MeshColliderComponent>();
-            if (mc.RuntimeShape) { ((physx::PxShape*)mc.RuntimeShape)->release(); mc.RuntimeShape = nullptr; }
-            if (mc.RuntimeMaterial) { ((physx::PxMaterial*)mc.RuntimeMaterial)->release(); mc.RuntimeMaterial = nullptr; }
+            if (mc.RuntimeShape)
+            {
+                ((physx::PxShape*)mc.RuntimeShape)->release();
+                mc.RuntimeShape = nullptr;
+            }
+            if (mc.RuntimeMaterial)
+            { 
+                ((physx::PxMaterial*)mc.RuntimeMaterial)->release();
+                mc.RuntimeMaterial = nullptr;
+            }
+        }
+
+        if (entity.HasComponent<CharacterControllerComponent>())
+        {
+            auto& cct = entity.GetComponent<CharacterControllerComponent>();
+            if (cct.RuntimeController)
+            {
+                ((physx::PxController*)cct.RuntimeController)->release();
+                cct.RuntimeController = nullptr;
+            }
         }
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
@@ -496,6 +538,18 @@ namespace RXNEngine {
                     if (physicsRotated)
                         tc.Rotation = glm::eulerAngles(worldRot);
                 }
+            }
+        }
+
+        auto cctView = m_Registry.view<TransformComponent, CharacterControllerComponent>();
+        for (auto e : cctView)
+        {
+            auto [tc, cct] = cctView.get<TransformComponent, CharacterControllerComponent>(e);
+            if (cct.RuntimeController)
+            {
+                physx::PxController* controller = (physx::PxController*)cct.RuntimeController;
+                const physx::PxExtendedVec3& pos = controller->getPosition();
+                tc.Translation = glm::vec3((float)pos.x, (float)pos.y, (float)pos.z);
             }
         }
     }
@@ -923,24 +977,28 @@ namespace RXNEngine {
         {
             newEntity.GetComponent<RigidbodyComponent>().RuntimeActor = nullptr;
 
-            if (newEntity.HasComponent<BoxColliderComponent>()) {
+            if (newEntity.HasComponent<BoxColliderComponent>())
+            {
                 newEntity.GetComponent<BoxColliderComponent>().RuntimeShape = nullptr;
                 newEntity.GetComponent<BoxColliderComponent>().RuntimeMaterial = nullptr;
             }
-            if (newEntity.HasComponent<SphereColliderComponent>()) {
+            if (newEntity.HasComponent<SphereColliderComponent>())
+            {
                 newEntity.GetComponent<SphereColliderComponent>().RuntimeShape = nullptr;
                 newEntity.GetComponent<SphereColliderComponent>().RuntimeMaterial = nullptr;
             }
-            if (newEntity.HasComponent<CapsuleColliderComponent>()) {
+            if (newEntity.HasComponent<CapsuleColliderComponent>())
+            {
                 newEntity.GetComponent<CapsuleColliderComponent>().RuntimeShape = nullptr;
                 newEntity.GetComponent<CapsuleColliderComponent>().RuntimeMaterial = nullptr;
             }
 
             if (m_IsSimulating)
-            {
                 CreatePhysicsBody(newEntity);
-            }
         }
+
+        if (newEntity.HasComponent<CharacterControllerComponent>())
+            newEntity.GetComponent<CharacterControllerComponent>().RuntimeController = nullptr;
 
         if (newEntity.HasComponent<ScriptComponent>())
         {
@@ -1261,6 +1319,33 @@ namespace RXNEngine {
 
                 if (entity.HasComponent<RigidbodyComponent>())
                     CreatePhysicsBody(entity);
+
+                if (entity.HasComponent<CharacterControllerComponent>())
+                {
+                    auto& cct = entity.GetComponent<CharacterControllerComponent>();
+                    auto& tc = entity.GetComponent<TransformComponent>();
+
+                    physx::PxCapsuleControllerDesc desc;
+                    desc.setToDefault();
+                    desc.height = cct.Height;
+                    desc.radius = cct.Radius;
+                    desc.stepOffset = cct.StepOffset;
+                    desc.slopeLimit = glm::cos(glm::radians(cct.SlopeLimitDegrees));
+                    desc.position = physx::PxExtendedVec3(tc.Translation.x, tc.Translation.y, tc.Translation.z);
+                    desc.upDirection = physx::PxVec3(0, 1, 0);
+
+                    auto physicsSys = Application::Get().GetSubsystem<PhysicsSystem>();
+                    desc.material = physicsSys->GetPhysics()->createMaterial(0.5f, 0.5f, 0.1f);
+
+                    cct.RuntimeController = GetSubsystem<PhysicsWorld>()->GetControllerManager()->createController(desc);
+
+                    if (cct.RuntimeController) {
+                        physx::PxController* pxCct = (physx::PxController*)cct.RuntimeController;
+
+                        pxCct->setUserData((void*)(uint64_t)entity.GetUUID());
+                        pxCct->getActor()->userData = (void*)(uint64_t)entity.GetUUID();
+                    }
+                }
             });
 
         m_IsSimulating = true;

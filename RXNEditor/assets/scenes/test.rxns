@@ -4,6 +4,1236 @@ Skybox:
   TexturePath: assets/textures/skyboxes/autumn_hill_view_4k.hdr
   Intensity: 1
 Entities:
+  - Entity: 9139923088943866162
+    TagComponent:
+      Tag: Cylinder.015
+    TransformComponent:
+      Translation: [0.007607967, -145.85046, -0.828625]
+      Rotation: [-1.5610094, -0.018369501, -8.9795176e-05]
+      Scale: [100.00001, 100.00003, 106.169]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 53
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 861148539479413761
+    TagComponent:
+      Tag: BezierCurve.001
+    TransformComponent:
+      Translation: [-231.83133, 164.28702, -9.969943]
+      Rotation: [3.0951612, -0.028426135, 1.9486746]
+      Scale: [99.99999, 99.99999, 100.000015]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 52
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 5989591290218181533
+    TagComponent:
+      Tag: Cylinder.035
+    TransformComponent:
+      Translation: [-272.97717, 151.28076, 2.1994448]
+      Rotation: [1.0158216, -1.5168132, -2.1701672]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 51
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 3096555360745992284
+    TagComponent:
+      Tag: Cube.012
+    TransformComponent:
+      Translation: [-272.97717, 151.28076, 2.1994448]
+      Rotation: [1.524905, -0.028431738, 1.9878975]
+      Scale: [99.99999, 100.000015, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 50
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10447609657953972410
+    TagComponent:
+      Tag: Cube.022
+    TransformComponent:
+      Translation: [-157.66257, 176.08655, 2.33875]
+      Rotation: [1.5212423, -0.02848541, 1.72076]
+      Scale: [100.00001, 100.00002, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 49
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16224551567343881305
+    TagComponent:
+      Tag: Cylinder.034
+    TransformComponent:
+      Translation: [-157.66257, 176.08655, 2.33875]
+      Rotation: [1.0487045, -1.5136461, -2.4702437]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 48
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 744985887038248283
+    TagComponent:
+      Tag: Cylinder.036
+    TransformComponent:
+      Translation: [-331.5021, 127.02515, 2.2904243]
+      Rotation: [0.99185836, -1.5181487, -2.0119069]
+      Scale: [99.99999, 99.99999, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 47
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12382328415978436627
+    TagComponent:
+      Tag: Cube.023
+    TransformComponent:
+      Translation: [-331.5021, 127.02515, 2.2904243]
+      Rotation: [1.5267138, -0.028792027, 2.1222072]
+      Scale: [99.999985, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 46
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10826899096890833416
+    TagComponent:
+      Tag: Cube.021
+    TransformComponent:
+      Translation: [-119.63522, 177.51584, 2.4690752]
+      Rotation: [1.5199555, -0.028719885, 1.6250279]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 45
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 15601078887139775861
+    TagComponent:
+      Tag: Cylinder.033
+    TransformComponent:
+      Translation: [-119.63522, 177.51584, 2.4690752]
+      Rotation: [1.0560367, -1.5124083, -2.5733323]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 44
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 15587255764016599012
+    TagComponent:
+      Tag: Cube.024
+    TransformComponent:
+      Translation: [-100.06261, 191.88022, 2.3391752]
+      Rotation: [1.5198079, -0.02871936, 1.6151798]
+      Scale: [99.999985, 100.00001, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 43
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6953431857583933642
+    TagComponent:
+      Tag: Cylinder.029
+    TransformComponent:
+      Translation: [-100.06261, 191.88022, 2.3391752]
+      Rotation: [1.0573959, -1.5122858, -2.584541]
+      Scale: [100, 99.99998, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 42
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 13588567731822793426
+    TagComponent:
+      Tag: Cylinder.032
+    TransformComponent:
+      Translation: [-272.8388, 148.51367, 2.247116]
+      Rotation: [1.0102495, -1.5171323, -2.1327994]
+      Scale: [100, 100, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 41
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 18225890113327258777
+    TagComponent:
+      Tag: Cube.011
+    TransformComponent:
+      Translation: [-272.8388, 148.51367, 2.247116]
+      Rotation: [1.5253338, -0.028519887, 2.0196912]
+      Scale: [99.999985, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 40
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16663607208726749735
+    TagComponent:
+      Tag: Cube.017
+    TransformComponent:
+      Translation: [-246.30582, 158.16788, 2.2342935]
+      Rotation: [1.5243621, -0.02842453, 1.9486741]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 39
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12735767900703055478
+    TagComponent:
+      Tag: Cube.009
+    TransformComponent:
+      Translation: [-246.298, 158.17023, 2.2385507]
+      Rotation: [1.524363, -0.028432548, 1.948653]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 38
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 304529362229084321
+    TagComponent:
+      Tag: Cylinder.019
+    TransformComponent:
+      Translation: [-246.30582, 158.16788, 2.2342935]
+      Rotation: [1.5243621, -0.02842453, 1.9486741]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 37
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4807361093009645086
+    TagComponent:
+      Tag: Cylinder.018
+    TransformComponent:
+      Translation: [-53.105186, 123.6786, 5.0244627]
+      Rotation: [1.5503001, -0.043606434, 1.0899563]
+      Scale: [100, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 36
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 5007097809049318321
+    TagComponent:
+      Tag: Sphere.003
+    TransformComponent:
+      Translation: [-53.105186, 123.6786, 5.0244627]
+      Rotation: [1.5503001, -0.043606434, 1.0899563]
+      Scale: [100, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 35
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2656665616680700996
+    TagComponent:
+      Tag: Sphere.004
+    TransformComponent:
+      Translation: [-0.003288269, -24.156845, 0.36219466]
+      Rotation: [1.5805774, -0.018370444, -8.983342e-05]
+      Scale: [99.999985, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 34
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 7317436518914627428
+    TagComponent:
+      Tag: Cylinder.017
+    TransformComponent:
+      Translation: [-0.003288269, -24.156845, 0.36219466]
+      Rotation: [1.5805774, -0.018370444, -8.983342e-05]
+      Scale: [99.999985, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 33
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 17217514133841271034
+    TagComponent:
+      Tag: BezierCurve.003
+    TransformComponent:
+      Translation: [241.40997, 165.08093, 2.997765]
+      Rotation: [-0.041815467, 0.06156051, -1.973598]
+      Scale: [100.00001, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 32
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 333561458547011160
+    TagComponent:
+      Tag: Cylinder.031
+    TransformComponent:
+      Translation: [331.75308, 123.62332, 15.871073]
+      Rotation: [-2.514004, 1.4932816, 1.6073825]
+      Scale: [99.99999, 99.99998, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 31
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 15429506395783724912
+    TagComponent:
+      Tag: Cube.019
+    TransformComponent:
+      Translation: [331.75308, 123.62332, 15.871073]
+      Rotation: [-1.6163721, 0.062722825, -2.1632297]
+      Scale: [99.99999, 99.99999, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 30
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 11509681280056814570
+    TagComponent:
+      Tag: Cylinder.037
+    TransformComponent:
+      Translation: [255.45412, 158.26038, 15.413239]
+      Rotation: [-2.5491734, 1.4960895, 1.7618606]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 29
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10703306772755535202
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 80
+      MaterialAssetPath: ""
+  - Entity: 2123907299748267761
+    TagComponent:
+      Tag: Cube.018
+    TransformComponent:
+      Translation: [255.45412, 158.26038, 15.413239]
+      Rotation: [-1.6125635, 0.061958086, -1.9734457]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 28
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 8199613351046596519
+    TagComponent:
+      Tag: Cylinder.039
+    TransformComponent:
+      Translation: [301.2105, 140.12115, 15.774849]
+      Rotation: [-2.5321252, 1.494398, 1.6753497]
+      Scale: [99.99999, 99.999985, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 27
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2051093853966246500
+    TagComponent:
+      Tag: Cube.027
+    TransformComponent:
+      Translation: [301.2105, 140.12115, 15.774849]
+      Rotation: [-1.6146072, 0.062608376, -2.0774233]
+      Scale: [99.999985, 99.99999, 99.99998]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 26
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4123110804868650736
+    TagComponent:
+      Tag: Cube.025
+    TransformComponent:
+      Translation: [227.466, 166.96072, 15.327484]
+      Rotation: [-1.6110543, 0.06183881, -1.8996141]
+      Scale: [99.999985, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 25
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6027080440977279624
+    TagComponent:
+      Tag: Cylinder.038
+    TransformComponent:
+      Translation: [227.466, 166.96072, 15.327484]
+      Rotation: [-2.5652122, 1.4970217, 1.8196049]
+      Scale: [99.99999, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 24
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16623842768329615111
+    TagComponent:
+      Tag: Cylinder.040
+    TransformComponent:
+      Translation: [221.48099, 175.36107, 14.87665]
+      Rotation: [-2.5534196, 1.4979632, 1.8304752]
+      Scale: [99.999985, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 23
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 16079033077376839093
+    TagComponent:
+      Tag: Cube.028
+    TransformComponent:
+      Translation: [221.48099, 175.36107, 14.87665]
+      Rotation: [-1.6112567, 0.06057726, -1.9005169]
+      Scale: [100, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 22
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 8583501318785801583
+    TagComponent:
+      Tag: Cube.026
+    TransformComponent:
+      Translation: [301.94495, 138.5101, 15.376951]
+      Rotation: [-1.615073, 0.06170452, -2.1007438]
+      Scale: [100.00001, 99.99999, 99.999985]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 21
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6317301756387949103
+    TagComponent:
+      Tag: Cylinder.030
+    TransformComponent:
+      Translation: [301.94495, 138.5101, 15.376951]
+      Rotation: [-2.519938, 1.4948664, 1.66387]
+      Scale: [99.99999, 99.999985, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 20
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 11843529255280810690
+    TagComponent:
+      Tag: Cube.020
+    TransformComponent:
+      Translation: [255.51532, 158.24942, 15.256085]
+      Rotation: [-1.6126105, 0.061558425, -1.9735991]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 19
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4352916646619626531
+    TagComponent:
+      Tag: Cube.016
+    TransformComponent:
+      Translation: [255.51532, 158.24942, 15.256085]
+      Rotation: [-1.6126105, 0.061558425, -1.9735991]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 18
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 1577149902728000125
+    TagComponent:
+      Tag: Cylinder.027
+    TransformComponent:
+      Translation: [255.51532, 158.24942, 15.256085]
+      Rotation: [-1.6126105, 0.061558425, -1.9735991]
+      Scale: [100.00001, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 17
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 4763372499449922290
+    TagComponent:
+      Tag: Cylinder.026
+    TransformComponent:
+      Translation: [47.38591, 118.82097, 9.8020525]
+      Rotation: [-1.5674418, 0.04387704, -1.0405846]
+      Scale: [99.99999, 99.99999, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 16
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12687968326720431844
+    TagComponent:
+      Tag: Sphere.006
+    TransformComponent:
+      Translation: [47.38591, 118.82097, 9.8020525]
+      Rotation: [-1.5674418, 0.04387704, -1.0405846]
+      Scale: [99.99999, 99.99999, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 15
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 3235610526839849037
+    TagComponent:
+      Tag: Sphere.007
+    TransformComponent:
+      Translation: [-0.0033416748, -24.15682, 0.3621943]
+      Rotation: [-1.5610095, -0.018369518, -8.999863e-05]
+      Scale: [100.00001, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 14
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 9985132244715222553
+    TagComponent:
+      Tag: Cylinder.025
+    TransformComponent:
+      Translation: [-0.0033416748, -24.15682, 0.3621943]
+      Rotation: [-1.5610095, -0.018369518, -8.999863e-05]
+      Scale: [100.00001, 100, 100.00001]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 13
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2455555932195308835
+    TagComponent:
+      Tag: Cylinder.013
+    TransformComponent:
+      Translation: [0.007935239, -149.43593, -0.8637098]
+      Rotation: [-1.5610094, -0.018369501, -8.9795176e-05]
+      Scale: [100.00001, 100.00003, 115.08406]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 12
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 3419570131338953199
+    TagComponent:
+      Tag: Cylinder.016
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [1.5805802, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 11
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 1180772086155116718
+    TagComponent:
+      Tag: Cylinder.024
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 10
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 10272015636448709298
+    TagComponent:
+      Tag: Cylinder.023
+    TransformComponent:
+      Translation: [-97.05328, -74.765564, -45.57456]
+      Rotation: [0.47262827, 1.5469198, 0.4846922]
+      Scale: [99.99999, 100.00001, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 9
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 2290404526397267787
+    TagComponent:
+      Tag: Cube.015
+    TransformComponent:
+      Translation: [0.00047763248, -66.48392, -0.051991176]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 8
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 929104386310163152
+    TagComponent:
+      Tag: Plane.001
+    TransformComponent:
+      Translation: [1.8425794, 10.508514, -99.94448]
+      Rotation: [0.009786738, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 7
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 6989106239556007934
+    TagComponent:
+      Tag: Cube.014
+    TransformComponent:
+      Translation: [-0.0035280702, -21.921959, 0.38406566]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 6
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 8661065278367010695
+    TagComponent:
+      Tag: Sphere.005
+    TransformComponent:
+      Translation: [38.18169, 9.919846, 108.39338]
+      Rotation: [0.009786738, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 5
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 13759639925880751557
+    TagComponent:
+      Tag: Cube.013
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 4
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 18266367203678085871
+    TagComponent:
+      Tag: Cylinder.020
+    TransformComponent:
+      Translation: [38.25651, 10.0228195, 98.70145]
+      Rotation: [-3.123224, 0.009785084, -1.5707062]
+      Scale: [100, 99.99999, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 3
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 11531110366120472731
+    TagComponent:
+      Tag: Cylinder.014
+    TransformComponent:
+      Translation: [-0.008417457, 5.682274, 0.7852575]
+      Rotation: [0.48947397, 1.5499823, 0.48947406]
+      Scale: [100, 100, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 2
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 12817001990273699899
+    TagComponent:
+      Tag: Cylinder.011
+    TransformComponent:
+      Translation: [0.005647871, -124.001015, -0.6148186]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 1
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 254346882202382271
+    TagComponent:
+      Tag: Cube.008
+    TransformComponent:
+      Translation: [-0.003327175, -24.156837, 0.36219665]
+      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
+      Scale: [99.99999, 100.00001, 100]
+    RelationshipComponent:
+      ParentHandle: 7396092255954753259
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
+      SubmeshIndex: 0
+      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
+  - Entity: 7396092255954753259
+    TagComponent:
+      Tag: CubeRude
+    TransformComponent:
+      Translation: [5.701496, 2.9908788, 2.505496]
+      Rotation: [0, -0, 0]
+      Scale: [0.0059700003, 0.0059700003, 0.0059700003]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 254346882202382271
+        - 12817001990273699899
+        - 11531110366120472731
+        - 18266367203678085871
+        - 13759639925880751557
+        - 8661065278367010695
+        - 6989106239556007934
+        - 929104386310163152
+        - 2290404526397267787
+        - 10272015636448709298
+        - 1180772086155116718
+        - 3419570131338953199
+        - 2455555932195308835
+        - 9985132244715222553
+        - 3235610526839849037
+        - 12687968326720431844
+        - 4763372499449922290
+        - 1577149902728000125
+        - 4352916646619626531
+        - 11843529255280810690
+        - 6317301756387949103
+        - 8583501318785801583
+        - 16079033077376839093
+        - 16623842768329615111
+        - 6027080440977279624
+        - 4123110804868650736
+        - 2051093853966246500
+        - 8199613351046596519
+        - 2123907299748267761
+        - 11509681280056814570
+        - 15429506395783724912
+        - 333561458547011160
+        - 17217514133841271034
+        - 7317436518914627428
+        - 2656665616680700996
+        - 5007097809049318321
+        - 4807361093009645086
+        - 304529362229084321
+        - 12735767900703055478
+        - 16663607208726749735
+        - 18225890113327258777
+        - 13588567731822793426
+        - 6953431857583933642
+        - 15587255764016599012
+        - 15601078887139775861
+        - 10826899096890833416
+        - 12382328415978436627
+        - 744985887038248283
+        - 16224551567343881305
+        - 10447609657953972410
+        - 3096555360745992284
+        - 5989591290218181533
+        - 861148539479413761
+        - 9139923088943866162
+    MeshColliderComponent:
+      IsConvex: true
+      OverrideAssetPath: ""
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 8652671496492807189
+    TagComponent:
+      Tag: Cube (Clone)
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 13946344685124341679
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+      MaterialAssetPath: ""
+  - Entity: 13946344685124341679
+    TagComponent:
+      Tag: 1 (Clone)
+    TransformComponent:
+      Translation: [-3.473571, 1.0101666, 3.8856936]
+      Rotation: [0, -0, 0]
+      Scale: [1.0825397, 0.14312, 1.1962909]
+    RelationshipComponent:
+      ParentHandle: 7028309828933853095
+      Children:
+        - 8652671496492807189
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+      UseCCD: false
+      CCDVelocityThreshold: 50
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 7028309828933853095
+    TagComponent:
+      Tag: Platforms
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 17097807209004231782
+        - 5640142119864444196
+        - 13330526667008083430
+        - 11674365850342597159
+        - 13946344685124341679
+  - Entity: 1833389387414846861
+    TagComponent:
+      Tag: Cube (Clone) (Clone) (Clone)
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 11674365850342597159
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+      MaterialAssetPath: ""
+  - Entity: 11674365850342597159
+    TagComponent:
+      Tag: 1 (Clone) (Clone) (Clone)
+    TransformComponent:
+      Translation: [-2.759007, 6.023661, -4.6024523]
+      Rotation: [0, -0, 0]
+      Scale: [1.0825397, 0.14312, 1.1962909]
+    RelationshipComponent:
+      ParentHandle: 7028309828933853095
+      Children:
+        - 1833389387414846861
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+      UseCCD: false
+      CCDVelocityThreshold: 50
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 13104795393700249412
+    TagComponent:
+      Tag: Cube (Clone) (Clone)
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 13330526667008083430
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+      MaterialAssetPath: ""
+  - Entity: 13330526667008083430
+    TagComponent:
+      Tag: 1 (Clone) (Clone)
+    TransformComponent:
+      Translation: [-5.4523563, 4.9114165, -2.2613719]
+      Rotation: [0, -0, 0]
+      Scale: [1.0825397, 0.14312, 1.1962909]
+    RelationshipComponent:
+      ParentHandle: 7028309828933853095
+      Children:
+        - 13104795393700249412
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+      UseCCD: false
+      CCDVelocityThreshold: 50
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 8485174398989537346
+    TagComponent:
+      Tag: Cube (Clone)
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 5640142119864444196
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+      MaterialAssetPath: ""
+  - Entity: 5640142119864444196
+    TagComponent:
+      Tag: 1 (Clone)
+    TransformComponent:
+      Translation: [-7.9944468, 3.4629488, 0.9338913]
+      Rotation: [0, -0, 0]
+      Scale: [1.0825397, 0.14312, 1.1962909]
+    RelationshipComponent:
+      ParentHandle: 7028309828933853095
+      Children:
+        - 8485174398989537346
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+      UseCCD: false
+      CCDVelocityThreshold: 50
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 14242125931714134896
+    TagComponent:
+      Tag: Cube
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 17097807209004231782
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+      MaterialAssetPath: ""
+  - Entity: 17097807209004231782
+    TagComponent:
+      Tag: 1
+    TransformComponent:
+      Translation: [-6.102747, 2.2672806, 3.8856936]
+      Rotation: [0, -0, 0]
+      Scale: [1.0825397, 0.14312, 1.1962909]
+    RelationshipComponent:
+      ParentHandle: 7028309828933853095
+      Children:
+        - 14242125931714134896
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+      UseCCD: false
+      CCDVelocityThreshold: 50
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: false
+  - Entity: 9223027845615510184
+    TagComponent:
+      Tag: Cube
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 13304839909504209576
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/cubee/1.obj
+      SubmeshIndex: 0
+      MaterialAssetPath: assets/models/NewMaterial.rxnmat
+  - Entity: 13304839909504209576
+    TagComponent:
+      Tag: ReloadAmmoPlace
+    TransformComponent:
+      Translation: [-8.663574, 2.8617048, 11.136319]
+      Rotation: [0, -0, 0]
+      Scale: [2.92, 2.92, 2.92]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 9223027845615510184
+    RigidbodyComponent:
+      Type: 0
+      Mass: 1
+      LinearDrag: 0.05
+      AngularDrag: 0.05
+      FixedRotation: false
+      UseCCD: false
+      CCDVelocityThreshold: 50
+    BoxColliderComponent:
+      HalfExtents: [1, 1, 1]
+      Offset: [0, 0, 0]
+      StaticFriction: 0.5
+      DynamicFriction: 0.5
+      Restitution: 0.1
+      IsTrigger: true
+  - Entity: 11873200981400455789
+    TagComponent:
+      Tag: Sandbox
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        - 8143408826906669679
+        - 274291961609010476
+        - 7532522321108319609
+  - Entity: 4146204036034150384
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 83
+      MaterialAssetPath: ""
+  - Entity: 655995719355908370
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 82
+      MaterialAssetPath: ""
+  - Entity: 15468069411793715623
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 81
+      MaterialAssetPath: ""
+  - Entity: 276294356897492076
+    TagComponent:
+      Tag: node_Object001_-5720
+    TransformComponent:
+      Translation: [0, -16.30266, 0.43795395]
+      Rotation: [0, -0, 0]
+      Scale: [100, 99.99999, 99.99999]
+    RelationshipComponent:
+      ParentHandle: 13459023092463429833
+      Children:
+        []
+    StaticMeshComponent:
+      AssetPath: assets/models/adamHead/adamHead.gltf
+      SubmeshIndex: 79
+      MaterialAssetPath: ""
   - Entity: 13993987217745563917
     TagComponent:
       Tag: BackWall (Clone)
@@ -45,22 +1275,11 @@ Entities:
       ParentHandle: 0
       Children:
         - 9515878402757550907
-    RigidbodyComponent:
-      Type: 1
-      Mass: 117.2
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: true
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    CapsuleColliderComponent:
+    CharacterControllerComponent:
+      SlopeLimitDegrees: 45
+      StepOffset: 0.3
       Radius: 0.5
       Height: 1
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: false
     ScriptComponent:
       ClassName: Player
   - Entity: 7532522321108319609
@@ -2738,1226 +3957,3 @@ Entities:
       AssetPath: assets/models/adamHead/adamHead.gltf
       SubmeshIndex: 78
       MaterialAssetPath: ""
-  - Entity: 276294356897492076
-    TagComponent:
-      Tag: node_Object001_-5720
-    TransformComponent:
-      Translation: [0, -16.30266, 0.43795395]
-      Rotation: [0, -0, 0]
-      Scale: [100, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 13459023092463429833
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/adamHead/adamHead.gltf
-      SubmeshIndex: 79
-      MaterialAssetPath: ""
-  - Entity: 10703306772755535202
-    TagComponent:
-      Tag: node_Object001_-5720
-    TransformComponent:
-      Translation: [0, -16.30266, 0.43795395]
-      Rotation: [0, -0, 0]
-      Scale: [100, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 13459023092463429833
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/adamHead/adamHead.gltf
-      SubmeshIndex: 80
-      MaterialAssetPath: ""
-  - Entity: 15468069411793715623
-    TagComponent:
-      Tag: node_Object001_-5720
-    TransformComponent:
-      Translation: [0, -16.30266, 0.43795395]
-      Rotation: [0, -0, 0]
-      Scale: [100, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 13459023092463429833
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/adamHead/adamHead.gltf
-      SubmeshIndex: 81
-      MaterialAssetPath: ""
-  - Entity: 655995719355908370
-    TagComponent:
-      Tag: node_Object001_-5720
-    TransformComponent:
-      Translation: [0, -16.30266, 0.43795395]
-      Rotation: [0, -0, 0]
-      Scale: [100, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 13459023092463429833
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/adamHead/adamHead.gltf
-      SubmeshIndex: 82
-      MaterialAssetPath: ""
-  - Entity: 4146204036034150384
-    TagComponent:
-      Tag: node_Object001_-5720
-    TransformComponent:
-      Translation: [0, -16.30266, 0.43795395]
-      Rotation: [0, -0, 0]
-      Scale: [100, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 13459023092463429833
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/adamHead/adamHead.gltf
-      SubmeshIndex: 83
-      MaterialAssetPath: ""
-  - Entity: 11873200981400455789
-    TagComponent:
-      Tag: Sandbox
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 0
-      Children:
-        - 8143408826906669679
-        - 274291961609010476
-        - 7532522321108319609
-  - Entity: 13304839909504209576
-    TagComponent:
-      Tag: ReloadAmmoPlace
-    TransformComponent:
-      Translation: [-8.663574, 2.8617048, 11.136319]
-      Rotation: [0, -0, 0]
-      Scale: [2.92, 2.92, 2.92]
-    RelationshipComponent:
-      ParentHandle: 0
-      Children:
-        - 9223027845615510184
-    RigidbodyComponent:
-      Type: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: false
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    BoxColliderComponent:
-      HalfExtents: [1, 1, 1]
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: true
-  - Entity: 9223027845615510184
-    TagComponent:
-      Tag: Cube
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 13304839909504209576
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cubee/1.obj
-      SubmeshIndex: 0
-      MaterialAssetPath: assets/models/NewMaterial.rxnmat
-  - Entity: 17097807209004231782
-    TagComponent:
-      Tag: 1
-    TransformComponent:
-      Translation: [-6.102747, 2.2672806, 3.8856936]
-      Rotation: [0, -0, 0]
-      Scale: [1.0825397, 0.14312, 1.1962909]
-    RelationshipComponent:
-      ParentHandle: 7028309828933853095
-      Children:
-        - 14242125931714134896
-    RigidbodyComponent:
-      Type: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: false
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    BoxColliderComponent:
-      HalfExtents: [1, 1, 1]
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: false
-  - Entity: 14242125931714134896
-    TagComponent:
-      Tag: Cube
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 17097807209004231782
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cubee/1.obj
-      SubmeshIndex: 0
-      MaterialAssetPath: ""
-  - Entity: 5640142119864444196
-    TagComponent:
-      Tag: 1 (Clone)
-    TransformComponent:
-      Translation: [-7.9944468, 3.4629488, 0.9338913]
-      Rotation: [0, -0, 0]
-      Scale: [1.0825397, 0.14312, 1.1962909]
-    RelationshipComponent:
-      ParentHandle: 7028309828933853095
-      Children:
-        - 8485174398989537346
-    RigidbodyComponent:
-      Type: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: false
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    BoxColliderComponent:
-      HalfExtents: [1, 1, 1]
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: false
-  - Entity: 8485174398989537346
-    TagComponent:
-      Tag: Cube (Clone)
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 5640142119864444196
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cubee/1.obj
-      SubmeshIndex: 0
-      MaterialAssetPath: ""
-  - Entity: 13330526667008083430
-    TagComponent:
-      Tag: 1 (Clone) (Clone)
-    TransformComponent:
-      Translation: [-5.4523563, 4.9114165, -2.2613719]
-      Rotation: [0, -0, 0]
-      Scale: [1.0825397, 0.14312, 1.1962909]
-    RelationshipComponent:
-      ParentHandle: 7028309828933853095
-      Children:
-        - 13104795393700249412
-    RigidbodyComponent:
-      Type: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: false
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    BoxColliderComponent:
-      HalfExtents: [1, 1, 1]
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: false
-  - Entity: 13104795393700249412
-    TagComponent:
-      Tag: Cube (Clone) (Clone)
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 13330526667008083430
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cubee/1.obj
-      SubmeshIndex: 0
-      MaterialAssetPath: ""
-  - Entity: 11674365850342597159
-    TagComponent:
-      Tag: 1 (Clone) (Clone) (Clone)
-    TransformComponent:
-      Translation: [-2.759007, 6.023661, -4.6024523]
-      Rotation: [0, -0, 0]
-      Scale: [1.0825397, 0.14312, 1.1962909]
-    RelationshipComponent:
-      ParentHandle: 7028309828933853095
-      Children:
-        - 1833389387414846861
-    RigidbodyComponent:
-      Type: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: false
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    BoxColliderComponent:
-      HalfExtents: [1, 1, 1]
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: false
-  - Entity: 1833389387414846861
-    TagComponent:
-      Tag: Cube (Clone) (Clone) (Clone)
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 11674365850342597159
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cubee/1.obj
-      SubmeshIndex: 0
-      MaterialAssetPath: ""
-  - Entity: 7028309828933853095
-    TagComponent:
-      Tag: Platforms
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 0
-      Children:
-        - 17097807209004231782
-        - 5640142119864444196
-        - 13330526667008083430
-        - 11674365850342597159
-        - 13946344685124341679
-  - Entity: 13946344685124341679
-    TagComponent:
-      Tag: 1 (Clone)
-    TransformComponent:
-      Translation: [-3.473571, 1.0101666, 3.8856936]
-      Rotation: [0, -0, 0]
-      Scale: [1.0825397, 0.14312, 1.1962909]
-    RelationshipComponent:
-      ParentHandle: 7028309828933853095
-      Children:
-        - 8652671496492807189
-    RigidbodyComponent:
-      Type: 0
-      Mass: 1
-      LinearDrag: 0.05
-      AngularDrag: 0.05
-      FixedRotation: false
-      UseCCD: false
-      CCDVelocityThreshold: 50
-    BoxColliderComponent:
-      HalfExtents: [1, 1, 1]
-      Offset: [0, 0, 0]
-      StaticFriction: 0.5
-      DynamicFriction: 0.5
-      Restitution: 0.1
-      IsTrigger: false
-  - Entity: 8652671496492807189
-    TagComponent:
-      Tag: Cube (Clone)
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    RelationshipComponent:
-      ParentHandle: 13946344685124341679
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cubee/1.obj
-      SubmeshIndex: 0
-      MaterialAssetPath: ""
-  - Entity: 7396092255954753259
-    TagComponent:
-      Tag: CubeRude
-    TransformComponent:
-      Translation: [5.701496, 2.9908788, 2.505496]
-      Rotation: [0, -0, 0]
-      Scale: [0.0059700003, 0.0059700003, 0.0059700003]
-    RelationshipComponent:
-      ParentHandle: 0
-      Children:
-        - 254346882202382271
-        - 12817001990273699899
-        - 11531110366120472731
-        - 18266367203678085871
-        - 13759639925880751557
-        - 8661065278367010695
-        - 6989106239556007934
-        - 929104386310163152
-        - 2290404526397267787
-        - 10272015636448709298
-        - 1180772086155116718
-        - 3419570131338953199
-        - 2455555932195308835
-        - 9985132244715222553
-        - 3235610526839849037
-        - 12687968326720431844
-        - 4763372499449922290
-        - 1577149902728000125
-        - 4352916646619626531
-        - 11843529255280810690
-        - 6317301756387949103
-        - 8583501318785801583
-        - 16079033077376839093
-        - 16623842768329615111
-        - 6027080440977279624
-        - 4123110804868650736
-        - 2051093853966246500
-        - 8199613351046596519
-        - 2123907299748267761
-        - 11509681280056814570
-        - 15429506395783724912
-        - 333561458547011160
-        - 17217514133841271034
-        - 7317436518914627428
-        - 2656665616680700996
-        - 5007097809049318321
-        - 4807361093009645086
-        - 304529362229084321
-        - 12735767900703055478
-        - 16663607208726749735
-        - 18225890113327258777
-        - 13588567731822793426
-        - 6953431857583933642
-        - 15587255764016599012
-        - 15601078887139775861
-        - 10826899096890833416
-        - 12382328415978436627
-        - 744985887038248283
-        - 16224551567343881305
-        - 10447609657953972410
-        - 3096555360745992284
-        - 5989591290218181533
-        - 861148539479413761
-        - 9139923088943866162
-  - Entity: 254346882202382271
-    TagComponent:
-      Tag: Cube.008
-    TransformComponent:
-      Translation: [-0.003327175, -24.156837, 0.36219665]
-      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 0
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 12817001990273699899
-    TagComponent:
-      Tag: Cylinder.011
-    TransformComponent:
-      Translation: [0.005647871, -124.001015, -0.6148186]
-      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 1
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 11531110366120472731
-    TagComponent:
-      Tag: Cylinder.014
-    TransformComponent:
-      Translation: [-0.008417457, 5.682274, 0.7852575]
-      Rotation: [0.48947397, 1.5499823, 0.48947406]
-      Scale: [100, 100, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 2
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 18266367203678085871
-    TagComponent:
-      Tag: Cylinder.020
-    TransformComponent:
-      Translation: [38.25651, 10.0228195, 98.70145]
-      Rotation: [-3.123224, 0.009785084, -1.5707062]
-      Scale: [100, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 3
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 13759639925880751557
-    TagComponent:
-      Tag: Cube.013
-    TransformComponent:
-      Translation: [-0.003327175, -24.156837, 0.36219665]
-      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 4
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 8661065278367010695
-    TagComponent:
-      Tag: Sphere.005
-    TransformComponent:
-      Translation: [38.18169, 9.919846, 108.39338]
-      Rotation: [0.009786738, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 5
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 6989106239556007934
-    TagComponent:
-      Tag: Cube.014
-    TransformComponent:
-      Translation: [-0.0035280702, -21.921959, 0.38406566]
-      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 6
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 929104386310163152
-    TagComponent:
-      Tag: Plane.001
-    TransformComponent:
-      Translation: [1.8425794, 10.508514, -99.94448]
-      Rotation: [0.009786738, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 7
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 2290404526397267787
-    TagComponent:
-      Tag: Cube.015
-    TransformComponent:
-      Translation: [0.00047763248, -66.48392, -0.051991176]
-      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 8
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 10272015636448709298
-    TagComponent:
-      Tag: Cylinder.023
-    TransformComponent:
-      Translation: [-97.05328, -74.765564, -45.57456]
-      Rotation: [0.47262827, 1.5469198, 0.4846922]
-      Scale: [99.99999, 100.00001, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 9
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 1180772086155116718
-    TagComponent:
-      Tag: Cylinder.024
-    TransformComponent:
-      Translation: [-0.003327175, -24.156837, 0.36219665]
-      Rotation: [-1.5610094, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 10
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 3419570131338953199
-    TagComponent:
-      Tag: Cylinder.016
-    TransformComponent:
-      Translation: [-0.003327175, -24.156837, 0.36219665]
-      Rotation: [1.5805802, -0.01836974, -8.988494e-05]
-      Scale: [99.99999, 100, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 11
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 2455555932195308835
-    TagComponent:
-      Tag: Cylinder.013
-    TransformComponent:
-      Translation: [0.007935239, -149.43593, -0.8637098]
-      Rotation: [-1.5610094, -0.018369501, -8.9795176e-05]
-      Scale: [100.00001, 100.00003, 115.08406]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 12
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 9985132244715222553
-    TagComponent:
-      Tag: Cylinder.025
-    TransformComponent:
-      Translation: [-0.0033416748, -24.15682, 0.3621943]
-      Rotation: [-1.5610095, -0.018369518, -8.999863e-05]
-      Scale: [100.00001, 100, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 13
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 3235610526839849037
-    TagComponent:
-      Tag: Sphere.007
-    TransformComponent:
-      Translation: [-0.0033416748, -24.15682, 0.3621943]
-      Rotation: [-1.5610095, -0.018369518, -8.999863e-05]
-      Scale: [100.00001, 100, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 14
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 12687968326720431844
-    TagComponent:
-      Tag: Sphere.006
-    TransformComponent:
-      Translation: [47.38591, 118.82097, 9.8020525]
-      Rotation: [-1.5674418, 0.04387704, -1.0405846]
-      Scale: [99.99999, 99.99999, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 15
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 4763372499449922290
-    TagComponent:
-      Tag: Cylinder.026
-    TransformComponent:
-      Translation: [47.38591, 118.82097, 9.8020525]
-      Rotation: [-1.5674418, 0.04387704, -1.0405846]
-      Scale: [99.99999, 99.99999, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 16
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 1577149902728000125
-    TagComponent:
-      Tag: Cylinder.027
-    TransformComponent:
-      Translation: [255.51532, 158.24942, 15.256085]
-      Rotation: [-1.6126105, 0.061558425, -1.9735991]
-      Scale: [100.00001, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 17
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 4352916646619626531
-    TagComponent:
-      Tag: Cube.016
-    TransformComponent:
-      Translation: [255.51532, 158.24942, 15.256085]
-      Rotation: [-1.6126105, 0.061558425, -1.9735991]
-      Scale: [100.00001, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 18
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 11843529255280810690
-    TagComponent:
-      Tag: Cube.020
-    TransformComponent:
-      Translation: [255.51532, 158.24942, 15.256085]
-      Rotation: [-1.6126105, 0.061558425, -1.9735991]
-      Scale: [100.00001, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 19
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 6317301756387949103
-    TagComponent:
-      Tag: Cylinder.030
-    TransformComponent:
-      Translation: [301.94495, 138.5101, 15.376951]
-      Rotation: [-2.519938, 1.4948664, 1.66387]
-      Scale: [99.99999, 99.999985, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 20
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 8583501318785801583
-    TagComponent:
-      Tag: Cube.026
-    TransformComponent:
-      Translation: [301.94495, 138.5101, 15.376951]
-      Rotation: [-1.615073, 0.06170452, -2.1007438]
-      Scale: [100.00001, 99.99999, 99.999985]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 21
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 16079033077376839093
-    TagComponent:
-      Tag: Cube.028
-    TransformComponent:
-      Translation: [221.48099, 175.36107, 14.87665]
-      Rotation: [-1.6112567, 0.06057726, -1.9005169]
-      Scale: [100, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 22
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 16623842768329615111
-    TagComponent:
-      Tag: Cylinder.040
-    TransformComponent:
-      Translation: [221.48099, 175.36107, 14.87665]
-      Rotation: [-2.5534196, 1.4979632, 1.8304752]
-      Scale: [99.999985, 100, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 23
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 6027080440977279624
-    TagComponent:
-      Tag: Cylinder.038
-    TransformComponent:
-      Translation: [227.466, 166.96072, 15.327484]
-      Rotation: [-2.5652122, 1.4970217, 1.8196049]
-      Scale: [99.99999, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 24
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 4123110804868650736
-    TagComponent:
-      Tag: Cube.025
-    TransformComponent:
-      Translation: [227.466, 166.96072, 15.327484]
-      Rotation: [-1.6110543, 0.06183881, -1.8996141]
-      Scale: [99.999985, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 25
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 2051093853966246500
-    TagComponent:
-      Tag: Cube.027
-    TransformComponent:
-      Translation: [301.2105, 140.12115, 15.774849]
-      Rotation: [-1.6146072, 0.062608376, -2.0774233]
-      Scale: [99.999985, 99.99999, 99.99998]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 26
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 8199613351046596519
-    TagComponent:
-      Tag: Cylinder.039
-    TransformComponent:
-      Translation: [301.2105, 140.12115, 15.774849]
-      Rotation: [-2.5321252, 1.494398, 1.6753497]
-      Scale: [99.99999, 99.999985, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 27
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 2123907299748267761
-    TagComponent:
-      Tag: Cube.018
-    TransformComponent:
-      Translation: [255.45412, 158.26038, 15.413239]
-      Rotation: [-1.6125635, 0.061958086, -1.9734457]
-      Scale: [99.99999, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 28
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 11509681280056814570
-    TagComponent:
-      Tag: Cylinder.037
-    TransformComponent:
-      Translation: [255.45412, 158.26038, 15.413239]
-      Rotation: [-2.5491734, 1.4960895, 1.7618606]
-      Scale: [99.99999, 100, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 29
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 15429506395783724912
-    TagComponent:
-      Tag: Cube.019
-    TransformComponent:
-      Translation: [331.75308, 123.62332, 15.871073]
-      Rotation: [-1.6163721, 0.062722825, -2.1632297]
-      Scale: [99.99999, 99.99999, 99.99998]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 30
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 333561458547011160
-    TagComponent:
-      Tag: Cylinder.031
-    TransformComponent:
-      Translation: [331.75308, 123.62332, 15.871073]
-      Rotation: [-2.514004, 1.4932816, 1.6073825]
-      Scale: [99.99999, 99.99998, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 31
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 17217514133841271034
-    TagComponent:
-      Tag: BezierCurve.003
-    TransformComponent:
-      Translation: [241.40997, 165.08093, 2.997765]
-      Rotation: [-0.041815467, 0.06156051, -1.973598]
-      Scale: [100.00001, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 32
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 7317436518914627428
-    TagComponent:
-      Tag: Cylinder.017
-    TransformComponent:
-      Translation: [-0.003288269, -24.156845, 0.36219466]
-      Rotation: [1.5805774, -0.018370444, -8.983342e-05]
-      Scale: [99.999985, 100.00001, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 33
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 2656665616680700996
-    TagComponent:
-      Tag: Sphere.004
-    TransformComponent:
-      Translation: [-0.003288269, -24.156845, 0.36219466]
-      Rotation: [1.5805774, -0.018370444, -8.983342e-05]
-      Scale: [99.999985, 100.00001, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 34
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 5007097809049318321
-    TagComponent:
-      Tag: Sphere.003
-    TransformComponent:
-      Translation: [-53.105186, 123.6786, 5.0244627]
-      Rotation: [1.5503001, -0.043606434, 1.0899563]
-      Scale: [100, 100, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 35
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 4807361093009645086
-    TagComponent:
-      Tag: Cylinder.018
-    TransformComponent:
-      Translation: [-53.105186, 123.6786, 5.0244627]
-      Rotation: [1.5503001, -0.043606434, 1.0899563]
-      Scale: [100, 100, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 36
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 304529362229084321
-    TagComponent:
-      Tag: Cylinder.019
-    TransformComponent:
-      Translation: [-246.30582, 158.16788, 2.2342935]
-      Rotation: [1.5243621, -0.02842453, 1.9486741]
-      Scale: [99.99999, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 37
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 12735767900703055478
-    TagComponent:
-      Tag: Cube.009
-    TransformComponent:
-      Translation: [-246.298, 158.17023, 2.2385507]
-      Rotation: [1.524363, -0.028432548, 1.948653]
-      Scale: [99.99999, 100, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 38
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 16663607208726749735
-    TagComponent:
-      Tag: Cube.017
-    TransformComponent:
-      Translation: [-246.30582, 158.16788, 2.2342935]
-      Rotation: [1.5243621, -0.02842453, 1.9486741]
-      Scale: [99.99999, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 39
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 18225890113327258777
-    TagComponent:
-      Tag: Cube.011
-    TransformComponent:
-      Translation: [-272.8388, 148.51367, 2.247116]
-      Rotation: [1.5253338, -0.028519887, 2.0196912]
-      Scale: [99.999985, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 40
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 13588567731822793426
-    TagComponent:
-      Tag: Cylinder.032
-    TransformComponent:
-      Translation: [-272.8388, 148.51367, 2.247116]
-      Rotation: [1.0102495, -1.5171323, -2.1327994]
-      Scale: [100, 100, 99.999985]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 41
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 6953431857583933642
-    TagComponent:
-      Tag: Cylinder.029
-    TransformComponent:
-      Translation: [-100.06261, 191.88022, 2.3391752]
-      Rotation: [1.0573959, -1.5122858, -2.584541]
-      Scale: [100, 99.99998, 99.99998]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 42
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 15587255764016599012
-    TagComponent:
-      Tag: Cube.024
-    TransformComponent:
-      Translation: [-100.06261, 191.88022, 2.3391752]
-      Rotation: [1.5198079, -0.02871936, 1.6151798]
-      Scale: [99.999985, 100.00001, 99.999985]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 43
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 15601078887139775861
-    TagComponent:
-      Tag: Cylinder.033
-    TransformComponent:
-      Translation: [-119.63522, 177.51584, 2.4690752]
-      Rotation: [1.0560367, -1.5124083, -2.5733323]
-      Scale: [100, 99.99999, 99.99999]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 44
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 10826899096890833416
-    TagComponent:
-      Tag: Cube.021
-    TransformComponent:
-      Translation: [-119.63522, 177.51584, 2.4690752]
-      Rotation: [1.5199555, -0.028719885, 1.6250279]
-      Scale: [99.99999, 100.00001, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 45
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 12382328415978436627
-    TagComponent:
-      Tag: Cube.023
-    TransformComponent:
-      Translation: [-331.5021, 127.02515, 2.2904243]
-      Rotation: [1.5267138, -0.028792027, 2.1222072]
-      Scale: [99.999985, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 46
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 744985887038248283
-    TagComponent:
-      Tag: Cylinder.036
-    TransformComponent:
-      Translation: [-331.5021, 127.02515, 2.2904243]
-      Rotation: [0.99185836, -1.5181487, -2.0119069]
-      Scale: [99.99999, 99.99999, 99.99998]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 47
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 16224551567343881305
-    TagComponent:
-      Tag: Cylinder.034
-    TransformComponent:
-      Translation: [-157.66257, 176.08655, 2.33875]
-      Rotation: [1.0487045, -1.5136461, -2.4702437]
-      Scale: [100.00001, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 48
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 10447609657953972410
-    TagComponent:
-      Tag: Cube.022
-    TransformComponent:
-      Translation: [-157.66257, 176.08655, 2.33875]
-      Rotation: [1.5212423, -0.02848541, 1.72076]
-      Scale: [100.00001, 100.00002, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 49
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 3096555360745992284
-    TagComponent:
-      Tag: Cube.012
-    TransformComponent:
-      Translation: [-272.97717, 151.28076, 2.1994448]
-      Rotation: [1.524905, -0.028431738, 1.9878975]
-      Scale: [99.99999, 100.000015, 100.00001]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 50
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 5989591290218181533
-    TagComponent:
-      Tag: Cylinder.035
-    TransformComponent:
-      Translation: [-272.97717, 151.28076, 2.1994448]
-      Rotation: [1.0158216, -1.5168132, -2.1701672]
-      Scale: [100.00001, 99.99999, 100]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 51
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 861148539479413761
-    TagComponent:
-      Tag: BezierCurve.001
-    TransformComponent:
-      Translation: [-231.83133, 164.28702, -9.969943]
-      Rotation: [3.0951612, -0.028426135, 1.9486746]
-      Scale: [99.99999, 99.99999, 100.000015]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 52
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat
-  - Entity: 9139923088943866162
-    TagComponent:
-      Tag: Cylinder.015
-    TransformComponent:
-      Translation: [0.007607967, -145.85046, -0.828625]
-      Rotation: [-1.5610094, -0.018369501, -8.9795176e-05]
-      Scale: [100.00001, 100.00003, 106.169]
-    RelationshipComponent:
-      ParentHandle: 7396092255954753259
-      Children:
-        []
-    StaticMeshComponent:
-      AssetPath: assets/models/cube-robot-animated/source/CubeRude/CubeRude.fbx
-      SubmeshIndex: 53
-      MaterialAssetPath: assets/models/cube-robot-animated/source/CubeRude/NewMaterial.rxnmat

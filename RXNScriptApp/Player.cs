@@ -1,6 +1,7 @@
 ﻿using RXNEngine;
 using System;
 using System.Threading;
+using System.Collections;
 
 public class Player : Entity
 {
@@ -10,7 +11,7 @@ public class Player : Entity
     public float MouseSensitivity = 0.002f;
     public float GamepadLookSensitivity = 2.5f;
 
-    public float JumpForce = 1.0f;
+    public float JumpForce = 7.0f;
     public float BulletForce = 0.1f;
     public int Ammo = 1000;
     public bool IsHovering = false;
@@ -21,14 +22,15 @@ public class Player : Entity
     public Entity? SunEntity;
 
     private float m_FireCooldown = 0.0f;
-
-    private bool m_JumpRequested = false;
     private int m_CurrentContacts = 0;
 
     private float m_Pitch = 0.0f;
     private float m_Yaw = 0.0f;
-
     private bool m_IsLocked = true;
+
+    private float m_VerticalVelocity = 0.0f;
+    private float m_Gravity = -19.62f;
+    private bool m_IsGrounded = false;
 
     public override void OnCreate()
     {
@@ -92,12 +94,13 @@ public class Player : Entity
             HeadCamera.Rotation = new Vector3(m_Pitch, 0.0f, 0.0f);
 
 
-        Vector3 pos = Translation;
         Vector3 velocity = new Vector3(0, 0, 0);
 
         Vector3 forward = this.Forward;
         Vector3 right = this.Right;
-        Vector3 up = this.Up;
+
+        forward.Y = 0;
+        right.Y = 0;
 
         if (Input.IsKeyDown(KeyCode.W)) velocity += forward;
         if (Input.IsKeyDown(KeyCode.S)) velocity -= forward;
@@ -110,17 +113,34 @@ public class Player : Entity
         velocity += right * leftX;
         velocity -= forward * leftY;
 
-        if (velocity.X != 0 || velocity.Y != 0 || velocity.Z != 0)
+        m_VerticalVelocity += m_Gravity * deltaTime;
+
+        if ((Input.IsKeyDown(KeyCode.Space) || Input.IsGamepadButtonDown(0, GamepadButton.A)) && m_IsGrounded)
         {
-            pos += velocity * Speed * deltaTime;
-            Translation = pos;
+            m_VerticalVelocity = JumpForce;
+            m_IsGrounded = false;
         }
 
-        if (Input.IsKeyDown(KeyCode.Space) || Input.IsGamepadButtonDown(0, GamepadButton.A))
-            m_JumpRequested = true;
+        if (IsHovering) m_VerticalVelocity = 0.0f;
+
+        if (HasComponent<CharacterControllerComponent>())
+        {
+            var cct = GetComponent<CharacterControllerComponent>();
+
+            Vector3 displacement = (velocity * Speed * deltaTime) + new Vector3(0, m_VerticalVelocity * deltaTime, 0);
+
+            CollisionFlags flags = cct!.Move(displacement, deltaTime);
+
+            m_IsGrounded = (flags & CollisionFlags.Down) != 0;
+
+            if (m_IsGrounded && m_VerticalVelocity < 0.0f)
+                m_VerticalVelocity = -1.0f;
+            else if ((flags & CollisionFlags.Up) != 0 && m_VerticalVelocity > 0.0f)
+                m_VerticalVelocity = -1.0f;
+        }
+
 
         bool rightTriggerPulled = Input.GetGamepadAxis(0, GamepadAxis.RightTrigger) > 0.5f;
-
         bool fireIntent = Input.IsKeyDown(KeyCode.F) || rightTriggerPulled;
 
         m_FireCooldown -= deltaTime;
@@ -130,7 +150,7 @@ public class Player : Entity
             if (BulletPrefab != null && HeadCamera != null)
             {
                 m_FireCooldown = 0.2f;
-                StartCoroutine(FireWeaponRoutine(pos));
+                StartCoroutine(FireWeaponRoutine(Translation));
             }
         }
 
@@ -160,41 +180,19 @@ public class Player : Entity
                 Input.SetCursorMode(CursorMode.Locked);
                 m_IsLocked = true;
             }
-            Thread.Sleep(50);
+            Thread.Sleep(50); 
         }
-
-        //if (SunEntity != null)
-        //{
-        //    var light = SunEntity.GetComponent<DirectionalLightComponent>();
-        //    if (light != null)
-        //    {
-        //        var data = light.Data;
-        //        data.Color = new Vector3(1, 0, 0);
-        //        data.Intensity = 50.0f;
-        //        light.Data = data;
-        //    }
-        //}
     }
 
     public override void OnFixedUpdate(float fixedTimeStep)
     {
-        if (m_JumpRequested)
-        {
-            this.ApplyLinearImpulse(this.Up * JumpForce);
-            m_JumpRequested = false;
-            Console.WriteLine("[Player] Jump Impulse Applied!");
-        }
-
-        if (IsHovering)
-        {
-            this.ApplyLinearImpulse(new Vector3(0, 9.81f * fixedTimeStep, 0));
-        }
     }
 
-    private System.Collections.IEnumerator FireWeaponRoutine(Vector3 startPos)
+    private IEnumerator FireWeaponRoutine(Vector3 startPos)
     {
         Entity firedBullet = Entity.Instantiate(BulletPrefab!);
         firedBullet.Translation = startPos + (HeadCamera!.Forward * 1.5f) + SpawnOffset;
+
         firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);
 
         Ammo--;
@@ -211,13 +209,11 @@ public class Player : Entity
     public override void OnCollisionEnter(Entity other)
     {
         m_CurrentContacts++;
-        Console.WriteLine($"[Player] Collision ENTER with Entity {other.ID}. (Total touching: {m_CurrentContacts})");
     }
 
     public override void OnCollisionExit(Entity other)
     {
         m_CurrentContacts--;
-        Console.WriteLine($"[Player] Collision EXIT with Entity {other.ID}.");
     }
 
     public override void OnTriggerEnter(Entity other)

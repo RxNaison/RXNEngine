@@ -77,6 +77,8 @@ namespace RXNScriptHost
 
         public IntPtr Entity_CapsuleCollider_Get;
         public IntPtr Entity_CapsuleCollider_Set;
+
+        public IntPtr CharacterController_Move;
     }
 
     public static class Interop

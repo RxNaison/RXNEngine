@@ -227,6 +227,20 @@ namespace RXNEngine {
 			out << YAML::EndMap; // MeshColliderComponent
 		}
 
+		if (entity.HasComponent<CharacterControllerComponent>())
+		{
+			out << YAML::Key << "CharacterControllerComponent";
+			out << YAML::BeginMap;
+
+			auto& cct = entity.GetComponent<CharacterControllerComponent>();
+			out << YAML::Key << "SlopeLimitDegrees" << YAML::Value << cct.SlopeLimitDegrees;
+			out << YAML::Key << "StepOffset" << YAML::Value << cct.StepOffset;
+			out << YAML::Key << "Radius" << YAML::Value << cct.Radius;
+			out << YAML::Key << "Height" << YAML::Value << cct.Height;
+
+			out << YAML::EndMap;
+		}
+
 		if (entity.HasComponent<ScriptComponent>())
 		{
 			out << YAML::Key << "ScriptComponent";
@@ -448,6 +462,20 @@ namespace RXNEngine {
 				mc.Restitution = meshColliderComponent["Restitution"].as<float>();
 			if (meshColliderComponent["IsTrigger"])
 				mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
+		}
+
+		auto characterControllerComponent = entity["CharacterControllerComponent"];
+		if (characterControllerComponent)
+		{
+			auto& cct = deserializedEntity.AddComponent<CharacterControllerComponent>();
+			if (characterControllerComponent["SlopeLimitDegrees"])
+				cct.SlopeLimitDegrees = characterControllerComponent["SlopeLimitDegrees"].as<float>();
+			if (characterControllerComponent["StepOffset"])
+				cct.StepOffset = characterControllerComponent["StepOffset"].as<float>();
+			if (characterControllerComponent["Radius"])
+				cct.Radius = characterControllerComponent["Radius"].as<float>();
+			if (characterControllerComponent["Height"])
+				cct.Height = characterControllerComponent["Height"].as<float>();
 		}
 
 		auto scriptComponent = entity["ScriptComponent"];
