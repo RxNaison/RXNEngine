@@ -664,7 +664,28 @@ namespace RXNEngine {
                     bool isVisible = frustum.IsSphereVisible(center, radius);
                     bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
 
-                    if (!isVisible && !isVisibleToShadows)
+                    bool isVisibleToLocalLights = false;
+                    for (const auto& pl : lightEnv.PointLights)
+                    {
+                        if (pl.CastsShadows && glm::distance(center, pl.Position) <= pl.Radius + radius)
+                        {
+                            isVisibleToLocalLights = true;
+                            break;
+                        }
+                    }
+                    if (!isVisibleToLocalLights)
+                    {
+                        for (const auto& sl : lightEnv.SpotLights)
+                        {
+                            if (sl.CastsShadows && glm::distance(center, sl.Position) <= sl.Radius + radius)
+                            {
+                                isVisibleToLocalLights = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!isVisible && !isVisibleToShadows && !isVisibleToLocalLights)
                         return;
 
                     RenderCommandData cmd;
@@ -679,7 +700,7 @@ namespace RXNEngine {
                     cmd.BoundingRadius = radius;
 
                     cmd.IsVisibleToCamera = isVisible;
-                    cmd.IsVisibleToShadows = isVisibleToShadows;
+                    cmd.IsVisibleToShadows = isVisible || isVisibleToShadows || isVisibleToLocalLights;
 
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
@@ -842,8 +863,29 @@ namespace RXNEngine {
 
                     bool isVisible = frustum.IsSphereVisible(center, radius);
                     bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
-                    
-                    if (!isVisible && !isVisibleToShadows)
+
+                    bool isVisibleToLocalLights = false;
+                    for (const auto& pl : lightEnv.PointLights)
+                    {
+                        if (pl.CastsShadows && glm::distance(center, pl.Position) <= pl.Radius + radius)
+                        {
+                            isVisibleToLocalLights = true;
+                            break;
+                        }
+                    }
+                    if (!isVisibleToLocalLights)
+                    {
+                        for (const auto& sl : lightEnv.SpotLights)
+                        {
+                            if (sl.CastsShadows && glm::distance(center, sl.Position) <= sl.Radius + radius)
+                            {
+                                isVisibleToLocalLights = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!isVisible && !isVisibleToShadows && !isVisibleToLocalLights)
                         return;
 
                     RenderCommandData cmd;
@@ -858,7 +900,7 @@ namespace RXNEngine {
                     cmd.BoundingRadius = radius;
 
                     cmd.IsVisibleToCamera = isVisible;
-                    cmd.IsVisibleToShadows = isVisibleToShadows;
+                    cmd.IsVisibleToShadows = isVisible || isVisibleToShadows || isVisibleToLocalLights;
 
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
