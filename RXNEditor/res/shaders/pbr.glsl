@@ -250,12 +250,24 @@ float PointShadowCalculation(vec3 fragPosWorld, vec3 lightPos, float farPlane, i
         return 1.0;
     
     vec3 fragToLight = fragPosWorld - lightPos;
-    float currentDepth = length(fragToLight);
+    
+    vec3 absVec = abs(fragToLight);
+    float z_eye = max(absVec.x, max(absVec.y, absVec.z));
+    
+    if (z_eye < 0.001) return 1.0;
+    
+    float n = 0.1;
+    float f = farPlane;
+    
+    float z_ndc = (f + n) / (f - n) - (2.0 * f * n) / ((f - n) * z_eye);
+    
+    float currentDepth = z_ndc * 0.5 + 0.5;
     
     float closestDepth = texture(u_PointShadowMap, vec4(fragToLight, float(shadowIndex))).r;
-    closestDepth *= farPlane;
     
-    float bias = 0.15; 
+    float dz_dzeye = (2.0 * f * n) / ((f - n) * z_eye * z_eye);
+    float bias = clamp(0.15 * dz_dzeye, 0.00005, 0.005);
+    
     return (currentDepth - bias > closestDepth) ? 0.0 : 1.0;
 }
 
@@ -326,7 +338,10 @@ void main()
             vec3 L = normalize(lightPos - v_WorldPos);
             vec3 H = normalize(V + L);
             float intensity = u_PointLights[i].PositionIntensity.w;
-            float attenuation = 1.0 / (distance * distance);
+
+            float falloffExp = max(u_PointLights[i].Falloff.x, 0.001);
+            float window = pow(clamp(1.0 - (distance / radius), 0.0, 1.0), falloffExp);
+            float attenuation = window / (distance * distance + 0.001);
 
             int shadowIdx = int(u_PointLights[i].ExtraData.x);
             float pShadow = PointShadowCalculation(v_WorldPos, lightPos, radius, shadowIdx);
@@ -397,7 +412,10 @@ void main()
 
                 vec3 H = normalize(V + L);
                 float intensity = u_SpotLights[i].PositionIntensity.w;
-                float attenuation = 1.0 / (distance * distance);
+
+                float falloffExp = max(u_SpotLights[i].Falloff.x, 0.001);
+                float window = pow(clamp(1.0 - (distance / radius), 0.0, 1.0), falloffExp);
+                float attenuation = window / (distance * distance + 0.001);
 
                 int shadowIdx = int(u_SpotLights[i].ExtraData.x);
                 float sShadow = SpotShadowCalculation(v_WorldPos, u_SpotLights[i].LightSpaceMatrix, shadowIdx);

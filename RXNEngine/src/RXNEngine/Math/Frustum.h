@@ -32,6 +32,7 @@ namespace RXNEngine {
 		void Define(const glm::mat4& viewProjection);
 
 		bool IsBoxVisible(const glm::vec3& min, const glm::vec3& max) const;
+		bool IsSphereVisible(const glm::vec3& center, float radius) const;
 
 	private:
 		std::array<Plane, 6> m_Planes;

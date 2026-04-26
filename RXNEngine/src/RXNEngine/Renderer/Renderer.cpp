@@ -386,7 +386,11 @@ namespace RXNEngine {
             m_Data->LightBufferLocal.PointLights[i].Falloff = glm::vec4(light.Falloff, 0.0f, 0.0f, 0.0f);
 
             float shadowIndex = -1.0f;
-            if (light.CastsShadows && activePointShadows < 4) shadowIndex = (float)activePointShadows++;
+            bool isVisibleToCamera = m_Data->CameraFrustum.IsSphereVisible(light.Position, light.Radius);
+
+            if (light.CastsShadows && isVisibleToCamera && activePointShadows < 4)
+                shadowIndex = (float)activePointShadows++;
+
             m_Data->LightBufferLocal.PointLights[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
         }
 
@@ -411,12 +415,13 @@ namespace RXNEngine {
             m_Data->LightBufferLocal.SpotLights[i].Position = glm::vec4(light.Position, light.Intensity);
             m_Data->LightBufferLocal.SpotLights[i].Direction = glm::vec4(light.Direction, light.Radius);
             m_Data->LightBufferLocal.SpotLights[i].Color = glm::vec4(light.Color, light.CutOff);
-
             m_Data->LightBufferLocal.SpotLights[i].Falloff = glm::vec4(light.Falloff, light.OuterCutOff, (float)cookieIndex, light.CookieSize);
             m_Data->LightBufferLocal.SpotLights[i].LightSpaceMatrix = light.LightSpaceMatrix;
 
             float shadowIndex = -1.0f;
-            if (light.CastsShadows && activeSpotShadows < 4)
+            bool isVisibleToCamera = m_Data->CameraFrustum.IsSphereVisible(light.Position, light.Radius);
+
+            if (light.CastsShadows && isVisibleToCamera && activeSpotShadows < 4)
                 shadowIndex = (float)activeSpotShadows++;
 
             m_Data->LightBufferLocal.SpotLights[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
@@ -1028,12 +1033,50 @@ namespace RXNEngine {
         if (data->ShadowQueue.empty())
             return;
 
+        glm::vec4 planes[6];
+        for (int i = 0; i < 4; ++i) planes[0][i] = matrix[i][3] + matrix[i][0]; // Left
+        for (int i = 0; i < 4; ++i) planes[1][i] = matrix[i][3] - matrix[i][0]; // Right
+        for (int i = 0; i < 4; ++i) planes[2][i] = matrix[i][3] + matrix[i][1]; // Bottom
+        for (int i = 0; i < 4; ++i) planes[3][i] = matrix[i][3] - matrix[i][1]; // Top
+        for (int i = 0; i < 4; ++i) planes[4][i] = matrix[i][3] + matrix[i][2]; // Near
+        for (int i = 0; i < 4; ++i) planes[5][i] = matrix[i][3] - matrix[i][2]; // Far
+
+        for (int i = 0; i < 6; ++i)
+        {
+            float length = glm::length(glm::vec3(planes[i]));
+            planes[i] /= length;
+        }
+
         InstanceData* batchData = data->BatchBuffer.data();
         uint32_t transformCount = 0;
         const RenderCommandPacket* batchStart = nullptr;
 
         for (const auto& packet : data->ShadowQueue)
         {
+            bool visible = true;
+
+            if (isOmni)
+            {
+                float dist = glm::distance(packet.BoundingCenter, lightPos);
+                if (dist > farPlane + packet.BoundingRadius)
+                    visible = false;
+            }
+
+            if (visible)
+            {
+                for (int i = 0; i < 6; ++i)
+                {
+                    if (glm::dot(glm::vec3(planes[i]), packet.BoundingCenter) + planes[i].w < -packet.BoundingRadius)
+                    {
+                        visible = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!visible)
+                continue;
+
             if (!batchStart)
             {
                 batchStart = &packet;
@@ -1041,6 +1084,7 @@ namespace RXNEngine {
                 transformCount++;
                 continue;
             }
+
             if (packet.Mesh == batchStart->Mesh && packet.SubmeshIndex == batchStart->SubmeshIndex && transformCount < MaxInstances)
             {
                 batchData[transformCount].Transform = packet.Transform;
@@ -1052,18 +1096,28 @@ namespace RXNEngine {
                 batchStart->Mesh->GetVertexArray()->Bind();
                 const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
                 RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+
+                data->Stats.DrawCalls++;
+                data->Stats.Instances += transformCount;
+                data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+
                 batchStart = &packet;
                 transformCount = 0;
                 batchData[transformCount].Transform = packet.Transform;
                 transformCount++;
             }
         }
+
         if (transformCount > 0 && batchStart)
         {
             data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
             batchStart->Mesh->GetVertexArray()->Bind();
             const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
             RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+
+            data->Stats.DrawCalls++;
+            data->Stats.Instances += transformCount;
+            data->Stats.TotalIndices += submesh.IndexCount * transformCount;
         }
     }
 }

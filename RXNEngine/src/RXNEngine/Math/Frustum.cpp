@@ -66,4 +66,14 @@ namespace RXNEngine {
 
 		return true;
 	}
+
+	bool Frustum::IsSphereVisible(const glm::vec3& center, float radius) const
+	{
+		for (const auto& plane : m_Planes)
+		{
+			if (plane.GetSignedDistanceToPlane(center) < -radius)
+				return false;
+		}
+		return true;
+	}
 }
