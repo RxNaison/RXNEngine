@@ -6,7 +6,7 @@
 
 namespace RXNEngine {
 
-	Ref<ShadowMap> ShadowMap::Create(uint32_t size)
+	Ref<ShadowMap> ShadowMap::Create()
 	{
 		switch (Renderer::GetAPI())
 		{

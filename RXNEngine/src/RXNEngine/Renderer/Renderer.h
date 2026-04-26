@@ -96,6 +96,10 @@ namespace RXNEngine {
         void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count);
         void Flush();
         void FlushShadows();
+        void FlushSpotShadows();
+        void FlushPointShadows();
+
+        void DrawShadowBatch(RendererData* data, Ref<Shader> shader, const glm::mat4& matrix, bool isOmni, const glm::vec3& lightPos = {}, float farPlane = 0.0f);
 
         void CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir);
 

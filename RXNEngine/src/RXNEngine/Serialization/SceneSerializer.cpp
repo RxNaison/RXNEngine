@@ -136,6 +136,7 @@ namespace RXNEngine {
 			out << YAML::Key << "Intensity" << YAML::Value << pl.Intensity;
 			out << YAML::Key << "Radius" << YAML::Value << pl.Radius;
 			out << YAML::Key << "Falloff" << YAML::Value << pl.Falloff;
+			out << YAML::Key << "CastsShadows" << YAML::Value << pl.CastsShadows;
 
 			out << YAML::EndMap; // PointLightComponent
 		}
@@ -152,6 +153,7 @@ namespace RXNEngine {
 			out << YAML::Key << "Falloff" << YAML::Value << sl.Falloff;
 			out << YAML::Key << "InnerAngle" << YAML::Value << sl.InnerAngle;
 			out << YAML::Key << "OuterAngle" << YAML::Value << sl.OuterAngle;
+			out << YAML::Key << "CastsShadows" << YAML::Value << sl.CastsShadows;
 
 			out << YAML::Key << "CookieAssetPath" << YAML::Value << sl.CookieAssetPath;
 			out << YAML::Key << "IsVideo" << YAML::Value << sl.IsVideo;
@@ -384,6 +386,8 @@ namespace RXNEngine {
 				plc.Radius = pointLightComponent["Radius"].as<float>();
 			if (pointLightComponent["Falloff"])
 				plc.Falloff = pointLightComponent["Falloff"].as<float>();
+			if (pointLightComponent["CastsShadows"])
+				plc.CastsShadows = pointLightComponent["CastsShadows"].as<bool>();
 		}
 
 		auto spotLightComponent = entity["SpotLightComponent"];
@@ -403,6 +407,8 @@ namespace RXNEngine {
 				sl.InnerAngle = spotLightComponent["InnerAngle"].as<float>();
 			if (spotLightComponent["OuterAngle"])
 				sl.OuterAngle = spotLightComponent["OuterAngle"].as<float>();
+			if (spotLightComponent["CastsShadows"])
+				sl.CastsShadows = spotLightComponent["CastsShadows"].as<bool>();
 
 			if (spotLightComponent["IsVideo"])
 				sl.IsVideo = spotLightComponent["IsVideo"].as<bool>();

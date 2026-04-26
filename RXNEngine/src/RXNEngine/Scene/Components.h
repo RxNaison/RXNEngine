@@ -105,6 +105,8 @@ namespace RXNEngine {
 		float Intensity = 1.0f;
 		float Radius = 10.0f;
 		float Falloff = 1.0f;
+
+		bool CastsShadows = false;
 	};
 
 	struct SpotLightComponent
@@ -121,6 +123,8 @@ namespace RXNEngine {
 		std::string CookieAssetPath = "";
 		bool IsVideo = false;
 		float CookieSize = 1.0f;
+
+		bool CastsShadows = false;
 	};
 
 	class ScriptableEntity;

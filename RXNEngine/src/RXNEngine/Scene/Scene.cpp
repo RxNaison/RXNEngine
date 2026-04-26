@@ -585,6 +585,7 @@ namespace RXNEngine {
                 pl.Intensity = light.Intensity;
                 pl.Radius = light.Radius;
                 pl.Falloff = light.Falloff;
+                pl.CastsShadows = light.CastsShadows;
                 lightEnv.PointLights.push_back(pl);
             }
         }
@@ -611,6 +612,7 @@ namespace RXNEngine {
                 sl.Falloff = light.Falloff;
                 sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
                 sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
+                sl.CastsShadows = light.CastsShadows;
 
                 sl.CookieTexture = light.IsVideo ?
                     (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;
@@ -753,6 +755,7 @@ namespace RXNEngine {
                 pl.Intensity = light.Intensity;
                 pl.Radius = light.Radius;
                 pl.Falloff = light.Falloff;
+                pl.CastsShadows = light.CastsShadows;
                 lightEnv.PointLights.push_back(pl);
             }
         }
@@ -788,6 +791,7 @@ namespace RXNEngine {
                 sl.Falloff = light.Falloff;
                 sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
                 sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
+                sl.CastsShadows = light.CastsShadows;
 
                 sl.CookieTexture = light.IsVideo ?
                     (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;

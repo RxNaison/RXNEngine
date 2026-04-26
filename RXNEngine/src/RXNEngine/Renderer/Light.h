@@ -5,6 +5,15 @@
 
 namespace RXNEngine {
 
+    struct DirectionalLight
+    {
+        glm::vec3 Direction = { -0.5f, -1.0f, -0.5f };
+        float Intensity = 1.0f;
+
+        glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
+        float Padding = 0.0f;
+    };
+
     struct PointLight
     {
         glm::vec3 Position = { 0.0f, 0.0f, 0.0f };
@@ -15,15 +24,8 @@ namespace RXNEngine {
 
         float Falloff = 1.0f;
         float Padding[3];
-    };
 
-    struct DirectionalLight
-    {
-        glm::vec3 Direction = { -0.5f, -1.0f, -0.5f };
-        float Intensity = 1.0f;
-
-        glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
-        float Padding = 0.0f;
+        bool CastsShadows = false;
     };
 
     struct SpotLight
@@ -44,6 +46,8 @@ namespace RXNEngine {
         glm::mat4 LightSpaceMatrix = glm::mat4(1.0f);
         Ref<Texture2D> CookieTexture = nullptr;
         float CookieSize = 1.0f;
+
+        bool CastsShadows = false;
     };
 
     struct LightEnvironment

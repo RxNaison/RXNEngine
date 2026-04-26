@@ -75,6 +75,9 @@ layout(binding = 10) uniform samplerCube u_IrradianceMap;
 layout(binding = 11) uniform samplerCube u_PrefilterMap;
 layout(binding = 12) uniform sampler2D   u_BRDFLUT;
 
+layout(binding = 13) uniform sampler2DArrayShadow u_SpotShadowMap; 
+layout(binding = 14) uniform samplerCubeArray u_PointShadowMap; 
+
 layout(binding = 16) uniform sampler2D u_LightCookies[8];
 
 // Lighting UBO
@@ -82,6 +85,7 @@ struct PointLight {
     vec4 PositionIntensity; 
     vec4 ColorRadius;       
     vec4 Falloff;           
+    vec4 ExtraData;
 };
 
 struct SpotLight {
@@ -90,6 +94,7 @@ struct SpotLight {
     vec4 ColorCutoff;
     vec4 Falloff;
     mat4 LightSpaceMatrix;
+    vec4 ExtraData;
 };
 
 layout(std140, binding = 1) uniform LightData {
@@ -219,6 +224,41 @@ float ShadowCalculation(vec3 fragPosWorld)
     return 1.0 - visibility;
 }
 
+float SpotShadowCalculation(vec3 fragPosWorld, mat4 lightSpaceMatrix, int shadowIndex) {
+    if (shadowIndex < 0)
+        return 1.0;
+    
+    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPosWorld, 1.0);
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        return 1.0;
+    
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(u_SpotShadowMap, 0));
+    vec2 offsets[4] = vec2[]( vec2(-0.5,-0.5), vec2(0.5,-0.5), vec2(-0.5,0.5), vec2(0.5,0.5) );
+    
+    for(int i = 0; i < 4; ++i)
+        shadow += texture(u_SpotShadowMap, vec4(projCoords.xy + offsets[i] * texelSize, float(shadowIndex), projCoords.z - 0.0005));
+
+    return shadow / 4.0;
+}
+
+float PointShadowCalculation(vec3 fragPosWorld, vec3 lightPos, float farPlane, int shadowIndex) {
+    if (shadowIndex < 0)
+        return 1.0;
+    
+    vec3 fragToLight = fragPosWorld - lightPos;
+    float currentDepth = length(fragToLight);
+    
+    float closestDepth = texture(u_PointShadowMap, vec4(fragToLight, float(shadowIndex))).r;
+    closestDepth *= farPlane;
+    
+    float bias = 0.15; 
+    return (currentDepth - bias > closestDepth) ? 0.0 : 1.0;
+}
+
 // ----------------------------------------------------------------------------
 // MAIN
 // ----------------------------------------------------------------------------
@@ -233,7 +273,7 @@ void main()
     // Combine Texture * Uniform for Modulated Control
     float metallic  = texture(u_MetalnessMap, v_TexCoord).b * u_Metalness; 
     float roughness = texture(u_RoughnessMap, v_TexCoord).g * u_Roughness;
-    float ao        = texture(u_AOMap, v_TexCoord).r * u_AO; // GLTF uses Red channel for AO usually
+    float ao        = texture(u_AOMap, v_TexCoord).r * u_AO;
 
     vec3 emissive   = texture(u_EmissiveMap, v_TexCoord).rgb * u_EmissiveColor;
 
@@ -287,7 +327,10 @@ void main()
             vec3 H = normalize(V + L);
             float intensity = u_PointLights[i].PositionIntensity.w;
             float attenuation = 1.0 / (distance * distance);
-            vec3 radiance = u_PointLights[i].ColorRadius.rgb * intensity * attenuation;
+
+            int shadowIdx = int(u_PointLights[i].ExtraData.x);
+            float pShadow = PointShadowCalculation(v_WorldPos, lightPos, radius, shadowIdx);
+            vec3 radiance = u_PointLights[i].ColorRadius.rgb * intensity * attenuation * pShadow;
 
             float NDF = DistributionGGX(N, H, roughness);   
             float G   = GeometrySmith(N, V, L, roughness);      
@@ -355,7 +398,10 @@ void main()
                 vec3 H = normalize(V + L);
                 float intensity = u_SpotLights[i].PositionIntensity.w;
                 float attenuation = 1.0 / (distance * distance);
-                vec3 radiance = u_SpotLights[i].ColorCutoff.rgb * intensity * attenuation * intensityMultiplier * cookieColor;
+
+                int shadowIdx = int(u_SpotLights[i].ExtraData.x);
+                float sShadow = SpotShadowCalculation(v_WorldPos, u_SpotLights[i].LightSpaceMatrix, shadowIdx);
+                vec3 radiance = u_SpotLights[i].ColorCutoff.rgb * intensity * attenuation * intensityMultiplier * cookieColor * sShadow;
 
                 float NDF = DistributionGGX(N, H, roughness);   
                 float G   = GeometrySmith(N, V, L, roughness);      

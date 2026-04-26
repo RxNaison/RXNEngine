@@ -434,6 +434,7 @@ namespace RXNEditor {
                 UI::DrawFloatControl("Intensity", component.Intensity, 0.1f, 0.0f, 100.0f);
                 UI::DrawFloatControl("Radius", component.Radius, 0.1f, 0.0f, 1000.0f);
                 UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
+                UI::DrawCheckbox("Casts Shadows", component.CastsShadows);
             });
 
         DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
@@ -444,6 +445,7 @@ namespace RXNEditor {
                 UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
                 UI::DrawFloatControl("Inner Angle", component.InnerAngle, 0.1f, 0.0f, 90.0f);
                 UI::DrawFloatControl("Outer Angle", component.OuterAngle, 0.1f, 0.0f, 90.0f);
+                UI::DrawCheckbox("Casts Shadows", component.CastsShadows);
 
                 ImGui::Separator();
                 ImGui::Text("Cookie Texture");
