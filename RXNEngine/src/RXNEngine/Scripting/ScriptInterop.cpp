@@ -52,6 +52,69 @@ namespace RXNEngine {
             float OuterAngle;
             float CookieSize;
         };
+
+        struct DirectionalLightDataInterop
+        {
+            glm::vec3 Color;
+            float Intensity;
+        };
+
+        struct PointLightDataInterop
+        {
+            glm::vec3 Color;
+            float Intensity;
+            float Radius;
+            float Falloff;
+        };
+
+        struct RigidbodyDataInterop
+        {
+            RigidbodyComponent::BodyType Type;
+            float Mass;
+            float LinearDrag;
+            float AngularDrag;
+            bool FixedRotation;
+            bool UseCCD;
+            float CCDVelocityThreshold;
+            void* RuntimeActor;
+        };
+
+        struct BoxColliderDataInterop
+        {
+            glm::vec3 HalfExtents;
+            glm::vec3 Offset;
+            float StaticFriction;
+            float DynamicFriction;
+            float Restitution;
+            bool IsTrigger;
+            void* RuntimeShape;
+            void* RuntimeMaterial;
+        };
+
+        struct SphereColliderDataInterop
+        {
+            float Radius;
+            glm::vec3 Offset;
+            float StaticFriction;
+            float DynamicFriction;
+            float Restitution;
+            bool IsTrigger;
+            void* RuntimeShape;
+            void* RuntimeMaterial;
+        };
+
+        struct CapsuleColliderDataInterop
+        {
+            float Radius;
+            float Height;
+            glm::vec3 Offset;
+            float StaticFriction;
+            float DynamicFriction;
+            float Restitution;
+            bool IsTrigger;
+            void* RuntimeShape;
+            void* RuntimeMaterial;
+        };
     }
 
 #pragma region Logging & Core
@@ -396,28 +459,40 @@ namespace RXNEngine {
      
     //CameraComponent
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Get(uint64_t entityID, DirectionalLightComponent* outComponent)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Get(uint64_t entityID, DirectionalLightDataInterop* outData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        *outComponent = entity.GetComponent<DirectionalLightComponent>();
+        auto& c = entity.GetComponent<DirectionalLightComponent>();
+        outData->Color = c.Color;
+        outData->Intensity = c.Intensity;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Set(uint64_t entityID, DirectionalLightComponent* inComponent)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeDirLight_Set(uint64_t entityID, DirectionalLightDataInterop* inData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        entity.GetComponent<DirectionalLightComponent>() = *inComponent;
+        auto& c = entity.GetComponent<DirectionalLightComponent>();
+        c.Color = inData->Color;
+        c.Intensity = inData->Intensity;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Get(uint64_t entityID, PointLightComponent* outComponent)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Get(uint64_t entityID, PointLightDataInterop* outData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        *outComponent = entity.GetComponent<PointLightComponent>();
+        auto& c = entity.GetComponent<PointLightComponent>();
+        outData->Color = c.Color;
+        outData->Intensity = c.Intensity;
+        outData->Radius = c.Radius;
+        outData->Falloff = c.Falloff;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Set(uint64_t entityID, PointLightComponent* inComponent)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativePointLight_Set(uint64_t entityID, PointLightDataInterop* inData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        entity.GetComponent<PointLightComponent>() = *inComponent;
+        auto& c = entity.GetComponent<PointLightComponent>();
+        c.Color = inData->Color;
+        c.Intensity = inData->Intensity;
+        c.Radius = inData->Radius;
+        c.Falloff = inData->Falloff;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSpotLight_Get(uint64_t entityID, SpotLightDataInterop* outData)
@@ -479,20 +554,32 @@ namespace RXNEngine {
         entity.GetComponent<ScriptComponent>().ClassName = inTag;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Get(uint64_t entityID, RigidbodyComponent* outData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Get(uint64_t entityID, RigidbodyDataInterop* outData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        *outData = entity.GetComponent<RigidbodyComponent>();
+        auto& c = entity.GetComponent<RigidbodyComponent>();
+        outData->Type = c.Type;
+        outData->Mass = c.Mass;
+        outData->LinearDrag = c.LinearDrag;
+        outData->AngularDrag = c.AngularDrag;
+        outData->FixedRotation = c.FixedRotation;
+        outData->UseCCD = c.UseCCD;
+        outData->CCDVelocityThreshold = c.CCDVelocityThreshold;
+        outData->RuntimeActor = c.RuntimeActor;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Set(uint64_t entityID, RigidbodyComponent* inData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Set(uint64_t entityID, RigidbodyDataInterop* inData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& rb = entity.GetComponent<RigidbodyComponent>();
 
-        void* tempActor = rb.RuntimeActor;
-        rb = *inData;
-        rb.RuntimeActor = tempActor;
+        rb.Type = inData->Type;
+        rb.Mass = inData->Mass;
+        rb.LinearDrag = inData->LinearDrag;
+        rb.AngularDrag = inData->AngularDrag;
+        rb.FixedRotation = inData->FixedRotation;
+        rb.UseCCD = inData->UseCCD;
+        rb.CCDVelocityThreshold = inData->CCDVelocityThreshold;
 
         if (rb.RuntimeActor && rb.Type != RigidbodyComponent::BodyType::Static)
         {
@@ -503,64 +590,87 @@ namespace RXNEngine {
         }
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Get(uint64_t entityID, BoxColliderComponent* outData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Get(uint64_t entityID, BoxColliderDataInterop* outData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        *outData = entity.GetComponent<BoxColliderComponent>();
+        auto& c = entity.GetComponent<BoxColliderComponent>();
+        outData->HalfExtents = c.HalfExtents;
+        outData->Offset = c.Offset;
+        outData->StaticFriction = c.StaticFriction;
+        outData->DynamicFriction = c.DynamicFriction;
+        outData->Restitution = c.Restitution;
+        outData->IsTrigger = c.IsTrigger;
+        outData->RuntimeShape = c.RuntimeShape;
+        outData->RuntimeMaterial = c.RuntimeMaterial;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Set(uint64_t entityID, BoxColliderComponent* inData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeBoxCollider_Set(uint64_t entityID, BoxColliderDataInterop* inData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& bc = entity.GetComponent<BoxColliderComponent>();
 
-        void* tempShape = bc.RuntimeShape;
-        void* tempMat = bc.RuntimeMaterial;
-
-        bc = *inData;
-
-        bc.RuntimeShape = tempShape;
-        bc.RuntimeMaterial = tempMat;
+        bc.HalfExtents = inData->HalfExtents;
+        bc.Offset = inData->Offset;
+        bc.StaticFriction = inData->StaticFriction;
+        bc.DynamicFriction = inData->DynamicFriction;
+        bc.Restitution = inData->Restitution;
+        bc.IsTrigger = inData->IsTrigger;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Get(uint64_t entityID, SphereColliderComponent* outData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Get(uint64_t entityID, SphereColliderDataInterop* outData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        *outData = entity.GetComponent<SphereColliderComponent>();
+        auto& c = entity.GetComponent<SphereColliderComponent>();
+        outData->Radius = c.Radius;
+        outData->Offset = c.Offset;
+        outData->StaticFriction = c.StaticFriction;
+        outData->DynamicFriction = c.DynamicFriction;
+        outData->Restitution = c.Restitution;
+        outData->IsTrigger = c.IsTrigger;
+        outData->RuntimeShape = c.RuntimeShape;
+        outData->RuntimeMaterial = c.RuntimeMaterial;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Set(uint64_t entityID, SphereColliderComponent* inData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSphereCollider_Set(uint64_t entityID, SphereColliderDataInterop* inData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& bc = entity.GetComponent<SphereColliderComponent>();
 
-        void* tempShape = bc.RuntimeShape;
-        void* tempMat = bc.RuntimeMaterial;
-
-        bc = *inData;
-
-        bc.RuntimeShape = tempShape;
-        bc.RuntimeMaterial = tempMat;
+        bc.Radius = inData->Radius;
+        bc.Offset = inData->Offset;
+        bc.StaticFriction = inData->StaticFriction;
+        bc.DynamicFriction = inData->DynamicFriction;
+        bc.Restitution = inData->Restitution;
+        bc.IsTrigger = inData->IsTrigger;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Get(uint64_t entityID, CapsuleColliderComponent* outData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Get(uint64_t entityID, CapsuleColliderDataInterop* outData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
-        *outData = entity.GetComponent<CapsuleColliderComponent>();
+        auto& c = entity.GetComponent<CapsuleColliderComponent>();
+        outData->Radius = c.Radius;
+        outData->Height = c.Height;
+        outData->Offset = c.Offset;
+        outData->StaticFriction = c.StaticFriction;
+        outData->DynamicFriction = c.DynamicFriction;
+        outData->Restitution = c.Restitution;
+        outData->IsTrigger = c.IsTrigger;
+        outData->RuntimeShape = c.RuntimeShape;
+        outData->RuntimeMaterial = c.RuntimeMaterial;
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Set(uint64_t entityID, CapsuleColliderComponent* inData)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeCapsuleCollider_Set(uint64_t entityID, CapsuleColliderDataInterop* inData)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
         auto& bc = entity.GetComponent<CapsuleColliderComponent>();
 
-        void* tempShape = bc.RuntimeShape;
-        void* tempMat = bc.RuntimeMaterial;
-
-        bc = *inData;
-
-        bc.RuntimeShape = tempShape;
-        bc.RuntimeMaterial = tempMat;
+        bc.Radius = inData->Radius;
+        bc.Height = inData->Height;
+        bc.Offset = inData->Offset;
+        bc.StaticFriction = inData->StaticFriction;
+        bc.DynamicFriction = inData->DynamicFriction;
+        bc.Restitution = inData->Restitution;
+        bc.IsTrigger = inData->IsTrigger;
     }
 
     extern "C" uint8_t CORECLR_DELEGATE_CALLTYPE NativeCharacterController_Move(uint64_t entityID, glm::vec3* displacement, float deltaTime)

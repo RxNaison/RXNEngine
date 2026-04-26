@@ -383,16 +383,18 @@ namespace RXNEngine {
     {
         UUID entityID = entity.GetUUID();
 
-        if (m_Data->EntityInstances.find(entityID) != m_Data->EntityInstances.end())
-            m_Data->EntityInstances[entityID]->InvokeOnUpdate(deltaTime);
+        auto it = m_Data->EntityInstances.find(entityID);
+        if (it != m_Data->EntityInstances.end())
+            it->second->InvokeOnUpdate(deltaTime);
     }
 
     void ScriptEngine::OnFixedUpdateEntity(Entity entity, float deltaTime)
     {
         UUID entityID = entity.GetUUID();
 
-        if (m_Data->EntityInstances.find(entityID) != m_Data->EntityInstances.end())
-            m_Data->EntityInstances[entityID]->InvokeOnFixedUpdate(deltaTime);
+        auto it = m_Data->EntityInstances.find(entityID);
+        if (it != m_Data->EntityInstances.end())
+            it->second->InvokeOnFixedUpdate(deltaTime);
     }
 #pragma endregion
 

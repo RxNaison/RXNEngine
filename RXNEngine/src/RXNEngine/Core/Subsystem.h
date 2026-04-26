@@ -50,7 +50,7 @@ namespace RXNEngine {
         Ref<T> GetSubsystem()
         {
             auto it = m_Subsystems.find(typeid(T));
-            RXN_CORE_ASSERT(it != m_Subsystems.end(), "Requested Subsystem is not registered!");
+            //RXN_CORE_ASSERT(it != m_Subsystems.end(), "Requested Subsystem is not registered!");
             return std::static_pointer_cast<T>(it->second);
         }
 

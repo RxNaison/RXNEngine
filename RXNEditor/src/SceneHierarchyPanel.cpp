@@ -689,6 +689,16 @@ namespace RXNEditor {
                                                 UUID droppedEntityID = *(UUID*)payload->Data;
                                                 instance->SetFieldValue(field.Name, droppedEntityID);
                                             }
+                                            else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                                            {
+                                                std::string path = (const char*)payload->Data;
+                                                if (path.ends_with(".rxnpb"))
+                                                {
+                                                    Entity prefabRoot = PrefabSerializer::Deserialize(m_Context, path);
+                                                    if (prefabRoot)
+                                                        instance->SetFieldValue(field.Name, prefabRoot.GetUUID());
+                                                }
+                                            }
                                             ImGui::EndDragDropTarget();
                                         }
                                         break;
