@@ -1,0 +1,16 @@
+Material: Standard_PBR
+Parameters:
+  AlbedoColor: [0.7335907, 0, 0, 1]
+  EmissiveColor: [1, 0, 0]
+  Roughness: 0.5
+  Metalness: 0
+  AO: 1
+  Tiling: 1
+  IsTransparent: false
+Textures:
+  AlbedoMap: ""
+  NormalMap: ""
+  MetalMap: ""
+  RoughMap: ""
+  AOMap: ""
+  EmissiveMap: ""

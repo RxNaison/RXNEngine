@@ -47,12 +47,36 @@ namespace RXNEditor {
         }
     }
 
+    void ContentBrowserPanel::RenameItem(const std::filesystem::path& oldPath, const std::string& newName)
+    {
+        try
+        {
+            std::filesystem::path newPath = oldPath.parent_path() / newName;
+
+            if (oldPath != newPath && !std::filesystem::exists(newPath))
+            {
+                std::filesystem::rename(oldPath, newPath);
+                Refresh();
+            }
+            else if (std::filesystem::exists(newPath) && oldPath != newPath)
+            {
+                RXN_CORE_WARN("Cannot rename: A file with that name already exists!");
+            }
+        }
+        catch (const std::exception& e)
+        {
+            RXN_CORE_ERROR("Failed to rename item: {0}", e.what());
+        }
+    }
+
     void ContentBrowserPanel::OnImGuiRender()
     {
         m_RefreshTimer += ImGui::GetIO().DeltaTime;
         if (m_RefreshTimer > m_RefreshInterval)
         {
-            Refresh();
+            if (!m_IsRenaming)
+                Refresh();
+
             m_RefreshTimer = 0.0f;
         }
 
@@ -209,6 +233,13 @@ namespace RXNEditor {
 
             if (ImGui::BeginPopupContextItem("ItemContextMenu"))
             {
+                if (ImGui::MenuItem("Rename"))
+                {
+                    m_IsRenaming = true;
+                    m_ItemToRename = item.Path;
+                    strncpy(m_RenameBuffer, item.Filename.c_str(), sizeof(m_RenameBuffer));
+                }
+
                 if (ImGui::MenuItem("Delete"))
                     DeleteItem(item.Path);
 
@@ -252,7 +283,33 @@ namespace RXNEditor {
                 }
             }
 
-            ImGui::TextWrapped("%s", item.Filename.c_str());
+            if (m_IsRenaming && m_ItemToRename == item.Path)
+            {
+                ImGui::PushItemWidth(-1);
+
+                if (ImGui::IsWindowFocused() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) == false)
+                    ImGui::SetKeyboardFocusHere();
+
+                bool enterPressed = ImGui::InputText("##Rename", m_RenameBuffer, sizeof(m_RenameBuffer), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+
+                if (enterPressed || (ImGui::IsItemDeactivated() && !ImGui::IsKeyPressed(ImGuiKey_Escape)))
+                {
+                    RenameItem(item.Path, std::string(m_RenameBuffer));
+                    m_IsRenaming = false;
+                    m_ItemToRename = "";
+                }
+                else if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+                {
+                    m_IsRenaming = false;
+                    m_ItemToRename = "";
+                }
+
+                ImGui::PopItemWidth();
+            }
+            else
+            {
+                ImGui::TextWrapped("%s", item.Filename.c_str());
+            }
 
             ImGui::NextColumn();
             ImGui::PopID();

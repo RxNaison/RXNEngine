@@ -365,6 +365,9 @@ namespace RXNEngine {
 
             m_Data->EntityInstances[entityID] = instance;
 
+            for (const auto& [name, fieldInstance] : sc.FieldInstances)
+                instance->SetFieldValueInternal(name, fieldInstance.Data.data());
+
             instance->InvokeOnCreate();
         }
         else

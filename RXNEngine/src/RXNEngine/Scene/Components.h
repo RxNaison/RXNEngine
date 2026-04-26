@@ -143,9 +143,16 @@ namespace RXNEngine {
 		}
 	};
 
+	struct ScriptFieldInstance
+	{
+		uint32_t Type = 0; // Maps to ScriptFieldType enum
+		std::array<uint8_t, 16> Data = { 0 };
+	};
+
 	struct ScriptComponent
 	{
 		std::string ClassName;
+		std::unordered_map<std::string, ScriptFieldInstance> FieldInstances;
 
 		ScriptComponent() = default;
 		ScriptComponent(const ScriptComponent&) = default;

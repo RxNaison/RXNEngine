@@ -433,7 +433,7 @@ namespace RXNEditor {
                 UI::DrawColor3Control("Color", component.Color);
                 UI::DrawFloatControl("Intensity", component.Intensity, 0.1f, 0.0f, 100.0f);
                 UI::DrawFloatControl("Radius", component.Radius, 0.1f, 0.0f, 1000.0f);
-                UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Falloff", component.Falloff, 0.05f, 0.0f, 10.0f);
                 UI::DrawCheckbox("Casts Shadows", component.CastsShadows);
             });
 
@@ -442,7 +442,7 @@ namespace RXNEditor {
                 UI::DrawColor3Control("Color", component.Color);
                 UI::DrawFloatControl("Intensity", component.Intensity, 0.1f, 0.0f, 100.0f);
                 UI::DrawFloatControl("Radius", component.Radius, 0.1f, 0.0f, 1000.0f);
-                UI::DrawFloatControl("Falloff", component.Falloff, 0.01f, 0.0f, 1.0f);
+                UI::DrawFloatControl("Falloff", component.Falloff, 0.05f, 0.0f, 10.0f);
                 UI::DrawFloatControl("Inner Angle", component.InnerAngle, 0.1f, 0.0f, 90.0f);
                 UI::DrawFloatControl("Outer Angle", component.OuterAngle, 0.1f, 0.0f, 90.0f);
                 UI::DrawCheckbox("Casts Shadows", component.CastsShadows);
@@ -586,132 +586,143 @@ namespace RXNEditor {
                 ImGui::PopID();
 
                 auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
-
                 bool classExists = scriptSys->EntityClassExists(component.ClassName);
 
                 if (!classExists && !component.ClassName.empty())
                     ImGui::TextColored(ImVec4(0.9f, 0.2f, 0.2f, 1.0f), "Warning: Class does not exist in loaded Assembly!");
 
-                if (scriptSys->EntityClassExists(component.ClassName))
+                if (classExists)
                 {
-                    if (m_Context->IsRunning())
+                    bool isRunning = m_Context->IsRunning();
+                    Ref<ScriptInstance> instance = nullptr;
+
+                    if (isRunning)
+                        instance = scriptSys->GetEntityScriptInstance(entity.GetUUID());
+
+                    const auto& fields = scriptSys->GetClassFields(component.ClassName);
+                    for (const auto& field : fields)
                     {
-                        auto instance = scriptSys->GetEntityScriptInstance(entity.GetUUID());
-                        if (instance)
+                        if (component.FieldInstances.find(field.Name) == component.FieldInstances.end())
                         {
-                            const auto& fields = scriptSys->GetClassFields(component.ClassName);
-                            for (const auto& field : fields)
+                            component.FieldInstances[field.Name] = { (uint32_t)field.Type, {0} };
+
+                            if (classExists && !isRunning)
                             {
-                                switch (field.Type)
-                                {
-                                    case ScriptFieldType::Float:
-                                    {
-                                        float data = instance->GetFieldValue<float>(field.Name);
-                                        if (UI::DrawFloatControl(field.Name.c_str(), data, 0.1f))
-                                            instance->SetFieldValue(field.Name, data);
-                                        break;
-                                    }
-                                    case ScriptFieldType::Bool:
-                                    {
-                                        bool data = instance->GetFieldValue<bool>(field.Name);
-                                        if (UI::DrawCheckbox(field.Name.c_str(), data))
-                                            instance->SetFieldValue(field.Name, data);
-                                        break;
-                                    }
-                                    case ScriptFieldType::Int:
-                                    {
-                                        int data = instance->GetFieldValue<int>(field.Name);
-                                        if (UI::DrawIntControl(field.Name.c_str(), data))
-                                            instance->SetFieldValue(field.Name, data);
-                                        break;
-                                    }
-                                    case ScriptFieldType::Double:
-                                    {
-                                        double data = instance->GetFieldValue<double>(field.Name);
-                                        if (ImGui::DragScalar(field.Name.c_str(), ImGuiDataType_Double, &data, 0.1f))
-                                            instance->SetFieldValue(field.Name, data);
-                                        break;
-                                    }
-                                    case ScriptFieldType::Vector2:
-                                    {
-                                        glm::vec2 data = instance->GetFieldValue<glm::vec2>(field.Name);
-                                        if (UI::DrawVec2Control(field.Name.c_str(), data, 0.1f))
-                                            instance->SetFieldValue(field.Name, data);
-                                        break;
-                                    }
-                                    case ScriptFieldType::Vector3:
-                                    {
-                                        glm::vec3 data = instance->GetFieldValue<glm::vec3>(field.Name);
-                                        if (UI::DrawVec3Control(field.Name.c_str(), data, 0.1f))
-                                            instance->SetFieldValue(field.Name, data);
-                                        break;
-                                    }
-                                    case ScriptFieldType::Vector4:
-                                    {
-                                        glm::vec4 data = instance->GetFieldValue<glm::vec4>(field.Name);
-
-                                        if (field.Name.find("Color") != std::string::npos)
-                                        {
-                                            if (UI::DrawColor4Control(field.Name.c_str(), data))
-                                                instance->SetFieldValue(field.Name, data);
-                                        }
-                                        else
-                                        {
-                                            if (UI::DrawColor4Control(field.Name.c_str(), data, 0.1f))
-                                                instance->SetFieldValue(field.Name, data);
-                                        }
-                                        break;
-                                    }
-                                    case ScriptFieldType::Entity:
-                                    {
-                                        ImGui::Text("%s", field.Name.c_str());
-                                        ImGui::SameLine();
-
-                                        uint64_t targetID = instance->GetFieldValue<uint64_t>(field.Name);
-                                        std::string buttonText = targetID == 0 ? "None (Entity)" : std::to_string(targetID);
-
-                                        if (targetID != 0)
-                                        {
-                                            Entity targetEntity = m_Context->GetEntityByUUID(targetID);
-                                            if (targetEntity)
-                                                buttonText = targetEntity.GetComponent<TagComponent>().Tag;
-                                            else
-                                                buttonText = "Invalid Entity";
-                                        }
-
-                                        std::string buttonID = buttonText + "##" + field.Name;
-                                        ImGui::Button(buttonID.c_str(), ImVec2(100.0f, 0.0f));
-
-                                        if (ImGui::BeginDragDropTarget())
-                                        {
-                                            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY"))
-                                            {
-                                                UUID droppedEntityID = *(UUID*)payload->Data;
-                                                instance->SetFieldValue(field.Name, droppedEntityID);
-                                            }
-                                            else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-                                            {
-                                                std::string path = (const char*)payload->Data;
-                                                if (path.ends_with(".rxnpb"))
-                                                {
-                                                    Entity prefabRoot = PrefabSerializer::Deserialize(m_Context, path);
-                                                    if (prefabRoot)
-                                                        instance->SetFieldValue(field.Name, prefabRoot.GetUUID());
-                                                }
-                                            }
-                                            ImGui::EndDragDropTarget();
-                                        }
-                                        break;
-                                    }
-                                    default:
-                                        break;
-                                }
+                                Ref<ScriptInstance> tempInstance = CreateRef<ScriptInstance>(scriptSys.get(), entity, component.ClassName);
+                                tempInstance->GetFieldValueInternal(field.Name, component.FieldInstances[field.Name].Data.data());
                             }
                         }
-                    }
-                    else
-                    {
-                        ImGui::TextDisabled("Variables can be edited while playing.");
+
+                        auto& fieldInst = component.FieldInstances[field.Name];
+                        uint8_t* dataPtr = fieldInst.Data.data();
+
+                        if (isRunning && instance)
+                            instance->GetFieldValueInternal(field.Name, dataPtr);
+
+                        switch (field.Type)
+                        {
+                            case ScriptFieldType::Float:
+                            {
+                                float data = *(float*)dataPtr;
+                                if (UI::DrawFloatControl(field.Name.c_str(), data, 0.1f))
+                                {
+                                    memcpy(dataPtr, &data, sizeof(float));
+                                    if (isRunning && instance)
+                                        instance->SetFieldValueInternal(field.Name, dataPtr);
+                                }
+                                break;
+                            }
+                            case ScriptFieldType::Bool:
+                            {
+                                bool data = *(bool*)dataPtr;
+                                if (UI::DrawCheckbox(field.Name.c_str(), data))
+                                {
+                                    memcpy(dataPtr, &data, sizeof(bool));
+                                    if (isRunning && instance)
+                                        instance->SetFieldValueInternal(field.Name, dataPtr);
+                                }
+                                break;
+                            }
+                            case ScriptFieldType::Int:
+                            {
+                                int data = *(int*)dataPtr;
+                                if (UI::DrawIntControl(field.Name.c_str(), data))
+                                {
+                                    memcpy(dataPtr, &data, sizeof(int));
+                                    if (isRunning && instance)
+                                        instance->SetFieldValueInternal(field.Name, dataPtr);
+                                }
+                                break;
+                            }
+                            case ScriptFieldType::Vector2:
+                            {
+                                glm::vec2 data = *(glm::vec2*)dataPtr;
+                                if (UI::DrawVec2Control(field.Name.c_str(), data, 0.1f))
+                                {
+                                    memcpy(dataPtr, &data, sizeof(glm::vec2));
+                                    if (isRunning && instance)
+                                        instance->SetFieldValueInternal(field.Name, dataPtr);
+                                }
+                                break;
+                            }
+                            case ScriptFieldType::Vector3:
+                            {
+                                glm::vec3 data = *(glm::vec3*)dataPtr;
+                                if (UI::DrawVec3Control(field.Name.c_str(), data, 0.1f))
+                                {
+                                    memcpy(dataPtr, &data, sizeof(glm::vec3));
+                                    if (isRunning && instance)
+                                        instance->SetFieldValueInternal(field.Name, dataPtr);
+                                }
+                                break;
+                            }
+                            case ScriptFieldType::Vector4:
+                            {
+                                glm::vec4 data = *(glm::vec4*)dataPtr;
+                                bool isColor = field.Name.find("Color") != std::string::npos;
+                                bool changed = isColor ? UI::DrawColor4Control(field.Name.c_str(), data) : UI::DrawColor4Control(field.Name.c_str(), data, 0.1f);
+                                if (changed)
+                                {
+                                    memcpy(dataPtr, &data, sizeof(glm::vec4));
+                                    if (isRunning && instance)
+                                        instance->SetFieldValueInternal(field.Name, dataPtr);
+                                }
+                                break;
+                            }
+                            case ScriptFieldType::Entity:
+                            {
+                                ImGui::Text("%s", field.Name.c_str());
+                                ImGui::SameLine();
+
+                                uint64_t targetID = *(uint64_t*)dataPtr;
+                                std::string buttonText = targetID == 0 ? "None (Entity)" : std::to_string(targetID);
+
+                                if (targetID != 0)
+                                {
+                                    Entity targetEntity = m_Context->GetEntityByUUID(targetID);
+                                    if (targetEntity)
+                                        buttonText = targetEntity.GetComponent<TagComponent>().Tag;
+                                    else 
+                                        buttonText = "Invalid Entity";
+                                }
+
+                                std::string buttonID = buttonText + "##" + field.Name;
+                                ImGui::Button(buttonID.c_str(), ImVec2(100.0f, 0.0f));
+
+                                if (ImGui::BeginDragDropTarget()) 
+                                {
+                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ENTITY")) 
+                                    {
+                                        targetID = *(UUID*)payload->Data;
+                                        memcpy(dataPtr, &targetID, sizeof(uint64_t));
+                                        if (isRunning && instance)
+                                            instance->SetFieldValueInternal(field.Name, dataPtr);
+                                    }
+                                    ImGui::EndDragDropTarget();
+                                }
+                                break;
+                            }
+                        }
                     }
                 }
             });
@@ -736,10 +747,9 @@ namespace RXNEditor {
             ImGui::PopStyleVar();
 
             ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
+
             if (ImGui::Button("-", ImVec2{ lineHeight, lineHeight }))
-            {
                 ImGui::OpenPopup("ComponentSettings");
-            }
 
             bool removeComponent = false;
             if (ImGui::BeginPopup("ComponentSettings"))

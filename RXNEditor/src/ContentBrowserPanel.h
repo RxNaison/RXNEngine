@@ -28,6 +28,7 @@ namespace RXNEditor {
 
         void Refresh();
         void DeleteItem(const std::filesystem::path& path);
+        void RenameItem(const std::filesystem::path& oldPath, const std::string& newName);
 
     private:
         std::filesystem::path m_BaseDirectory;
@@ -47,5 +48,9 @@ namespace RXNEditor {
         bool m_SettingsWindow = false;
 
         MaterialOpenCallbackFn m_MaterialOpenCallback;
+
+        bool m_IsRenaming = false;
+        std::filesystem::path m_ItemToRename;
+        char m_RenameBuffer[256] = "";
     };
 }

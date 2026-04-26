@@ -6,6 +6,7 @@
 #include "RXNEngine/Core/UUID.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Serialization/YamlHelpers.h"
+#include "RXNEngine/Scripting/ScriptEngine.h"
 
 #include <fstream>
 
@@ -270,6 +271,29 @@ namespace RXNEngine {
 
 			auto& sc = entity.GetComponent<ScriptComponent>();
 			out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
+
+			out << YAML::Key << "ScriptFields" << YAML::Value;
+			out << YAML::BeginMap; // ScriptFields
+			for (const auto& [name, field] : sc.FieldInstances)
+			{
+				out << YAML::Key << name;
+				out << YAML::BeginMap;
+				out << YAML::Key << "Type" << YAML::Value << field.Type;
+
+				out << YAML::Key << "Data" << YAML::Value;
+				switch ((ScriptFieldType)field.Type)
+				{
+					case ScriptFieldType::Float: out << *(float*)field.Data.data(); break;
+					case ScriptFieldType::Bool: out << *(bool*)field.Data.data(); break;
+					case ScriptFieldType::Int: out << *(int*)field.Data.data(); break;
+					case ScriptFieldType::Vector2: out << *(glm::vec2*)field.Data.data(); break;
+					case ScriptFieldType::Vector3: out << *(glm::vec3*)field.Data.data(); break;
+					case ScriptFieldType::Vector4: out << *(glm::vec4*)field.Data.data(); break;
+					case ScriptFieldType::Entity: out << *(uint64_t*)field.Data.data(); break;
+				}
+				out << YAML::EndMap;
+			}
+			out << YAML::EndMap; // ScriptFields
 
 			out << YAML::EndMap; // ScriptComponent
 		}
@@ -548,6 +572,31 @@ namespace RXNEngine {
 		{
 			auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
 			if (scriptComponent["ClassName"]) sc.ClassName = scriptComponent["ClassName"].as<std::string>();
+
+			auto scriptFields = scriptComponent["ScriptFields"];
+			if (scriptFields)
+			{
+				for (auto field : scriptFields)
+				{
+					std::string name = field.first.as<std::string>();
+					uint32_t type = field.second["Type"].as<uint32_t>();
+
+					ScriptFieldInstance fieldInstance;
+					fieldInstance.Type = type;
+
+					switch ((ScriptFieldType)type)
+					{
+						case ScriptFieldType::Float: { float data = field.second["Data"].as<float>(); memcpy(fieldInstance.Data.data(), &data, sizeof(float)); break; }
+						case ScriptFieldType::Bool: { bool data = field.second["Data"].as<bool>(); memcpy(fieldInstance.Data.data(), &data, sizeof(bool)); break; }
+						case ScriptFieldType::Int: { int data = field.second["Data"].as<int>(); memcpy(fieldInstance.Data.data(), &data, sizeof(int)); break; }
+						case ScriptFieldType::Vector2: { glm::vec2 data = field.second["Data"].as<glm::vec2>(); memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec2)); break; }
+						case ScriptFieldType::Vector3: { glm::vec3 data = field.second["Data"].as<glm::vec3>(); memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec3)); break; }
+						case ScriptFieldType::Vector4: { glm::vec4 data = field.second["Data"].as<glm::vec4>(); memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec4)); break; }
+						case ScriptFieldType::Entity: { uint64_t data = field.second["Data"].as<uint64_t>(); memcpy(fieldInstance.Data.data(), &data, sizeof(uint64_t)); break; }
+					}
+					sc.FieldInstances[name] = fieldInstance;
+				}
+			}
 		}
 
 	}

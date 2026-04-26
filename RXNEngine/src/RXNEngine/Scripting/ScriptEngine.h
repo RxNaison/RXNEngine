@@ -50,7 +50,7 @@ namespace RXNEngine {
 		{
 			SetFieldValueInternal(name, &value);
 		}
-	private:
+
 		bool GetFieldValueInternal(const std::string& name, void* outBuffer);
 		void SetFieldValueInternal(const std::string& name, const void* inBuffer);
 	private:
