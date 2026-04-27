@@ -623,6 +623,22 @@ namespace RXNEngine {
             }
         }
 
+        glm::vec3 cameraPos = glm::vec3(cameraTransform[3]);
+        glm::vec3 cameraForward = -glm::normalize(glm::vec3(cameraTransform[2]));
+        glm::vec3 focusPoint = cameraPos + cameraForward * 5.0f;
+
+        std::sort(lightEnv.PointLights.begin(), lightEnv.PointLights.end(), [&focusPoint](const PointLight& a, const PointLight& b)
+            {
+                return glm::distance(a.Position, focusPoint) < glm::distance(b.Position, focusPoint);
+            });
+
+        std::sort(lightEnv.SpotLights.begin(), lightEnv.SpotLights.end(), [&focusPoint](const SpotLight& a, const SpotLight& b)
+            {
+                glm::vec3 centerA = a.Position + (a.Direction * (a.Radius * 0.5f));
+                glm::vec3 centerB = b.Position + (b.Direction * (b.Radius * 0.5f));
+                return glm::distance(centerA, focusPoint) < glm::distance(centerB, focusPoint);
+            });
+
         auto renderSys = Application::Get().GetSubsystem<Renderer>();
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
@@ -822,6 +838,21 @@ namespace RXNEngine {
                 lightEnv.SpotLights.push_back(sl);
             }
         }
+
+        glm::vec3 cameraPos = camera.GetPosition();
+        glm::vec3 focusPoint = cameraPos + camera.GetForwardDirection() * 5.0f;
+
+        std::sort(lightEnv.PointLights.begin(), lightEnv.PointLights.end(), [&focusPoint](const PointLight& a, const PointLight& b)
+            {
+                return glm::distance(a.Position, focusPoint) < glm::distance(b.Position, focusPoint);
+            });
+
+        std::sort(lightEnv.SpotLights.begin(), lightEnv.SpotLights.end(), [&focusPoint](const SpotLight& a, const SpotLight& b)
+            {
+                glm::vec3 centerA = a.Position + (a.Direction * (a.Radius * 0.5f));
+                glm::vec3 centerB = b.Position + (b.Direction * (b.Radius * 0.5f));
+                return glm::distance(centerA, focusPoint) < glm::distance(centerB, focusPoint);
+            });
 
         auto renderSys = Application::Get().GetSubsystem<Renderer>();
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();

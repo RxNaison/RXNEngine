@@ -4404,6 +4404,10 @@ Entities:
       Children:
         - 15220680879073863470
         - 388821232343885595
+        - 11778984254678428442
+        - 11986054665334966959
+        - 17037025635567551837
+        - 16995451706017661159
   - Entity: 2628907653675786955
     TagComponent:
       Tag: Sun
@@ -4438,7 +4442,15 @@ Entities:
     ScriptComponent:
       ClassName: PulsingLight
       ScriptFields:
-        {}
+        MinIntensity:
+          Type: 1
+          Data: 2
+        MaxIntensity:
+          Type: 1
+          Data: 50
+        PulseSpeed:
+          Type: 1
+          Data: 3
   - Entity: 388821232343885595
     TagComponent:
       Tag: RightLight
@@ -4478,3 +4490,113 @@ Entities:
       Radius: 1
       Falloff: 1
       CastsShadows: false
+  - Entity: 11778984254678428442
+    TagComponent:
+      Tag: FrontLight
+    TransformComponent:
+      Translation: [-0.33901855, 2.0186949, 4.976282]
+      Rotation: [-0.2412411, 0.47321332, 1.2736316]
+      Scale: [0.99999917, 0.9999993, 1]
+    RelationshipComponent:
+      ParentHandle: 4148594566000295431
+      Children:
+        []
+    SpotLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 44.2
+      Radius: 54.2
+      Falloff: 1
+      InnerAngle: 21.7
+      OuterAngle: 32.9
+      CastsShadows: true
+      CookieAssetPath: ""
+      IsVideo: false
+      CookieSize: 1
+  - Entity: 11986054665334966959
+    TagComponent:
+      Tag: LeftLight
+    TransformComponent:
+      Translation: [3.9073489, 1.9118432, 0.17571384]
+      Rotation: [1.6377826, 0.25846007, 2.047121]
+      Scale: [0.9999964, 0.99999964, 0.9999997]
+    RelationshipComponent:
+      ParentHandle: 4148594566000295431
+      Children:
+        []
+    SpotLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 44.2
+      Radius: 54.2
+      Falloff: 1
+      InnerAngle: 21.7
+      OuterAngle: 32.9
+      CastsShadows: true
+      CookieAssetPath: ""
+      IsVideo: false
+      CookieSize: 1
+  - Entity: 17037025635567551837
+    TagComponent:
+      Tag: BackLight
+    TransformComponent:
+      Translation: [0.18219092, 2.4321625, -4.575985]
+      Rotation: [2.9694726, -0.41046104, 1.8887177]
+      Scale: [1.0000002, 1.0000004, 1.000014]
+    RelationshipComponent:
+      ParentHandle: 4148594566000295431
+      Children:
+        []
+    SpotLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 44.2
+      Radius: 54.2
+      Falloff: 1
+      InnerAngle: 21.7
+      OuterAngle: 32.9
+      CastsShadows: true
+      CookieAssetPath: ""
+      IsVideo: false
+      CookieSize: 1
+  - Entity: 16995451706017661159
+    TagComponent:
+      Tag: TopLight
+    TransformComponent:
+      Translation: [0.04204991, 3.4788232, 0.60618323]
+      Rotation: [-1.6523124, -0.49465066, 0.020768758]
+      Scale: [1.0000002, 0.9999993, 0.99999166]
+    RelationshipComponent:
+      ParentHandle: 4148594566000295431
+      Children:
+        []
+    SpotLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 44.2
+      Radius: 54.2
+      Falloff: 1
+      InnerAngle: 21.7
+      OuterAngle: 32.9
+      CastsShadows: true
+      CookieAssetPath: ""
+      IsVideo: false
+      CookieSize: 1
+  - Entity: 8368550668426482522
+    TagComponent:
+      Tag: New Entity
+    TransformComponent:
+      Translation: [-0.3935084, 2.9583457, -6.5490417]
+      Rotation: [-0.8047261, -0, 0]
+      Scale: [1, 0.9999999, 0.9999999]
+    RelationshipComponent:
+      ParentHandle: 0
+      Children:
+        []
+    SpotLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 25.5
+      Radius: 10
+      Falloff: 1
+      InnerAngle: 12.5
+      OuterAngle: 17.5
+      CastsShadows: true
+      CookieAssetPath: ""
+      IsVideo: false
+      CookieSize: 1

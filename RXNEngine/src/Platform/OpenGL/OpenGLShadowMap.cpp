@@ -18,7 +18,7 @@ namespace RXNEngine {
         if (m_IsCubemap)
         {
             glCreateTextures(GL_TEXTURE_CUBE_MAP_ARRAY, 1, &m_DepthMapTexture);
-            glTextureStorage3D(m_DepthMapTexture, 1, GL_DEPTH_COMPONENT16, m_Size, m_Size, layers * 6);
+            glTextureStorage3D(m_DepthMapTexture, 1, GL_DEPTH_COMPONENT32F, m_Size, m_Size, layers * 6);
             glTextureParameteri(m_DepthMapTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTextureParameteri(m_DepthMapTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTextureParameteri(m_DepthMapTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -28,7 +28,7 @@ namespace RXNEngine {
         else
         {
             glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &m_DepthMapTexture);
-            glTextureStorage3D(m_DepthMapTexture, 1, GL_DEPTH_COMPONENT16, m_Size, m_Size, layers);
+            glTextureStorage3D(m_DepthMapTexture, 1, GL_DEPTH_COMPONENT32F, m_Size, m_Size, layers);
             glTextureParameteri(m_DepthMapTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTextureParameteri(m_DepthMapTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTextureParameteri(m_DepthMapTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);

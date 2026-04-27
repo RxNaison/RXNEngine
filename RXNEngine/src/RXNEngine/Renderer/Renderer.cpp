@@ -179,7 +179,7 @@ namespace RXNEngine {
             minZ -= 200.0f;
             maxZ += 200.0f;
 
-            float shadowMapRes = 4096.0f;
+            float shadowMapRes = (float)m_Data->ShadowData.ShadowTarget->GetSize();
             float unitsPerTexelX = (maxX - minX) / shadowMapRes;
             float unitsPerTexelY = (maxY - minY) / shadowMapRes;
 

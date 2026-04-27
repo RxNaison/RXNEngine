@@ -210,17 +210,14 @@ float ShadowCalculation(vec3 fragPosWorld)
     float visibility = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
     
-    // automatically gives 16-tap smoothing due to hardware bilinear interpolation
-    vec2 offsets[4] = vec2[](
-        vec2(-0.5, -0.5), vec2(0.5, -0.5),
-        vec2(-0.5,  0.5), vec2(0.5,  0.5)
-    );
-
-    for(int i = 0; i < 4; ++i) {
-        visibility += texture(u_ShadowMap, vec4(projCoords.xy + offsets[i] * texelSize, float(layer), projCoords.z - bias));
+    // 9-Tap PCF Filter (gives 36-pixel blur with hardware bilinear filtering)
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            visibility += texture(u_ShadowMap, vec4(projCoords.xy + vec2(x, y) * texelSize, float(layer), projCoords.z - bias));
+        }
     }
     
-    visibility /= 4.0;
+    visibility /= 9.0;
     return 1.0 - visibility;
 }
 
@@ -237,20 +234,30 @@ float SpotShadowCalculation(vec3 fragPosWorld, mat4 lightSpaceMatrix, int shadow
     
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_SpotShadowMap, 0));
-    vec2 offsets[4] = vec2[]( vec2(-0.5,-0.5), vec2(0.5,-0.5), vec2(-0.5,0.5), vec2(0.5,0.5) );
     
-    for(int i = 0; i < 4; ++i)
-        shadow += texture(u_SpotShadowMap, vec4(projCoords.xy + offsets[i] * texelSize, float(shadowIndex), projCoords.z - 0.0005));
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            shadow += texture(u_SpotShadowMap, vec4(projCoords.xy + vec2(x, y) * texelSize, float(shadowIndex), projCoords.z - 0.0005));
+        }
+    }
 
-    return shadow / 4.0;
+    return shadow / 9.0;
 }
+
+const vec3 sampleOffsetDirections[20] = vec3[]
+(
+   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+);
 
 float PointShadowCalculation(vec3 fragPosWorld, vec3 lightPos, float farPlane, int shadowIndex) {
     if (shadowIndex < 0)
         return 1.0;
     
     vec3 fragToLight = fragPosWorld - lightPos;
-    
     vec3 absVec = abs(fragToLight);
     float z_eye = max(absVec.x, max(absVec.y, absVec.z));
     
@@ -260,15 +267,33 @@ float PointShadowCalculation(vec3 fragPosWorld, vec3 lightPos, float farPlane, i
     float f = farPlane;
     
     float z_ndc = (f + n) / (f - n) - (2.0 * f * n) / ((f - n) * z_eye);
-    
     float currentDepth = z_ndc * 0.5 + 0.5;
-    
-    float closestDepth = texture(u_PointShadowMap, vec4(fragToLight, float(shadowIndex))).r;
     
     float dz_dzeye = (2.0 * f * n) / ((f - n) * z_eye * z_eye);
     float bias = clamp(0.15 * dz_dzeye, 0.00005, 0.005);
     
-    return (currentDepth - bias > closestDepth) ? 0.0 : 1.0;
+    float centerDepth = texture(u_PointShadowMap, vec4(fragToLight, float(shadowIndex))).r;
+    float depthDiff = currentDepth - centerDepth;
+    
+    if (abs(depthDiff) > 0.01) 
+    {
+        return (currentDepth - bias > centerDepth) ? 0.0 : 1.0;
+    }
+
+    float shadow = 0.0;
+    int samples = 20;
+    float diskRadius = 0.01; 
+    
+    for(int i = 0; i < samples; ++i)
+    {
+        vec3 sampleDir = fragToLight + sampleOffsetDirections[i] * diskRadius * z_eye;
+        float closestDepth = texture(u_PointShadowMap, vec4(sampleDir, float(shadowIndex))).r;
+        
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    
+    return 1.0 - (shadow / float(samples));
 }
 
 // ----------------------------------------------------------------------------
