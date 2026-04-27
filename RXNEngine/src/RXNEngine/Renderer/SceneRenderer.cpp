@@ -116,9 +116,15 @@ namespace RXNEngine {
         }
     }
 
-    void SceneRenderer::RenderEditor(float deltaTime, EditorCamera& camera, Entity selectedEntity)
+    void SceneRenderer::RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, Entity selectedEntity)
     {
         OPTICK_EVENT();
+
+        if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
+        {
+            SetViewportSize(targetWidth, targetHeight);
+            camera.SetViewportSize((float)targetWidth, (float)targetHeight);
+        }
 
         m_OutlineMaskPass->Bind();
         RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
@@ -180,9 +186,15 @@ namespace RXNEngine {
         RenderPostProcess();
     }
 
-    void SceneRenderer::RenderRuntime()
+    void SceneRenderer::RenderRuntime(uint32_t targetWidth, uint32_t targetHeight)
     {
         OPTICK_EVENT();
+
+        if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
+        {
+            SetViewportSize(targetWidth, targetHeight);
+            m_Scene->OnViewportResize(targetWidth, targetHeight);
+        }
 
         m_OutlineMaskPass->Bind();
         RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });

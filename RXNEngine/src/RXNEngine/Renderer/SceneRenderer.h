@@ -46,8 +46,8 @@ namespace RXNEngine {
         void SetScene(Ref<Scene>& scene) { m_Scene = scene; }
         Ref<Scene>& GetScene() { return m_Scene; }
 
-        void RenderEditor(float deltaTime, EditorCamera& camera, Entity selectedEntity = {});
-        void RenderRuntime();
+        void RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, Entity selectedEntity = {});
+        void RenderRuntime(uint32_t targetWidth, uint32_t targetHeight);
 
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }
         uint32_t GetFinalColorAttachmentRendererID() { return m_FinalPass->GetColorAttachmentRendererID(); }

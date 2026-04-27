@@ -58,20 +58,20 @@ namespace RXNEditor {
             case SceneState::Edit:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_SceneRenderer->RenderEditor(deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
                 Application::Get().GetSubsystem<ScriptEngine>()->ReloadIfModified(deltaTime);
                 break;
             }
             case SceneState::Simulate:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_SceneRenderer->RenderEditor(deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
                 break;
             }
             case SceneState::Play:
             {
                 m_ActiveScene->OnUpdateRuntime(deltaTime);
-                m_SceneRenderer->RenderRuntime();
+                m_SceneRenderer->RenderRuntime(m_ViewportWidth, m_ViewportHeight);
                 break;
             }
         }
@@ -253,18 +253,11 @@ namespace RXNEditor {
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
         const auto& renderTargetSpec = m_SceneRenderer->GetFinalPass()->GetSpecification();
 
-        if (renderTargetSpec.Width != viewportSize.x || renderTargetSpec.Height != viewportSize.y)
-        {
-            m_SceneRenderer->SetViewportSize(viewportSize.x, viewportSize.y);
-            m_EditorCamera->SetViewportSize(viewportSize.x, viewportSize.y);
-            m_ActiveScene->OnViewportResize(viewportSize.x, viewportSize.y);
-
-            m_ViewportWidth = viewportSize.x;
-            m_ViewportHeight = viewportSize.y;
-        }
+        m_ViewportWidth = (uint32_t)viewportSize.x;
+        m_ViewportHeight = (uint32_t)viewportSize.y;
 
         uint32_t textureID = m_SceneRenderer->GetFinalColorAttachmentRendererID();
-        ImGui::Image((void*)textureID, ImVec2{ renderTargetSpec.Width, renderTargetSpec.Height }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        ImGui::Image((void*)(uint64_t)textureID, viewportSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
         if (selectedEntity && m_GizmoType != -1 && m_SceneState != SceneState::Play)
