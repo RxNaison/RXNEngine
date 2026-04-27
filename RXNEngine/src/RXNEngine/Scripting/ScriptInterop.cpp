@@ -35,6 +35,18 @@ namespace RXNEngine {
             }
         };
 
+        struct RaycastHit
+        {
+            uint64_t EntityID;
+            glm::vec3 Position;
+            glm::vec3 Normal;
+            float Distance;
+
+            float StaticFriction;
+            float DynamicFriction;
+            float Restitution;
+        };
+
         struct TransformDataInterop
         {
             glm::vec3 Translation;
@@ -83,9 +95,6 @@ namespace RXNEngine {
         {
             glm::vec3 HalfExtents;
             glm::vec3 Offset;
-            float StaticFriction;
-            float DynamicFriction;
-            float Restitution;
             bool IsTrigger;
             void* RuntimeShape;
             void* RuntimeMaterial;
@@ -95,9 +104,6 @@ namespace RXNEngine {
         {
             float Radius;
             glm::vec3 Offset;
-            float StaticFriction;
-            float DynamicFriction;
-            float Restitution;
             bool IsTrigger;
             void* RuntimeShape;
             void* RuntimeMaterial;
@@ -108,9 +114,6 @@ namespace RXNEngine {
             float Radius;
             float Height;
             glm::vec3 Offset;
-            float StaticFriction;
-            float DynamicFriction;
-            float Restitution;
             bool IsTrigger;
             void* RuntimeShape;
             void* RuntimeMaterial;
@@ -331,6 +334,22 @@ namespace RXNEngine {
                 outHit->Position = glm::vec3(block.position.x, block.position.y, block.position.z);
                 outHit->Normal = glm::vec3(block.normal.x, block.normal.y, block.normal.z);
                 outHit->Distance = block.distance;
+
+                outHit->StaticFriction = 0.5f;
+                outHit->DynamicFriction = 0.5f;
+                outHit->Restitution = 0.1f;
+
+                if (block.shape)
+                {
+                    physx::PxMaterial* mat = nullptr;
+                    block.shape->getMaterials(&mat, 1);
+                    if (mat)
+                    {
+                        outHit->StaticFriction = mat->getStaticFriction();
+                        outHit->DynamicFriction = mat->getDynamicFriction();
+                        outHit->Restitution = mat->getRestitution();
+                    }
+                }
 
                 return 1;
             }
@@ -596,9 +615,6 @@ namespace RXNEngine {
         auto& c = entity.GetComponent<BoxColliderComponent>();
         outData->HalfExtents = c.HalfExtents;
         outData->Offset = c.Offset;
-        outData->StaticFriction = c.StaticFriction;
-        outData->DynamicFriction = c.DynamicFriction;
-        outData->Restitution = c.Restitution;
         outData->IsTrigger = c.IsTrigger;
         outData->RuntimeShape = c.RuntimeShape;
         outData->RuntimeMaterial = c.RuntimeMaterial;
@@ -611,9 +627,6 @@ namespace RXNEngine {
 
         bc.HalfExtents = inData->HalfExtents;
         bc.Offset = inData->Offset;
-        bc.StaticFriction = inData->StaticFriction;
-        bc.DynamicFriction = inData->DynamicFriction;
-        bc.Restitution = inData->Restitution;
         bc.IsTrigger = inData->IsTrigger;
     }
 
@@ -623,9 +636,6 @@ namespace RXNEngine {
         auto& c = entity.GetComponent<SphereColliderComponent>();
         outData->Radius = c.Radius;
         outData->Offset = c.Offset;
-        outData->StaticFriction = c.StaticFriction;
-        outData->DynamicFriction = c.DynamicFriction;
-        outData->Restitution = c.Restitution;
         outData->IsTrigger = c.IsTrigger;
         outData->RuntimeShape = c.RuntimeShape;
         outData->RuntimeMaterial = c.RuntimeMaterial;
@@ -638,9 +648,6 @@ namespace RXNEngine {
 
         bc.Radius = inData->Radius;
         bc.Offset = inData->Offset;
-        bc.StaticFriction = inData->StaticFriction;
-        bc.DynamicFriction = inData->DynamicFriction;
-        bc.Restitution = inData->Restitution;
         bc.IsTrigger = inData->IsTrigger;
     }
 
@@ -651,9 +658,6 @@ namespace RXNEngine {
         outData->Radius = c.Radius;
         outData->Height = c.Height;
         outData->Offset = c.Offset;
-        outData->StaticFriction = c.StaticFriction;
-        outData->DynamicFriction = c.DynamicFriction;
-        outData->Restitution = c.Restitution;
         outData->IsTrigger = c.IsTrigger;
         outData->RuntimeShape = c.RuntimeShape;
         outData->RuntimeMaterial = c.RuntimeMaterial;
@@ -667,9 +671,6 @@ namespace RXNEngine {
         bc.Radius = inData->Radius;
         bc.Height = inData->Height;
         bc.Offset = inData->Offset;
-        bc.StaticFriction = inData->StaticFriction;
-        bc.DynamicFriction = inData->DynamicFriction;
-        bc.Restitution = inData->Restitution;
         bc.IsTrigger = inData->IsTrigger;
     }
 

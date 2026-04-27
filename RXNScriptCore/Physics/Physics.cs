@@ -11,6 +11,10 @@ namespace RXNEngine
         public Vector3 Position;
         public Vector3 Normal;
         public float Distance;
+
+        public float StaticFriction;
+        public float DynamicFriction;
+        public float Restitution;
     }
 
     public static class Physics

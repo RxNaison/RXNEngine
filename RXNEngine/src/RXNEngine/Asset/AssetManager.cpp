@@ -5,6 +5,7 @@
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
+#include "RXNEngine/Serialization/PhysicsMaterialSerializer.h"
 
 namespace RXNEngine {
 
@@ -97,12 +98,34 @@ namespace RXNEngine {
         return nullptr;
     }
 
+    Ref<PhysicsMaterial> AssetManager::GetPhysicsMaterial(const std::string& path)
+    {
+        std::string normalizedPath = std::filesystem::path(path).generic_string();
+
+        if (m_PhysicsMaterials.find(normalizedPath) != m_PhysicsMaterials.end())
+            return m_PhysicsMaterials[normalizedPath];
+
+        Ref<PhysicsMaterial> newMaterial = CreateRef<PhysicsMaterial>();
+        newMaterial->SetAssetPath(normalizedPath);
+
+        PhysicsMaterialSerializer serializer(newMaterial);
+        if (serializer.Deserialize(normalizedPath))
+        {
+            m_PhysicsMaterials[normalizedPath] = newMaterial;
+            return newMaterial;
+        }
+
+        RXN_CORE_ERROR("Could not load PhysicsMaterial: {0}", normalizedPath);
+        return nullptr;
+    }
+
     void AssetManager::Clear()
     {
         m_Meshes.clear();
         m_Shaders.clear();
         m_Textures.clear();
         m_Materials.clear();
+		m_PhysicsMaterials.clear();
     }
 
     void AssetManager::LoadMeshAsync(const std::string& path, uint64_t entityID)

@@ -59,9 +59,6 @@ namespace RXNEngine
     {
         public Vector3 HalfExtents;
         public Vector3 Offset;
-        public float StaticFriction;
-        public float DynamicFriction;
-        public float Restitution;
         public bool IsTrigger;
 
         internal IntPtr RuntimeShape;
@@ -73,11 +70,6 @@ namespace RXNEngine
     {
         float Radius;
         Vector3 Offset;
-
-        float StaticFriction;
-        float DynamicFriction;
-        float Restitution;
-
         bool IsTrigger;
 
         internal IntPtr RuntimeShape;
@@ -90,11 +82,6 @@ namespace RXNEngine
         float Radius;
         float Height;
         Vector3 Offset;
-
-        float StaticFriction;
-        float DynamicFriction;
-        float Restitution;
-
         bool IsTrigger;
 
         internal IntPtr RuntimeShape;

@@ -3,6 +3,7 @@
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
+#include "RXNEngine/Serialization/PhysicsMaterialSerializer.h"
 
 #include <imgui.h>
 
@@ -131,6 +132,30 @@ namespace RXNEditor {
                     Refresh();
                 }
 
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Create New Physics Material"))
+                {
+                    Ref<PhysicsMaterial> newPhysMat = CreateRef<PhysicsMaterial>();
+
+                    std::string newFilename = "NewPhysicsMaterial.rxnphys";
+                    std::filesystem::path newFilePath = m_CurrentDirectory / newFilename;
+
+                    int count = 1;
+                    while (std::filesystem::exists(newFilePath))
+                    {
+                        newFilename = "NewPhysicsMaterial (" + std::to_string(count) + ").rxnphys";
+                        newFilePath = m_CurrentDirectory / newFilename;
+                        count++;
+                    }
+
+                    PhysicsMaterialSerializer serializer(newPhysMat);
+                    serializer.Serialize(newFilePath.string());
+
+                    RXN_CORE_INFO("Created new physics material at {0}", newFilePath.string());
+                    Refresh();
+                }
+
                 ImGui::EndPopup();
             }
 
@@ -251,6 +276,14 @@ namespace RXNEditor {
                             m_MaterialOpenCallback(item.Path.string());
                     }
                 }
+                else if (item.Path.extension() == ".rxnphys")
+                {
+                    if (ImGui::MenuItem("Edit Physics Material"))
+                    {
+                        if (m_PhysMaterialOpenCallback)
+                            m_PhysMaterialOpenCallback(item.Path.string());
+                    }
+                }
 
                 ImGui::EndPopup();
             }
@@ -279,6 +312,11 @@ namespace RXNEditor {
                     {
                         if (m_MaterialOpenCallback)
                             m_MaterialOpenCallback(item.Path.string());
+                    }
+                    else if (item.Path.extension() == ".rxnphys")
+                    {
+                        if (m_PhysMaterialOpenCallback)
+                            m_PhysMaterialOpenCallback(item.Path.string());
                     }
                 }
             }

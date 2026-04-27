@@ -1321,7 +1321,12 @@ namespace RXNEngine {
         if (entity.HasComponent<BoxColliderComponent>())
         {
             auto& bc = entity.GetComponent<BoxColliderComponent>();
-            physx::PxMaterial* material = physics->createMaterial(bc.StaticFriction, bc.DynamicFriction, bc.Restitution);
+
+            float staticFric = bc.PhysicsMaterialAsset ? bc.PhysicsMaterialAsset->StaticFriction : 0.5f;
+            float dynFric = bc.PhysicsMaterialAsset ? bc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
+            float rest = bc.PhysicsMaterialAsset ? bc.PhysicsMaterialAsset->Restitution : 0.1f;
+
+            physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
             bc.RuntimeMaterial = material;
 
             glm::vec3 colliderSize = bc.HalfExtents * worldScale;
@@ -1342,7 +1347,12 @@ namespace RXNEngine {
         if (entity.HasComponent<SphereColliderComponent>())
         {
             auto& sc = entity.GetComponent<SphereColliderComponent>();
-            physx::PxMaterial* material = physics->createMaterial(sc.StaticFriction, sc.DynamicFriction, sc.Restitution);
+
+            float staticFric = sc.PhysicsMaterialAsset ? sc.PhysicsMaterialAsset->StaticFriction : 0.5f;
+            float dynFric = sc.PhysicsMaterialAsset ? sc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
+            float rest = sc.PhysicsMaterialAsset ? sc.PhysicsMaterialAsset->Restitution : 0.1f;
+
+            physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
             sc.RuntimeMaterial = material;
 
             float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
@@ -1363,7 +1373,12 @@ namespace RXNEngine {
         if (entity.HasComponent<CapsuleColliderComponent>())
         {
             auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-            physx::PxMaterial* material = physics->createMaterial(cc.StaticFriction, cc.DynamicFriction, cc.Restitution);
+
+            float staticFric = cc.PhysicsMaterialAsset ? cc.PhysicsMaterialAsset->StaticFriction : 0.5f;
+            float dynFric = cc.PhysicsMaterialAsset ? cc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
+            float rest = cc.PhysicsMaterialAsset ? cc.PhysicsMaterialAsset->Restitution : 0.1f;
+
+            physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
             cc.RuntimeMaterial = material;
 
             float radiusScale = glm::max(worldScale.x, worldScale.z);
@@ -1422,7 +1437,11 @@ namespace RXNEngine {
 
             if (collisionMesh && !collisionMesh->GetVertices().empty())
             {
-                physx::PxMaterial* material = physics->createMaterial(mc.StaticFriction, mc.DynamicFriction, mc.Restitution);
+                float staticFric = mc.PhysicsMaterialAsset ? mc.PhysicsMaterialAsset->StaticFriction : 0.5f;
+                float dynFric = mc.PhysicsMaterialAsset ? mc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
+                float rest = mc.PhysicsMaterialAsset ? mc.PhysicsMaterialAsset->Restitution : 0.1f;
+
+                physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
                 mc.RuntimeMaterial = material;
 
                 physx::PxShape* shape = nullptr;

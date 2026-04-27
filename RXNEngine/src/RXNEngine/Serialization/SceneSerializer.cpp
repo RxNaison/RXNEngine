@@ -190,11 +190,8 @@ namespace RXNEngine {
 			auto& bc = entity.GetComponent<BoxColliderComponent>();
 			out << YAML::Key << "HalfExtents" << YAML::Value << bc.HalfExtents;
 			out << YAML::Key << "Offset" << YAML::Value << bc.Offset;
-			out << YAML::Key << "StaticFriction" << YAML::Value << bc.StaticFriction;
-			out << YAML::Key << "DynamicFriction" << YAML::Value << bc.DynamicFriction;
-			out << YAML::Key << "Restitution" << YAML::Value << bc.Restitution;
-
 			out << YAML::Key << "IsTrigger" << YAML::Value << bc.IsTrigger;
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(bc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // BoxColliderComponent
 		}
@@ -207,11 +204,8 @@ namespace RXNEngine {
 			auto& sc = entity.GetComponent<SphereColliderComponent>();
 			out << YAML::Key << "Radius" << YAML::Value << sc.Radius;
 			out << YAML::Key << "Offset" << YAML::Value << sc.Offset;
-			out << YAML::Key << "StaticFriction" << YAML::Value << sc.StaticFriction;
-			out << YAML::Key << "DynamicFriction" << YAML::Value << sc.DynamicFriction;
-			out << YAML::Key << "Restitution" << YAML::Value << sc.Restitution;
-
 			out << YAML::Key << "IsTrigger" << YAML::Value << sc.IsTrigger;
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(sc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // SphereColliderComponent
 		}
@@ -225,11 +219,8 @@ namespace RXNEngine {
 			out << YAML::Key << "Radius" << YAML::Value << cc.Radius;
 			out << YAML::Key << "Height" << YAML::Value << cc.Height;
 			out << YAML::Key << "Offset" << YAML::Value << cc.Offset;
-			out << YAML::Key << "StaticFriction" << YAML::Value << cc.StaticFriction;
-			out << YAML::Key << "DynamicFriction" << YAML::Value << cc.DynamicFriction;
-			out << YAML::Key << "Restitution" << YAML::Value << cc.Restitution;
-
 			out << YAML::Key << "IsTrigger" << YAML::Value << cc.IsTrigger;
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(cc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // CapsuleColliderComponent
 		}
@@ -242,10 +233,8 @@ namespace RXNEngine {
 			auto& mc = entity.GetComponent<MeshColliderComponent>();
 			out << YAML::Key << "IsConvex" << YAML::Value << mc.IsConvex;
 			out << YAML::Key << "OverrideAssetPath" << YAML::Value << mc.OverrideAssetPath;
-			out << YAML::Key << "StaticFriction" << YAML::Value << mc.StaticFriction;
-			out << YAML::Key << "DynamicFriction" << YAML::Value << mc.DynamicFriction;
-			out << YAML::Key << "Restitution" << YAML::Value << mc.Restitution;
 			out << YAML::Key << "IsTrigger" << YAML::Value << mc.IsTrigger;
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(mc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // MeshColliderComponent
 		}
@@ -485,14 +474,18 @@ namespace RXNEngine {
 				bc.HalfExtents = boxColliderComponent["HalfExtents"].as<glm::vec3>();
 			if (boxColliderComponent["Offset"])
 				bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
-			if (boxColliderComponent["StaticFriction"])
-				bc.StaticFriction = boxColliderComponent["StaticFriction"].as<float>();
-			if (boxColliderComponent["DynamicFriction"])
-				bc.DynamicFriction = boxColliderComponent["DynamicFriction"].as<float>();
-			if (boxColliderComponent["Restitution"])
-				bc.Restitution = boxColliderComponent["Restitution"].as<float>();
 			if (boxColliderComponent["IsTrigger"])
 				bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
+
+			if (boxColliderComponent["PhysicsMaterialPath"])
+			{
+				std::string path = boxColliderComponent["PhysicsMaterialPath"].as<std::string>();
+				if (!path.empty())
+				{
+					bc.PhysicsMaterialPath = path;
+					bc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(path);
+				}
+			}
 		}
 
 		auto sphereColliderComponent = entity["SphereColliderComponent"];
@@ -504,14 +497,18 @@ namespace RXNEngine {
 				sc.Radius = sphereColliderComponent["Radius"].as<float>();
 			if (sphereColliderComponent["Offset"])
 				sc.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
-			if (sphereColliderComponent["StaticFriction"])
-				sc.StaticFriction = sphereColliderComponent["StaticFriction"].as<float>();
-			if (sphereColliderComponent["DynamicFriction"])
-				sc.DynamicFriction = sphereColliderComponent["DynamicFriction"].as<float>();
-			if (sphereColliderComponent["Restitution"])
-				sc.Restitution = sphereColliderComponent["Restitution"].as<float>();
 			if (sphereColliderComponent["IsTrigger"])
 				sc.IsTrigger = sphereColliderComponent["IsTrigger"].as<bool>();
+
+			if (boxColliderComponent["PhysicsMaterialPath"])
+			{
+				std::string path = boxColliderComponent["PhysicsMaterialPath"].as<std::string>();
+				if (!path.empty())
+				{
+					sc.PhysicsMaterialPath = path;
+					sc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(path);
+				}
+			}
 		}
 
 		auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
@@ -525,14 +522,18 @@ namespace RXNEngine {
 				cc.Height = capsuleColliderComponent["Height"].as<float>();
 			if (capsuleColliderComponent["Offset"])
 				cc.Offset = capsuleColliderComponent["Offset"].as<glm::vec3>();
-			if (capsuleColliderComponent["StaticFriction"])
-				cc.StaticFriction = capsuleColliderComponent["StaticFriction"].as<float>();
-			if (capsuleColliderComponent["DynamicFriction"])
-				cc.DynamicFriction = capsuleColliderComponent["DynamicFriction"].as<float>();
-			if (capsuleColliderComponent["Restitution"])
-				cc.Restitution = capsuleColliderComponent["Restitution"].as<float>();
 			if (capsuleColliderComponent["IsTrigger"])
 				cc.IsTrigger = capsuleColliderComponent["IsTrigger"].as<bool>();
+
+			if (boxColliderComponent["PhysicsMaterialPath"])
+			{
+				std::string path = boxColliderComponent["PhysicsMaterialPath"].as<std::string>();
+				if (!path.empty())
+				{
+					cc.PhysicsMaterialPath = path;
+					cc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(path);
+				}
+			}
 		}
 
 		auto meshColliderComponent = entity["MeshColliderComponent"];
@@ -543,14 +544,18 @@ namespace RXNEngine {
 				mc.IsConvex = meshColliderComponent["IsConvex"].as<bool>();
 			if (meshColliderComponent["OverrideAssetPath"])
 				mc.OverrideAssetPath = meshColliderComponent["OverrideAssetPath"].as<std::string>();
-			if (meshColliderComponent["StaticFriction"])
-				mc.StaticFriction = meshColliderComponent["StaticFriction"].as<float>();
-			if (meshColliderComponent["DynamicFriction"])
-				mc.DynamicFriction = meshColliderComponent["DynamicFriction"].as<float>();
-			if (meshColliderComponent["Restitution"])
-				mc.Restitution = meshColliderComponent["Restitution"].as<float>();
 			if (meshColliderComponent["IsTrigger"])
 				mc.IsTrigger = meshColliderComponent["IsTrigger"].as<bool>();
+
+			if (boxColliderComponent["PhysicsMaterialPath"])
+			{
+				std::string path = boxColliderComponent["PhysicsMaterialPath"].as<std::string>();
+				if (!path.empty())
+				{
+					mc.PhysicsMaterialPath = path;
+					mc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(path);
+				}
+			}
 		}
 
 		auto characterControllerComponent = entity["CharacterControllerComponent"];

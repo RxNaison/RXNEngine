@@ -243,10 +243,9 @@ namespace RXNEditor {
             char buffer[256];
             memset(buffer, 0, sizeof(buffer));
             strcpy_s(buffer, sizeof(buffer), tag.c_str());
+
             if (ImGui::InputText("##Tag", buffer, sizeof(buffer)))
-            {
                 tag = std::string(buffer);
-            }
         }
 
         ImGui::SameLine();
@@ -518,43 +517,62 @@ namespace RXNEditor {
                 }
             });
 
-        DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
+        auto drawPhysicsMaterialWidget = [&](auto& component)
+            {
+                ImGui::Text("Physics Material");
+                ImGui::SameLine(130.0f);
+                std::string matName = component.PhysicsMaterialPath.empty() ? "Default" : component.PhysicsMaterialPath.substr(component.PhysicsMaterialPath.find_last_of("/\\") + 1);
+
+                ImGui::Button(matName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
+
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                        std::string path = (const char*)payload->Data;
+                        if (path.ends_with(".rxnphys")) {
+                            component.PhysicsMaterialPath = path;
+                            component.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(path);
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+
+                if (component.PhysicsMaterialAsset) {
+                    if (ImGui::Button("Reset Material", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f))) {
+                        component.PhysicsMaterialAsset = nullptr;
+                        component.PhysicsMaterialPath = "";
+                    }
+                }
+            };
+
+        DrawComponent<BoxColliderComponent>("Box Collider", entity, [&](auto& component)
             {
                 UI::DrawVec3Control("HalfExtents", component.HalfExtents, 0.5f);
                 UI::DrawVec3Control("Offset", component.Offset);
-                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
-                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
-                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
                 UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+                drawPhysicsMaterialWidget(component);
             });
-        DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
+        DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [&](auto& component)
             {
                 UI::DrawFloatControl("Radius", component.Radius, 0.05f, 0.0f, 100.0f);
                 UI::DrawVec3Control("Offset", component.Offset);
-                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
-                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
-                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
                 UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+                drawPhysicsMaterialWidget(component);
             });
 
-        DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
+        DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [&](auto& component)
             {
                 UI::DrawFloatControl("Radius", component.Radius, 0.05f, 0.0f, 100.0f);
                 UI::DrawFloatControl("Height", component.Height, 0.05f, 0.0f, 100.0f);
                 UI::DrawVec3Control("Offset", component.Offset);
-                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
-                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
-                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
                 UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+                drawPhysicsMaterialWidget(component);
             });
 
-        DrawComponent<MeshColliderComponent>("Mesh Collider", entity, [](auto& component)
+        DrawComponent<MeshColliderComponent>("Mesh Collider", entity, [&](auto& component)
             {
                 UI::DrawCheckbox("Is Convex", component.IsConvex);
-                UI::DrawFloatControl("Static Friction", component.StaticFriction, 0.01f, 0.0f, 1.0f);
-                UI::DrawFloatControl("Dynamic Friction", component.DynamicFriction, 0.01f, 0.0f, 1.0f, 117.0f);
-                UI::DrawFloatControl("Restitution", component.Restitution, 0.01f, 0.0f, 1.0f);
                 UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+                drawPhysicsMaterialWidget(component);
             });
 
         DrawComponent<CharacterControllerComponent>("Character Controller", entity, [](auto& component)

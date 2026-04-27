@@ -41,6 +41,11 @@ namespace RXNEditor {
                 auto mat = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(filepath);
                 m_MaterialEditorPanel.SetContext(mat, filepath);
             });
+        m_ContentBrowserPanel.SetPhysicsMaterialOpenCallback([this](const std::string& filepath)
+            {
+                auto physMat = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(filepath);
+                m_PhysicsMaterialEditorPanel.SetContext(physMat, filepath);
+            });
 	}
 
 	void EditorLayer::OnDetach()
@@ -231,6 +236,7 @@ namespace RXNEditor {
         m_ContentBrowserPanel.OnImGuiRender();
         m_EnvironmentPanel.OnImGuiRender();
         m_MaterialEditorPanel.OnImGuiRender();
+        m_PhysicsMaterialEditorPanel.OnImGuiRender();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
@@ -410,133 +416,144 @@ namespace RXNEditor {
         if (e.GetRepeatCount() > 1)
             return false;
 
-		auto inputSys = Application::Get().GetSubsystem<Input>();
+        int key = e.GetKeyCode();
+
+        auto inputSys = Application::Get().GetSubsystem<Input>();
 
         bool control = inputSys->IsKeyPressed(KeyCode::LeftControl) || inputSys->IsKeyPressed(KeyCode::RightControl);
         bool shift = inputSys->IsKeyPressed(KeyCode::LeftShift) || inputSys->IsKeyPressed(KeyCode::RightShift);
 
-        switch (e.GetKeyCode())
+        bool alt = inputSys->IsKeyPressed(KeyCode::LeftAlt) || inputSys->IsKeyPressed(KeyCode::RightAlt);
+        bool rightMouse = inputSys->IsMouseButtonPressed(MouseCode::ButtonRight);
+
+        if (key == KeyCode::P)
         {
-            case KeyCode::N:
+            if (control && shift)
             {
-                if (control)
-                    NewScene();
-
-                break;
-            }
-            case KeyCode::O:
-            {
-                if (control)
-                    OpenScene(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
-
-                break;
-            }
-            case KeyCode::S:
-            {
-                if (control)
+                if (m_SceneState == SceneState::Simulate)
                 {
-                    if (shift)
-                    {
-                        SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
-                    }
-                    else
-                    {
-                        if(m_ActiveScenePath.empty())
-                            SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
-                        else
-                            SaveSceneAs(m_ActiveScenePath);
-                    }
-                }
-
-                break;
-            }
-
-            case KeyCode::Q:
-            {
-                if (!ImGuizmo::IsUsing())
-                    m_GizmoType = -1;
-                break;
-            }
-            case KeyCode::W:
-            {
-                if (!ImGuizmo::IsUsing())
-                    m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
-                break;
-            }
-            case KeyCode::E:
-            {
-                if (!ImGuizmo::IsUsing())
-                    m_GizmoType = ImGuizmo::OPERATION::ROTATE;
-                break;
-            }
-            case KeyCode::R:
-            {
-                if (control && shift)
-                {
-                    Application::Get().GetSubsystem<ScriptEngine>()->ReloadAssembly();
+                    OnSceneStop();
+                    m_SceneState = SceneState::Edit;
                 }
                 else
                 {
+                    OnSceneSimulate();
+                    m_SceneState = SceneState::Simulate;
+                }
+            }
+            else if (control)
+            {
+                if (m_SceneState == SceneState::Play)
+                {
+                    OnSceneStop();
+                    m_SceneState = SceneState::Edit;
+                }
+                else
+                {
+                    OnScenePlay();
+                    m_SceneState = SceneState::Play;
+                }
+            }
+        }
+
+        if (m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate)
+            return false;
+
+        if (!(alt || rightMouse))
+        {
+            switch (key)
+            {
+                case KeyCode::N:
+                {
+                    if (control)
+                        NewScene();
+
+                    break;
+                }
+                case KeyCode::O:
+                {
+                    if (control)
+                        OpenScene(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+
+                    break;
+                }
+                case KeyCode::S:
+                {
+                    if (control)
+                    {
+                        if (shift)
+                        {
+                            SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+                        }
+                        else
+                        {
+                            if (m_ActiveScenePath.empty())
+                                SaveSceneAs(FileDialogs::SaveFile("Scene (*.rxns)\0*.rxns\0"));
+                            else
+                                SaveSceneAs(m_ActiveScenePath);
+                        }
+                    }
+
+                    break;
+                }
+
+                case KeyCode::Q:
+                {
                     if (!ImGuizmo::IsUsing())
-                        m_GizmoType = ImGuizmo::OPERATION::SCALE;
+                        m_GizmoType = -1;
+                    break;
                 }
-                break;
-            }
-            case KeyCode::Delete:
-            {
-                if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
+                case KeyCode::W:
                 {
-                    Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-                    if (selectedEntity)
-                    {
-                        m_SceneHierarchyPanel.SetSelectedEntity({});
-                        m_ActiveScene->DestroyEntity(selectedEntity);
-                    }
+                    if (!ImGuizmo::IsUsing())
+                        m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+                    break;
                 }
-                break;
-            }
-            case KeyCode::P:
-            {
-				if (control && shift)
+                case KeyCode::E:
                 {
-                    if (m_SceneState == SceneState::Simulate)
+                    if (!ImGuizmo::IsUsing())
+                        m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+                    break;
+                }
+                case KeyCode::R:
+                {
+                    if (control && shift)
                     {
-                        OnSceneStop();
-                        m_SceneState = SceneState::Edit;
+                        Application::Get().GetSubsystem<ScriptEngine>()->ReloadAssembly();
                     }
                     else
                     {
-                        OnSceneSimulate();
-                        m_SceneState = SceneState::Simulate;
+                        if (!ImGuizmo::IsUsing())
+                            m_GizmoType = ImGuizmo::OPERATION::SCALE;
                     }
+                    break;
                 }
-                else if (control)
+                case KeyCode::Delete:
                 {
-                    if (m_SceneState == SceneState::Play)
+                    if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
                     {
-                        OnSceneStop();
-                        m_SceneState = SceneState::Edit;
+                        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+                        if (selectedEntity)
+                        {
+                            m_SceneHierarchyPanel.SetSelectedEntity({});
+                            m_ActiveScene->DestroyEntity(selectedEntity);
+                        }
                     }
-                    else
-                    {
-                        OnScenePlay();
-                        m_SceneState = SceneState::Play;
-                    }
+                    break;
                 }
-                break;
-            }
-            case KeyCode::D:
-            {
-                if (control)
+                case KeyCode::D:
                 {
-                    Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-                    if (selectedEntity)
+                    if (control)
                     {
-                        Entity duplicate = m_ActiveScene->DuplicateEntity(selectedEntity);
-                        m_SceneHierarchyPanel.SetSelectedEntity(duplicate);
+                        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+                        if (selectedEntity)
+                        {
+                            Entity duplicate = m_ActiveScene->DuplicateEntity(selectedEntity);
+                            m_SceneHierarchyPanel.SetSelectedEntity(duplicate);
+                        }
                     }
-				}
-                break;
+                    break;
+                }
             }
         }
 

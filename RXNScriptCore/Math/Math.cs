@@ -14,5 +14,10 @@ namespace RXNEngine
             if (value > max) return max;
             return value;
         }
+
+        public static float Lerp(float a, float b, float t)
+        {
+            return a + (b - a) * Clamp(t, 0.0f, 1.0f);
+        }
     }
 }

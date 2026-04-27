@@ -3,6 +3,7 @@
 #include "RXNEngine/Asset/StaticMesh.h"
 #include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 #include "RXNEngine/Asset/ModelImporter.h"
+#include "RXNEngine/Asset/PhysicsMaterial.h"
 
 #include <unordered_map>
 #include <string>
@@ -20,6 +21,7 @@ namespace RXNEngine {
         Ref<Texture2D> GetTexture(const std::string& path);
         Ref<Shader> GetShader(const std::string& path);
         Ref<Material> GetMaterial(const std::string& path);
+        Ref<PhysicsMaterial> GetPhysicsMaterial(const std::string& path);
 
         void Clear();
 
@@ -39,6 +41,7 @@ namespace RXNEngine {
         std::unordered_map<std::string, Ref<Shader>> m_Shaders;
         std::unordered_map<std::string, Ref<Texture2D>> m_Textures;
         std::unordered_map<std::string, Ref<Material>> m_Materials;
+        std::unordered_map<std::string, Ref<PhysicsMaterial>> m_PhysicsMaterials;
     };
 
 }

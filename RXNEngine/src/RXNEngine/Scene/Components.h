@@ -6,6 +6,7 @@
 #include "RXNEngine/Renderer/Light.h"
 #include "SceneCamera.h"
 #include "RXNEngine/Renderer/GraphicsAPI/VideoTexture.h"
+#include "RXNEngine/Asset/PhysicsMaterial.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -183,12 +184,10 @@ namespace RXNEngine {
 	{
 		glm::vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
 		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
-
-		float StaticFriction = 0.5f;
-		float DynamicFriction = 0.5f;
-		float Restitution = 0.1f;
-
 		bool IsTrigger = false;
+
+		Ref<PhysicsMaterial> PhysicsMaterialAsset;
+		std::string PhysicsMaterialPath = "";
 
 		void* RuntimeShape = nullptr;
 		void* RuntimeMaterial = nullptr;
@@ -201,12 +200,10 @@ namespace RXNEngine {
 	{
 		float Radius = 0.5f;
 		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
-
-		float StaticFriction = 0.5f;
-		float DynamicFriction = 0.5f;
-		float Restitution = 0.1f;
-
 		bool IsTrigger = false;
+
+		Ref<PhysicsMaterial> PhysicsMaterialAsset;
+		std::string PhysicsMaterialPath = "";
 
 		void* RuntimeShape = nullptr;
 		void* RuntimeMaterial = nullptr;
@@ -220,12 +217,10 @@ namespace RXNEngine {
 		float Radius = 0.5f;
 		float Height = 1.0f;
 		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
-
-		float StaticFriction = 0.5f;
-		float DynamicFriction = 0.5f;
-		float Restitution = 0.1f;
-
 		bool IsTrigger = false;
+
+		Ref<PhysicsMaterial> PhysicsMaterialAsset;
+		std::string PhysicsMaterialPath = "";
 
 		void* RuntimeShape = nullptr;
 		void* RuntimeMaterial = nullptr;
@@ -240,9 +235,9 @@ namespace RXNEngine {
 
 		std::string OverrideAssetPath = "";
 
-		float StaticFriction = 0.5f;
-		float DynamicFriction = 0.5f;
-		float Restitution = 0.1f;
+		Ref<PhysicsMaterial> PhysicsMaterialAsset;
+		std::string PhysicsMaterialPath = "";
+
 		bool IsTrigger = false;
 
 		void* RuntimeShape = nullptr;

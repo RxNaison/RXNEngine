@@ -21,6 +21,9 @@ namespace RXNEditor {
         using MaterialOpenCallbackFn = std::function<void(const std::string&)>;
         void SetMaterialOpenCallback(const MaterialOpenCallbackFn& callback) { m_MaterialOpenCallback = callback; }
 
+        using PhysicsMaterialOpenCallbackFn = std::function<void(const std::string&)>;
+        void SetPhysicsMaterialOpenCallback(const PhysicsMaterialOpenCallbackFn& callback) { m_PhysMaterialOpenCallback = callback; }
+
     private:
         void DrawTopBar();
         void DrawDirectoryTree(const std::filesystem::path& directoryPath);
@@ -48,6 +51,7 @@ namespace RXNEditor {
         bool m_SettingsWindow = false;
 
         MaterialOpenCallbackFn m_MaterialOpenCallback;
+        PhysicsMaterialOpenCallbackFn m_PhysMaterialOpenCallback;
 
         bool m_IsRenaming = false;
         std::filesystem::path m_ItemToRename;
