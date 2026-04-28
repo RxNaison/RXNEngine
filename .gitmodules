@@ -19,9 +19,6 @@
 [submodule "RXNEngine/vendor/PhysX"]
 	path = RXNEngine/vendor/PhysX
 	url = https://github.com/NVIDIA-Omniverse/PhysX.git
-[submodule "RXNEngine/vendor/optick"]
-	path = RXNEngine/vendor/optick
-	url = https://github.com/bombomby/optick.git
 [submodule "RXNEngine/vendor/SDL"]
 	path = RXNEngine/vendor/SDL
 	url = https://github.com/libsdl-org/SDL.git

@@ -2,6 +2,7 @@
 #include "PhysicsWorld.h"
 #include "PhysicsSystem.h"
 
+
 namespace RXNEngine {
 
     physx::PxFilterFlags ContactReportFilterShader(
@@ -37,7 +38,7 @@ namespace RXNEngine {
 
     void PhysicsWorld::Update(float deltaTime)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
         if (!m_Scene) return;
 
         m_Scene->simulate(deltaTime);

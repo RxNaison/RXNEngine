@@ -30,7 +30,7 @@ namespace RXNEngine {
 
 	void OpenGLContext::SwapBuffers()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 		SDL_GL_SwapWindow((SDL_Window*)m_WindowHandle);
 	}
 }

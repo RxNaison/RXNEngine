@@ -14,8 +14,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <optick.h>
-
+#include "RXNEngine/Core/RXNProfile.h"
 #include "RXNEngine/Core/Log.h"
 
 #ifdef RXN_PLATFORM_WINDOWS

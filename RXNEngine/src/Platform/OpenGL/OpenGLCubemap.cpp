@@ -14,7 +14,7 @@ namespace RXNEngine {
 
 	static void RenderCube()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		if (s_CubeVAO == nullptr)
 		{
@@ -74,7 +74,7 @@ namespace RXNEngine {
 
 	static void RenderQuad()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		if (s_QuadVAO == nullptr)
 		{
@@ -218,7 +218,7 @@ namespace RXNEngine {
 
 	void OpenGLCubemap::CreateIrradianceMap()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		int res = 32;
 		uint32_t captureFBO, captureRBO;
@@ -273,7 +273,7 @@ namespace RXNEngine {
 
 	void OpenGLCubemap::CreatePrefilterMap()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		int res = 128;
 		uint32_t captureFBO, captureRBO;
@@ -346,7 +346,7 @@ namespace RXNEngine {
 
 	void OpenGLCubemap::CreateBRDFLUT()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		glGenTextures(1, &m_BRDFLUTMapID);
 		glBindTexture(GL_TEXTURE_2D, m_BRDFLUTMapID);

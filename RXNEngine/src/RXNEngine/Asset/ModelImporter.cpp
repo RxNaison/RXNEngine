@@ -230,7 +230,7 @@ namespace RXNEngine {
 
 	bool ModelImporter::LoadModelData(const std::string& filepath, ImporterData& outData, const ModelImportSettings& settings)
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		uint32_t importFlags = aiProcess_Triangulate;
 		if (settings.GenerateNormals)
@@ -334,7 +334,7 @@ namespace RXNEngine {
 
 	Ref<StaticMesh> ModelImporter::BuildMeshFromData(const ImporterData& data, const std::string& modelFilepath)
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		auto assetManager = Application::Get().GetSubsystem<AssetManager>();
 		Ref<Shader> defaultPBR = assetManager->GetShader("res/shaders/pbr.glsl");

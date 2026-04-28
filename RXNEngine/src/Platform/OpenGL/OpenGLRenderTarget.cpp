@@ -113,7 +113,7 @@ namespace RXNEngine {
 
 	void OpenGLRenderTarget::UpdateState()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		if (m_RendererID)
 		{

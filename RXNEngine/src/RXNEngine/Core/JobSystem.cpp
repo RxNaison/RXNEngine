@@ -1,8 +1,6 @@
 #include "rxnpch.h"
 #include "JobSystem.h"
 
-#include <optick.h>
-
 namespace RXNEngine {
 
     void JobSystem::Init()
@@ -126,7 +124,7 @@ namespace RXNEngine {
     void JobSystem::WorkerThread(uint32_t threadID)
     {
         std::string threadName = "Worker Thread " + std::to_string(threadID);
-        OPTICK_THREAD(threadName.c_str());
+        RXN_PROFILE_THREAD(threadName.c_str());
 
         while (m_IsRunning)
         {
@@ -145,7 +143,10 @@ namespace RXNEngine {
 
             if (job)
             {
-                job();
+                {
+                    RXN_PROFILE_SCOPE_NAMED("JobSystem::ExecuteTask");
+                    job();
+                }
                 m_FinishedLabel.fetch_add(1);
 
                 {

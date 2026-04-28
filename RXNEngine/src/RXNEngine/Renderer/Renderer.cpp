@@ -124,7 +124,7 @@ namespace RXNEngine {
 
     std::vector<glm::vec4> GetFrustumCornersWorldSpace(const glm::mat4& proj, const glm::mat4& view)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         const auto inv = glm::inverse(proj * view);
         std::vector<glm::vec4> frustumCorners;
@@ -144,7 +144,7 @@ namespace RXNEngine {
 
     void Renderer::CalculateShadowMapMatrices(const glm::mat4& cameraView, const glm::vec3& lightDir)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         float aspect = (float)m_Data->CurrentRenderTarget->GetSpecification().Width / (float)m_Data->CurrentRenderTarget->GetSpecification().Height;
         float fov = m_Data->CameraFOV < 0.01f ? glm::radians(45.0f) : m_Data->CameraFOV;
@@ -306,14 +306,14 @@ namespace RXNEngine {
     void Renderer::BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
         const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
         PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, renderTarget);
     }
 
     void Renderer::BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
         const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
         glm::mat4 view = glm::inverse(transform);
@@ -332,7 +332,7 @@ namespace RXNEngine {
         const Ref<Cubemap>& environment,
         const Ref<RenderTarget>& renderTarget)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (environment)
         {
@@ -443,7 +443,7 @@ namespace RXNEngine {
 
     void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         const auto& submeshes = mesh->GetSubmeshes();
         if (submeshIndex >= submeshes.size()) return;
@@ -492,7 +492,7 @@ namespace RXNEngine {
 
     void Renderer::DrawWireBox(const glm::mat4& transform, const glm::vec4& color)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         glm::vec3 lineVertices[8];
         for (size_t i = 0; i < 8; i++)
@@ -524,7 +524,7 @@ namespace RXNEngine {
 
     void Renderer::DrawWireSphere(const glm::mat4& transform, const glm::vec4& color)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         const int segments = 32;
         constexpr float angleStep = glm::two_pi<float>() / segments;
@@ -550,7 +550,7 @@ namespace RXNEngine {
 
     void Renderer::DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         const int segments = 32;
         const float angleStep = glm::two_pi<float>() / segments;
@@ -629,7 +629,7 @@ namespace RXNEngine {
 
     void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const glm::mat4& cameraViewMatrix, const glm::mat4& cameraProjectionMatrix)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         RenderCommand::SetDepthFunc(RendererAPI::DepthFunc::LessEqual);
 
@@ -652,7 +652,7 @@ namespace RXNEngine {
 
     void Renderer::Flush()
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         FlushShadows();
         FlushSpotShadows();
@@ -722,7 +722,7 @@ namespace RXNEngine {
 
     void Renderer::ExecuteQueue(const std::vector<const RenderCommandPacket*>& queue)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (queue.empty()) return;
 
@@ -766,7 +766,7 @@ namespace RXNEngine {
 
     void Renderer::FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
         if (count == 0) return;
 
         m_Data->InstanceVertexBuffer->SetData(instanceData, count * sizeof(InstanceData));
@@ -796,7 +796,7 @@ namespace RXNEngine {
 
     void Renderer::FlushShadows()
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         m_Data->ShadowData.ShadowShader->Bind();
 
@@ -928,7 +928,7 @@ namespace RXNEngine {
 
     void Renderer::ExecutePickingPass(const Ref<Shader>& pickingShader)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         auto drawQueue = [&](const std::vector<RenderCommandPacket>& queue)
             {

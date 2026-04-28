@@ -23,7 +23,7 @@ namespace RXNEngine {
 
 	void EditorCamera::UpdateView()
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		m_Position = CalculatePosition();
 
@@ -59,7 +59,7 @@ namespace RXNEngine {
 
 	void EditorCamera::OnUpdate(float deltaTime)
 	{
-		OPTICK_EVENT();
+		RXN_PROFILE_SCOPE();
 
 		auto inputSys = Application::Get().GetSubsystem<Input>();
 

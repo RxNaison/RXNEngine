@@ -118,7 +118,7 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, const std::vector<Entity>& selectedEntities)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
         {
@@ -193,7 +193,7 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderRuntime(uint32_t targetWidth, uint32_t targetHeight)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
         {
@@ -247,7 +247,7 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderPostProcess()
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         m_FinalPass->Bind();
 
@@ -283,7 +283,7 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderBloom()
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (m_BloomMips.empty()) return;
 

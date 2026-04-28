@@ -159,7 +159,7 @@ namespace RXNEngine {
         std::lock_guard<std::mutex> lock(m_AsyncMutex);
         if (m_FinishedTasks.empty()) return;
 
-        OPTICK_EVENT("AssetManager::UploadToGPU");
+        RXN_PROFILE_SCOPE_NAMED("AssetManager::UploadToGPU");
 
         AsyncLoadTask* task = m_FinishedTasks.front();
         m_FinishedTasks.erase(m_FinishedTasks.begin());

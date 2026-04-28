@@ -19,7 +19,7 @@ IncludeDir["yaml_cpp"] = "RXNEngine/vendor/yaml-cpp/include"
 IncludeDir["ImGuizmo"] = "RXNEngine/vendor/ImGuizmo"
 IncludeDir["PhysX"] = "RXNEngine/vendor/PhysX/physx/include"
 IncludeDir["PxShared"] = "RXNEngine/vendor/PhysX/pxshared/include"
-IncludeDir["Optick"] = "RXNEngine/vendor/optick/src"
+IncludeDir["Tracy"] = "RXNEngine/vendor/tracy/public"
 IncludeDir["CoreCLR"] = "RXNEngine/vendor/coreclr/include"
 IncludeDir["pl_mpeg"] = "RXNEngine/vendor/pl_mpeg/include"
 
@@ -56,8 +56,8 @@ project "RXNEngine"
         "%{prj.name}/vendor/entt/include/**.hpp",
         "%{prj.name}/vendor/ImGuizmo/**.h",
         "%{prj.name}/vendor/ImGuizmo/*.cpp",
-        "%{prj.name}/vendor/optick/src/**.h",
-        "%{prj.name}/vendor/optick/src/**.cpp"
+        "%{prj.name}/vendor/tracy/public/tracy/**.h",
+        "%{prj.name}/vendor/tracy/public/TracyClient.cpp"
     }
    
     defines
@@ -84,25 +84,23 @@ project "RXNEngine"
         "%{IncludeDir.ImGuizmo}",
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.PxShared}",
-        "%{IncludeDir.Optick}",
+        "%{IncludeDir.Tracy}",
         "%{IncludeDir.CoreCLR}",
         "%{IncludeDir.pl_mpeg}"
     }
 
-    links { "Glad", "Imgui", "opengl32.lib" }
+    links { "Glad", "Imgui", "opengl32.lib", "ws2_32.lib", "dbghelp.lib" }
 
     removefiles
     {
-        "%{prj.name}/vendor/ImGuizmo/example/**",
-        "RXNEngine/vendor/optick/src/optick_gpu.vulkan.cpp",
-        "RXNEngine/vendor/optick/src/optick_gpu.d3d12.cpp"
+        "%{prj.name}/vendor/ImGuizmo/example/**"
     }
 
     filter "files:RXNEngine/vendor/ImGuizmo/*.cpp"
     flags { "NoPCH" }
     filter {}
 
-    filter "files:RXNEngine/vendor/optick/src/**.cpp"
+    filter "files:RXNEngine/vendor/tracy/public/TracyClient.cpp"
         flags { "NoPCH" }
     filter {}
 
@@ -114,7 +112,7 @@ project "RXNEngine"
       defines "RXN_DEBUG"
       runtime "Debug"
       symbols "on"
-      defines { "RXN_ENABLE_ASSERTS", "USE_OPTICK=1" }
+      defines { "RXN_ENABLE_ASSERTS", "TRACY_ENABLE" }
       links 
       { 
           "RXNEngine/vendor/SDL/build/Debug/SDL3.lib",
@@ -130,7 +128,7 @@ project "RXNEngine"
           PhysXBinDir .. "/debug/PhysXCooking_64.lib"
       }
     filter "configurations:Release"
-      defines { "RXN_RELEASE", "NDEBUG", "USE_OPTICK=1" }
+      defines { "RXN_RELEASE", "NDEBUG", "TRACY_ENABLE" }
       runtime "Release"
       optimize "on"
       links 
@@ -148,7 +146,7 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCooking_64.lib"
       }
     filter "configurations:Dist"
-      defines { "RXN_DIST", "NDEBUG", "USE_OPTICK=0" }
+      defines { "RXN_DIST", "NDEBUG" }
       runtime "Release"
       optimize "on"
       links 
@@ -203,7 +201,7 @@ project "RXNEditor"
         "%{IncludeDir.ImGuizmo}",
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.PxShared}",
-        "%{IncludeDir.Optick}"
+        "%{IncludeDir.Tracy}"
     }
     links "RXNEngine"
     
@@ -211,7 +209,7 @@ project "RXNEditor"
        systemversion "latest"
     
     filter "configurations:Debug"
-       defines { "RXN_DEBUG", "USE_OPTICK=1" }
+       defines { "RXN_DEBUG", "TRACY_ENABLE" }
        runtime "Debug"
        symbols "on"
 
@@ -228,7 +226,7 @@ project "RXNEditor"
        }
 
     filter "configurations:Release"
-       defines { "RXN_RELEASE", "USE_OPTICK=0" }
+       defines { "RXN_RELEASE", "TRACY_ENABLE" }
        runtime "Release"
        optimize "on"
 
@@ -245,7 +243,7 @@ project "RXNEditor"
        }
 
     filter "configurations:Dist"
-       defines { "RXN_DIST", "USE_OPTICK=1" }
+       defines { "RXN_DIST" }
        runtime "Release"
        optimize "on"
 

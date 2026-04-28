@@ -3,6 +3,7 @@
 #include "RXNEngine/Asset/ModelImporter.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 
+
 #include <imgui.h>
 #include <ImGuizmo.h>
 
@@ -56,7 +57,7 @@ namespace RXNEditor {
 
 	void EditorLayer::OnUpdate(float deltaTime)
 	{
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         Application::Get().GetSubsystem<Renderer>()->ResetStats();
 
@@ -108,7 +109,7 @@ namespace RXNEditor {
 
 	void EditorLayer::OnEvent(Event& event)
 	{
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (m_ViewportHovered)
             m_EditorCamera->OnEvent(event);
@@ -159,7 +160,7 @@ namespace RXNEditor {
 
 	void EditorLayer::OnImGuiRenderer()
 	{
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         static bool opt_fullscreen = true;
         static bool opt_padding = false;
@@ -303,14 +304,27 @@ namespace RXNEditor {
 
             if (ImGuizmo::IsUsing())
             {
+                glm::mat4 primaryOriginalTransform = m_ActiveScene->GetWorldTransform(primaryEntity);
+                glm::vec3 pivotTranslation, tempRot, tempScale;
+                Math::DecomposeTransform(primaryOriginalTransform, pivotTranslation, tempRot, tempScale);
+                glm::mat4 pivot = glm::translate(glm::mat4(1.0f), pivotTranslation);
+
                 for (Entity entity : selectedEntities)
                 {
                     auto& entityTC = entity.GetComponent<TransformComponent>();
                     auto& entityRC = entity.GetComponent<RelationshipComponent>();
 
-                    glm::mat4 entityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
+                    glm::mat4 entityWorldTransform;
 
-                    entityWorldTransform = deltaMatrix * entityWorldTransform;
+                    if (entity == primaryEntity)
+                    {
+                        entityWorldTransform = groupTransform;
+                    }
+                    else
+                    {
+                        glm::mat4 oldEntityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
+                        entityWorldTransform = pivot * deltaMatrix * glm::inverse(pivot) * oldEntityWorldTransform;
+                    }
 
                     if (entityRC.ParentHandle != 0)
                     {

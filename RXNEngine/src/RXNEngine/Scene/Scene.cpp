@@ -119,7 +119,7 @@ namespace RXNEngine {
 
     Ref<Scene> Scene::Copy(Ref<Scene> other)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         Ref<Scene> newScene = CreateRef<Scene>();
 
@@ -182,7 +182,7 @@ namespace RXNEngine {
 
     void Scene::RemoveEntity(Entity entity)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         if (m_IsRunning && entity.HasComponent<ScriptComponent>())
             Application::Get().GetSubsystem<ScriptEngine>()->OnDestroyEntity(entity);
@@ -350,7 +350,7 @@ namespace RXNEngine {
 
     void Scene::UpdateWorldTransforms()
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         std::vector<std::vector<entt::entity>> generations;
         generations.push_back({});
@@ -429,7 +429,7 @@ namespace RXNEngine {
 
     void Scene::OnUpdateSimulation(float deltaTime)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
 
@@ -446,7 +446,7 @@ namespace RXNEngine {
 
                 Application::Get().GetSubsystem<JobSystem>()->Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
                     {
-                        OPTICK_EVENT("Run C# Fixed Update");
+                        RXN_PROFILE_SCOPE_NAMED("Run C# Fixed Update");
                         Entity entity = { entities[args.JobIndex], this };
                         Application::Get().GetSubsystem<ScriptEngine>()->OnFixedUpdateEntity(entity, deltaTime);
                     });
@@ -556,7 +556,7 @@ namespace RXNEngine {
 
     void Scene::OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         LightEnvironment lightEnv;
         {
@@ -761,7 +761,7 @@ namespace RXNEngine {
 
     void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         UpdateWorldTransforms();
 
@@ -1035,7 +1035,7 @@ namespace RXNEngine {
 
     void Scene::OnUpdateRuntime(float deltaTime)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         auto spotLightView = m_Registry.view<SpotLightComponent>();
         for (auto e : spotLightView)
@@ -1077,7 +1077,7 @@ namespace RXNEngine {
 
             jobSys->Dispatch(entities.size(), groupSize, [this, &entities, deltaTime, &scriptSys](JobDispatchArgs args)
                 {
-                    OPTICK_EVENT("Run C# Update");
+                    RXN_PROFILE_SCOPE_NAMED("Run C# Update");
                     Entity entity = { entities[args.JobIndex], this };
                     scriptSys->OnUpdateEntity(entity, deltaTime);
                 });
@@ -1120,7 +1120,7 @@ namespace RXNEngine {
 
     Entity Scene::DuplicateEntity(Entity entity)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         std::string name = entity.GetComponent<TagComponent>().Tag;
         Entity newEntity = CreateEntity(name + " (Clone)");
@@ -1272,7 +1272,7 @@ namespace RXNEngine {
 
     void Scene::CreatePhysicsBody(Entity entity)
     {
-        OPTICK_EVENT();
+        RXN_PROFILE_SCOPE();
 
         auto physicsSys = Application::Get().GetSubsystem<PhysicsSystem>();
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
