@@ -15,8 +15,13 @@ namespace RXNEditor {
         void SetContext(const Ref<Scene>& context);
         void OnImGuiRender();
 
-        Entity GetSelectedEntity() const { return m_SelectedEntity; }
-        void SetSelectedEntity(Entity entity) { m_SelectedEntity = entity; }
+        Entity GetSelectedEntity() const { return m_SelectedEntities.empty() ? Entity{} : m_SelectedEntities.front(); }
+        const std::vector<Entity>& GetSelectedEntities() const { return m_SelectedEntities; }
+
+        void SetSelectedEntity(Entity entity);
+        void ToggleSelection(Entity entity);
+        bool IsEntitySelected(Entity entity) const;
+        void ClearSelection();
 
         Entity ResolvePickedEntity(Entity entity);
 
@@ -30,7 +35,9 @@ namespace RXNEditor {
         void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction);
     private:
         Ref<Scene> m_Context;
-        Entity m_SelectedEntity;
+        std::vector<Entity> m_SelectedEntities;
+        Entity m_SelectionContextAnchor;
+        std::vector<Entity> m_VisibleNodes;
         std::unordered_set<uint64_t> m_ExpandedNodes;
 
         std::function<void(const std::string&)> m_MeshDropCallback;

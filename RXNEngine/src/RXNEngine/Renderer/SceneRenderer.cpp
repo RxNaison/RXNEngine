@@ -116,7 +116,7 @@ namespace RXNEngine {
         }
     }
 
-    void SceneRenderer::RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, Entity selectedEntity)
+    void SceneRenderer::RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, const std::vector<Entity>& selectedEntities)
     {
         OPTICK_EVENT();
 
@@ -130,7 +130,7 @@ namespace RXNEngine {
         RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
         RenderCommand::Clear();
 
-        if (selectedEntity)
+        if (!selectedEntities.empty())
         {
             RenderCommand::SetDepthTest(false);
 
@@ -156,7 +156,12 @@ namespace RXNEngine {
                     }
                 };
 
-            drawOutline(selectedEntity, drawOutline);
+            for (Entity entity : selectedEntities)
+            {
+                if (entity)
+                    drawOutline(entity, drawOutline);
+            }
+
             RenderCommand::SetDepthTest(true);
         }
         m_OutlineMaskPass->Unbind();

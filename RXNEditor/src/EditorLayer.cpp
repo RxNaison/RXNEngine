@@ -63,14 +63,14 @@ namespace RXNEditor {
             case SceneState::Edit:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
                 Application::Get().GetSubsystem<ScriptEngine>()->ReloadIfModified(deltaTime);
                 break;
             }
             case SceneState::Simulate:
             {
                 m_EditorCamera->OnUpdate(deltaTime);
-                m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntity());
+                m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
                 break;
             }
             case SceneState::Play:
@@ -118,17 +118,22 @@ namespace RXNEditor {
                             my = viewportSize.y - my;
 
                             int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)mx, (int)my, *m_EditorCamera);
+                            bool isCtrlHeld = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
 
                             if (pickedID > -1)
                             {
                                 Entity pickedEntity = { (entt::entity)pickedID, m_ActiveScene.get() };
                                 pickedEntity = m_SceneHierarchyPanel.ResolvePickedEntity(pickedEntity);
 
-                                m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
+                                if (isCtrlHeld)
+                                    m_SceneHierarchyPanel.ToggleSelection(pickedEntity);
+                                else
+                                    m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
                             }
                             else
                             {
-                                m_SceneHierarchyPanel.SetSelectedEntity({});
+                                if (!isCtrlHeld)
+                                    m_SceneHierarchyPanel.ClearSelection();
                             }
                         }
                     }
@@ -265,8 +270,8 @@ namespace RXNEditor {
         uint32_t textureID = m_SceneRenderer->GetFinalColorAttachmentRendererID();
         ImGui::Image((void*)(uint64_t)textureID, viewportSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-        if (selectedEntity && m_GizmoType != -1 && m_SceneState != SceneState::Play)
+        const std::vector<Entity>& selectedEntities = m_SceneHierarchyPanel.GetSelectedEntities();
+        if (!selectedEntities.empty() && m_GizmoType != -1 && m_SceneState != SceneState::Play)
         {
             ImGuizmo::SetOrthographic(false);
             ImGuizmo::SetDrawlist();
@@ -275,40 +280,47 @@ namespace RXNEditor {
             const glm::mat4& cameraView = m_EditorCamera->GetViewMatrix();
             const glm::mat4& cameraProj = m_EditorCamera->GetProjection();
 
-            auto& entityTC = selectedEntity.GetComponent<TransformComponent>();
-            auto& entityRC = selectedEntity.GetComponent<RelationshipComponent>();
-
-            glm::mat4 entityWorldTransform = m_ActiveScene->GetWorldTransform(selectedEntity);
-
             bool snap = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
             float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 5.0f : 0.5f;
             float snapValues[3] = { snapValue, snapValue, snapValue };
 
+            Entity primaryEntity = selectedEntities[0];
+            glm::mat4 groupTransform = m_ActiveScene->GetWorldTransform(primaryEntity);
+            glm::mat4 deltaMatrix(1.0f);
+
             ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,
-                ImGuizmo::LOCAL, glm::value_ptr(entityWorldTransform), nullptr, snap ? snapValues : nullptr);
+                ImGuizmo::LOCAL, glm::value_ptr(groupTransform), glm::value_ptr(deltaMatrix), snap ? snapValues : nullptr);
 
             if (ImGuizmo::IsUsing())
             {
-                if (entityRC.ParentHandle != 0)
+                for (Entity entity : selectedEntities)
                 {
-                    Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
-                    if (parent)
+                    auto& entityTC = entity.GetComponent<TransformComponent>();
+                    auto& entityRC = entity.GetComponent<RelationshipComponent>();
+
+                    glm::mat4 entityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
+
+                    entityWorldTransform = deltaMatrix * entityWorldTransform;
+
+                    if (entityRC.ParentHandle != 0)
                     {
-                        glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
-                        entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                        Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
+                        if (parent)
+                        {
+                            glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
+                            entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                        }
                     }
-                }
 
-                glm::vec3 translation, rotation, scale;
-                Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
+                    glm::vec3 translation, rotation, scale;
+                    Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
 
-                entityTC.Translation = translation;
-                entityTC.Rotation = rotation;
-                entityTC.Scale = scale;
+                    entityTC.Translation = translation;
+                    entityTC.Rotation = rotation;
+                    entityTC.Scale = scale;
 
-                if (m_SceneState == SceneState::Simulate)
-                {
-                    m_ActiveScene->SyncTransformToPhysics(selectedEntity);
+                    if (m_SceneState == SceneState::Simulate)
+                        m_ActiveScene->SyncTransformToPhysics(entity);
                 }
             }
 
@@ -532,12 +544,13 @@ namespace RXNEditor {
                 {
                     if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
                     {
-                        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-                        if (selectedEntity)
+                        const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
+                        for (Entity entity : selected)
                         {
-                            m_SceneHierarchyPanel.SetSelectedEntity({});
-                            m_ActiveScene->DestroyEntity(selectedEntity);
+                            if (entity)
+                                m_ActiveScene->DestroyEntity(entity);
                         }
+                        m_SceneHierarchyPanel.ClearSelection();
                     }
                     break;
                 }
@@ -545,11 +558,16 @@ namespace RXNEditor {
                 {
                     if (control)
                     {
-                        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-                        if (selectedEntity)
+                        auto selected = m_SceneHierarchyPanel.GetSelectedEntities();
+                        m_SceneHierarchyPanel.ClearSelection();
+
+                        for (Entity entity : selected)
                         {
-                            Entity duplicate = m_ActiveScene->DuplicateEntity(selectedEntity);
-                            m_SceneHierarchyPanel.SetSelectedEntity(duplicate);
+                            if (entity)
+                            {
+                                Entity duplicate = m_ActiveScene->DuplicateEntity(entity);
+                                m_SceneHierarchyPanel.ToggleSelection(duplicate);
+                            }
                         }
                     }
                     break;

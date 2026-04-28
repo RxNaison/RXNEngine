@@ -34,11 +34,43 @@ namespace RXNEditor {
     void SceneHierarchyPanel::SetContext(const Ref<Scene>& context)
     {
         m_Context = context;
-        m_SelectedEntity = {};
+        ClearSelection();
+    }
+
+    void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
+    {
+        m_SelectedEntities.clear();
+
+        if (entity)
+            m_SelectedEntities.push_back(entity);
+
+        m_SelectionContextAnchor = entity;
+    }
+
+    void SceneHierarchyPanel::ToggleSelection(Entity entity)
+    {
+        auto it = std::find(m_SelectedEntities.begin(), m_SelectedEntities.end(), entity);
+        if (it != m_SelectedEntities.end())
+            m_SelectedEntities.erase(it);
+        else
+            m_SelectedEntities.push_back(entity);
+    }
+
+    bool SceneHierarchyPanel::IsEntitySelected(Entity entity) const
+    {
+        return std::find(m_SelectedEntities.begin(), m_SelectedEntities.end(), entity) != m_SelectedEntities.end();
+    }
+
+    void SceneHierarchyPanel::ClearSelection()
+    {
+        m_SelectedEntities.clear();
+        m_SelectionContextAnchor = {};
     }
 
     void SceneHierarchyPanel::OnImGuiRender()
     {
+        m_VisibleNodes.clear();
+
         ImGui::Begin("Scene Hierarchy");
 
         if (m_Context)
@@ -68,14 +100,14 @@ namespace RXNEditor {
                     {
                         Entity prefabRoot = PrefabSerializer::Deserialize(m_Context, path);
                         if (prefabRoot)
-							m_SelectedEntity = prefabRoot;
+							SetSelectedEntity(prefabRoot);
                     }
                 }
                 ImGui::EndDragDropTarget();
             }
 
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-                m_SelectedEntity = {};
+                ClearSelection();
 
             if (ImGui::BeginPopupContextItem("EmptySpacePopup", ImGuiPopupFlags_MouseButtonRight))
             {
@@ -97,8 +129,8 @@ namespace RXNEditor {
                 ImGui::EndDragDropTarget();
             }
 
-            if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
-                m_SelectedEntity = {};
+            if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
+                ClearSelection();
 
             if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
             {
@@ -111,19 +143,31 @@ namespace RXNEditor {
         ImGui::End();
 
         ImGui::Begin("Properties");
-        if (m_SelectedEntity)
+        if (m_SelectedEntities.size() == 1)
         {
-            if (m_SelectedEntity.IsValid())
-                DrawComponents(m_SelectedEntity);
+            if (m_SelectedEntities[0].IsValid())
+                DrawComponents(m_SelectedEntities[0]);
             else
-                m_SelectedEntity = {};
+                ClearSelection();
+        }
+        else if (m_SelectedEntities.size() > 1)
+        {
+            ImGui::Text("Multiple Entities Selected (%zu)", m_SelectedEntities.size());
+            ImGui::Separator();
+            if (ImGui::Button("Delete All Selected", ImVec2(ImGui::GetContentRegionAvail().x, 30.0f)))
+            {
+                for (Entity e : m_SelectedEntities)
+                    m_Context->DestroyEntity(e);
+                ClearSelection();
+            }
         }
         ImGui::End();
     }
 
     Entity SceneHierarchyPanel::ResolvePickedEntity(Entity entity)
     {
-        if (!entity) return {};
+        if (!entity)
+            return {};
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
@@ -147,7 +191,10 @@ namespace RXNEditor {
         auto& tag = entity.GetComponent<TagComponent>().Tag;
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
-        ImGuiTreeNodeFlags flags = ((m_SelectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+        m_VisibleNodes.push_back(entity);
+
+        bool isSelected = IsEntitySelected(entity);
+        ImGuiTreeNodeFlags flags = (isSelected ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
         flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 
         if (rc.Children.empty())
@@ -183,7 +230,49 @@ namespace RXNEditor {
         if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
             if (!ImGui::IsMouseDragPastThreshold(ImGuiMouseButton_Left))
-                m_SelectedEntity = entity;
+            {
+                if (ImGui::GetIO().KeyShift && m_SelectionContextAnchor)
+                {
+                    int startIndex = -1, endIndex = -1;
+
+                    for (int i = 0; i < (int)m_VisibleNodes.size(); i++)
+                    {
+                        if (m_VisibleNodes[i] == m_SelectionContextAnchor)
+                            startIndex = i;
+
+                        if (m_VisibleNodes[i] == entity)
+                            endIndex = i;
+                    }
+
+                    if (startIndex != -1 && endIndex != -1)
+                    {
+                        if (!ImGui::GetIO().KeyCtrl)
+                            m_SelectedEntities.clear();
+
+                        int minIdx = std::min(startIndex, endIndex);
+                        int maxIdx = std::max(startIndex, endIndex);
+
+                        for (int i = minIdx; i <= maxIdx; i++)
+                        {
+                            if (!IsEntitySelected(m_VisibleNodes[i]))
+                                m_SelectedEntities.push_back(m_VisibleNodes[i]);
+                        }
+                    }
+                    else
+                    {
+                        SetSelectedEntity(entity);
+                    }
+                }
+                else if (ImGui::GetIO().KeyCtrl)
+                {
+                    ToggleSelection(entity);
+                    m_SelectionContextAnchor = entity;
+                }
+                else
+                {
+                    SetSelectedEntity(entity);
+                }
+            }
         }
 
         bool entityDeleted = false;
@@ -225,8 +314,8 @@ namespace RXNEditor {
         if (entityDeleted)
         {
             m_Context->DestroyEntity(entity);
-            if (m_SelectedEntity == entity)
-                m_SelectedEntity = {};
+            if (isSelected)
+                ToggleSelection(entity);
         }
     }
 
@@ -255,19 +344,20 @@ namespace RXNEditor {
 
         if (ImGui::BeginPopup("AddComponent"))
         {
-            ShowAddComponentEntry<CameraComponent>("Camera", m_SelectedEntity);
-            ShowAddComponentEntry<StaticMeshComponent>("Mesh", m_SelectedEntity);
-            ShowAddComponentEntry<DirectionalLightComponent>("Directional Light", m_SelectedEntity);
-            ShowAddComponentEntry<PointLightComponent>("Point Light", m_SelectedEntity);
-            ShowAddComponentEntry<SpotLightComponent>("Spot Light", m_SelectedEntity);
-            ShowAddComponentEntry<RigidbodyComponent>("Rigidbody", m_SelectedEntity);
-            ShowAddComponentEntry<BoxColliderComponent>("Box Collider", m_SelectedEntity);
-            ShowAddComponentEntry<SphereColliderComponent>("Sphere Collider", m_SelectedEntity);
-            ShowAddComponentEntry<CapsuleColliderComponent>("Capsule Collider", m_SelectedEntity);
-            ShowAddComponentEntry<MeshColliderComponent>("Mesh Collider", m_SelectedEntity);
-            ShowAddComponentEntry<ScriptComponent>("Script Component", m_SelectedEntity, m_SelectedEntity.GetComponent<TagComponent>().Tag);
-            ShowAddComponentEntry<CharacterControllerComponent>("Character Controller", m_SelectedEntity);
+			Entity selectedEntity = GetSelectedEntity();
 
+            ShowAddComponentEntry<CameraComponent>("Camera", selectedEntity);
+            ShowAddComponentEntry<StaticMeshComponent>("Mesh", selectedEntity);
+            ShowAddComponentEntry<DirectionalLightComponent>("Directional Light", selectedEntity);
+            ShowAddComponentEntry<PointLightComponent>("Point Light", selectedEntity);
+            ShowAddComponentEntry<SpotLightComponent>("Spot Light", selectedEntity);
+            ShowAddComponentEntry<RigidbodyComponent>("Rigidbody", selectedEntity);
+            ShowAddComponentEntry<BoxColliderComponent>("Box Collider", selectedEntity);
+            ShowAddComponentEntry<SphereColliderComponent>("Sphere Collider", selectedEntity);
+            ShowAddComponentEntry<CapsuleColliderComponent>("Capsule Collider", selectedEntity);
+            ShowAddComponentEntry<MeshColliderComponent>("Mesh Collider", selectedEntity);
+            ShowAddComponentEntry<ScriptComponent>("Script Component", selectedEntity, selectedEntity.GetComponent<TagComponent>().Tag);
+            ShowAddComponentEntry<CharacterControllerComponent>("Character Controller", selectedEntity);
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();

@@ -46,7 +46,7 @@ namespace RXNEngine {
         void SetScene(Ref<Scene>& scene) { m_Scene = scene; }
         Ref<Scene>& GetScene() { return m_Scene; }
 
-        void RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, Entity selectedEntity = {});
+        void RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
         void RenderRuntime(uint32_t targetWidth, uint32_t targetHeight);
 
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }
