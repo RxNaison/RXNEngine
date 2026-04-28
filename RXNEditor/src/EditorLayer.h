@@ -63,6 +63,7 @@ namespace RXNEditor {
 		glm::vec2 m_ViewportBounds[2];
 		bool m_ViewportFocused = false;
 		bool m_ViewportHovered = false;
+		bool m_AllowViewportCamera = false;
 
 		SceneState m_SceneState = SceneState::Edit;
 

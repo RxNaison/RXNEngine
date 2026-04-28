@@ -46,6 +46,8 @@ namespace RXNEditor {
                 auto physMat = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(filepath);
                 m_PhysicsMaterialEditorPanel.SetContext(physMat, filepath);
             });
+
+        Application::Get().GetImGuiLayer()->BlockEvents(false);
 	}
 
 	void EditorLayer::OnDetach()
@@ -58,18 +60,30 @@ namespace RXNEditor {
 
         Application::Get().GetSubsystem<Renderer>()->ResetStats();
 
+        auto inputSys = Application::Get().GetSubsystem<Input>();
+        bool isAnyMouseButtonDown = inputSys->IsMouseButtonPressed(MouseCode::ButtonRight) ||
+            inputSys->IsMouseButtonPressed(MouseCode::ButtonMiddle) ||
+            inputSys->IsMouseButtonPressed(MouseCode::ButtonLeft);
+
+        if (!isAnyMouseButtonDown)
+            m_AllowViewportCamera = m_ViewportHovered;
+
         switch (m_SceneState)
         {
             case SceneState::Edit:
             {
-                m_EditorCamera->OnUpdate(deltaTime);
+                if (m_AllowViewportCamera)
+                    m_EditorCamera->OnUpdate(deltaTime);
+
                 m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
                 Application::Get().GetSubsystem<ScriptEngine>()->ReloadIfModified(deltaTime);
                 break;
             }
             case SceneState::Simulate:
             {
-                m_EditorCamera->OnUpdate(deltaTime);
+                if (m_AllowViewportCamera)
+                    m_EditorCamera->OnUpdate(deltaTime);
+
                 m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
                 break;
             }
@@ -96,7 +110,8 @@ namespace RXNEditor {
 	{
         OPTICK_EVENT();
 
-        m_EditorCamera->OnEvent(event);
+        if (m_ViewportHovered)
+            m_EditorCamera->OnEvent(event);
 
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e)->bool { return OnKeyPressed(e); });
@@ -255,11 +270,6 @@ namespace RXNEditor {
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
-
-        if(!ImGui::IsAnyItemActive())
-            Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
-        else
-            Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered);
 
         ImVec2 viewportSize = ImGui::GetContentRegionAvail();
         const auto& renderTargetSpec = m_SceneRenderer->GetFinalPass()->GetSpecification();
@@ -428,8 +438,10 @@ namespace RXNEditor {
         if (e.GetRepeatCount() > 1)
             return false;
 
-        int key = e.GetKeyCode();
+        if (ImGui::GetIO().WantTextInput)
+            return false;
 
+        int key = e.GetKeyCode();
         auto inputSys = Application::Get().GetSubsystem<Input>();
 
         bool control = inputSys->IsKeyPressed(KeyCode::LeftControl) || inputSys->IsKeyPressed(KeyCode::RightControl);
@@ -542,16 +554,13 @@ namespace RXNEditor {
                 }
                 case KeyCode::Delete:
                 {
-                    if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
+                    const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
+                    for (Entity entity : selected)
                     {
-                        const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
-                        for (Entity entity : selected)
-                        {
-                            if (entity)
-                                m_ActiveScene->DestroyEntity(entity);
-                        }
-                        m_SceneHierarchyPanel.ClearSelection();
+                        if (entity)
+                            m_ActiveScene->DestroyEntity(entity);
                     }
+                    m_SceneHierarchyPanel.ClearSelection();
                     break;
                 }
                 case KeyCode::D:
