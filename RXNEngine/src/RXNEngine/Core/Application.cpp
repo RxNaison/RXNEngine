@@ -15,7 +15,8 @@ namespace RXNEngine {
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application(const WindowProps& props)
+	Application::Application(const WindowProps& props, ApplicationCommandLineArgs args)
+		: m_CommandLineArgs(args) 
 	{
 		RXN_PROFILE_SCOPE();
 

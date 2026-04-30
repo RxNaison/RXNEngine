@@ -4,21 +4,34 @@
 #include "MiniaudioBackend.h"
 
 namespace RXNEngine {
+
     void AudioSystem::Init()
     {
-        bool useFMOD = true;
+    }
 
-        if (useFMOD)
+    void AudioSystem::ApplyProjectSettings(bool useFMOD)
+    {
+        if (m_Backend)
+            m_Backend->Shutdown();
+
+        m_UsingFMOD = useFMOD;
+        if (m_UsingFMOD)
+        {
+            RXN_CORE_INFO("AudioSystem: Booting FMOD Studio Backend.");
             m_Backend = CreateScope<FMODBackend>();
+        }
         else
+        {
+            RXN_CORE_INFO("AudioSystem: Booting Miniaudio Backend.");
             m_Backend = CreateScope<MiniaudioBackend>();
-
+        }
         m_Backend->Init();
     }
 
     void AudioSystem::Shutdown()
     {
-        m_Backend->Shutdown();
+        if (m_Backend)
+            m_Backend->Shutdown();
     }
 
     void AudioSystem::LoadFMODBank(const std::string& bankFilePath)

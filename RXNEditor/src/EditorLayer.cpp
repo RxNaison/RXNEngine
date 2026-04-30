@@ -2,7 +2,9 @@
 #include "EditorLayer.h"
 #include "RXNEngine/Asset/ModelImporter.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
-
+#include "RXNEngine/Audio/AudioSystem.h"
+#include "RXNEngine/Project/Project.h"
+#include "RXNEngine/Project/ProjectSerializer.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -47,8 +49,44 @@ namespace RXNEditor {
                 auto physMat = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(filepath);
                 m_PhysicsMaterialEditorPanel.SetContext(physMat, filepath);
             });
+        m_LauncherPanel.SetProjectLoadedCallback([this](Ref<Project> project)
+            {
+                Application::Get().GetSubsystem<AudioSystem>()->ApplyProjectSettings(project->GetConfig().UseFMOD);
+                m_ContentBrowserPanel.Init();
+
+                if (!project->GetConfig().StartScene.empty())
+                    OpenScene((Project::GetProjectDirectory() / project->GetConfig().StartScene).string());
+                else
+                    NewScene();
+            });
 
         Application::Get().GetImGuiLayer()->BlockEvents(false);
+
+        auto cmdArgs = Application::Get().GetCommandLineArgs();
+        if (cmdArgs.Count > 1)
+        {
+            std::filesystem::path projectPath = cmdArgs[1];
+
+            if (projectPath.extension() == ".rxnproj" && std::filesystem::exists(projectPath))
+            {
+                Ref<Project> loadedProject = Project::New();
+                ProjectSerializer serializer(loadedProject);
+
+                if (serializer.Deserialize(projectPath))
+                {
+                    RXN_CORE_INFO("Command-Line Launch: Loading project {0}", projectPath.string());
+
+                    m_LauncherPanel.AddRecentProject(projectPath.string());
+                    Application::Get().GetSubsystem<AudioSystem>()->ApplyProjectSettings(loadedProject->GetConfig().UseFMOD);
+                    m_ContentBrowserPanel.Init();
+
+                    if (!loadedProject->GetConfig().StartScene.empty())
+                        OpenScene((Project::GetProjectDirectory() / loadedProject->GetConfig().StartScene).string());
+                    else
+                        NewScene();
+                }
+            }
+        }
 	}
 
 	void EditorLayer::OnDetach()
@@ -60,6 +98,14 @@ namespace RXNEditor {
         RXN_PROFILE_SCOPE();
 
         Application::Get().GetSubsystem<Renderer>()->ResetStats();
+
+        if (!Project::GetActive())
+        {
+            RenderCommand::BindDefaultRenderTarget();
+            RenderCommand::SetClearColor({ 0.1f, 0.105f, 0.11f, 1.0f });
+            RenderCommand::Clear();
+            return;
+        }
 
         auto inputSys = Application::Get().GetSubsystem<Input>();
         bool isAnyMouseButtonDown = inputSys->IsMouseButtonPressed(MouseCode::ButtonRight) ||
@@ -111,6 +157,9 @@ namespace RXNEditor {
 	{
         RXN_PROFILE_SCOPE();
 
+        if (!Project::GetActive())
+            return;
+
         if (m_ViewportHovered)
             m_EditorCamera->OnEvent(event);
 
@@ -161,6 +210,12 @@ namespace RXNEditor {
 	void EditorLayer::OnImGuiRenderer()
 	{
         RXN_PROFILE_SCOPE();
+
+        if (!Project::GetActive())
+        {
+            m_LauncherPanel.OnImGuiRender();
+            return;
+        }
 
         static bool opt_fullscreen = true;
         static bool opt_padding = false;
@@ -641,6 +696,19 @@ namespace RXNEditor {
         {
             SceneSerializer m_SceneSerializer(m_ActiveScene);
             m_SceneSerializer.Serialize(path);
+
+            m_ActiveScenePath = path;
+
+            if (Project::GetActive())
+            {
+                std::filesystem::path relativePath = std::filesystem::relative(path, Project::GetProjectDirectory());
+                if (Project::GetConfig().StartScene != relativePath)
+                {
+                    Project::GetConfig().StartScene = relativePath;
+                    ProjectSerializer projectSerializer(Project::GetActive());
+                    projectSerializer.Serialize(Project::GetProjectFilePath());
+                }
+            }
         }
     }
 
@@ -654,12 +722,24 @@ namespace RXNEditor {
             m_EditorScene = CreateRef<Scene>();
             SceneSerializer m_SceneSerializer(m_EditorScene);
             m_SceneSerializer.Deserialize(path);
+
             m_ActiveScenePath = path;
 
             m_ActiveScene = m_EditorScene;
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
             m_SceneRenderer->SetScene(m_ActiveScene);
             m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
+
+            if (Project::GetActive())
+            {
+                std::filesystem::path relativePath = std::filesystem::relative(path, Project::GetProjectDirectory());
+                if (Project::GetConfig().StartScene != relativePath)
+                {
+                    Project::GetConfig().StartScene = relativePath;
+                    ProjectSerializer projectSerializer(Project::GetActive());
+                    projectSerializer.Serialize(Project::GetProjectFilePath());
+                }
+            }
         }
     }
     void EditorLayer::NewScene()
@@ -687,6 +767,8 @@ namespace RXNEditor {
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
+
+        m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
 
         if (selectedUUID != 0)
             m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));
@@ -728,6 +810,8 @@ namespace RXNEditor {
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
+
+        m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
 
         if (selectedUUID != 0)
             m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));

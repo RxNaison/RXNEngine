@@ -4,6 +4,7 @@
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
 #include "RXNEngine/Serialization/PhysicsMaterialSerializer.h"
+#include "RXNEngine/Project/Project.h"
 
 #include <imgui.h>
 
@@ -11,14 +12,16 @@ using namespace RXNEngine;
 
 namespace RXNEditor {
 
-    extern const std::filesystem::path g_AssetPath = "assets";
-
     ContentBrowserPanel::ContentBrowserPanel()
-        : m_BaseDirectory(g_AssetPath), m_CurrentDirectory(g_AssetPath)
     {
         m_DirectoryIcon = RXNEngine::Texture2D::Create("res/icons/Directory.png");
         m_FileIcon = RXNEngine::Texture2D::Create("res/icons/File.png");
+    }
 
+    void ContentBrowserPanel::Init()
+    {
+        m_BaseDirectory = Project::GetAssetDirectory();
+        m_CurrentDirectory = m_BaseDirectory;
         Refresh();
     }
 
@@ -188,7 +191,8 @@ namespace RXNEditor {
             ImGui::SameLine();
         }
 
-        ImGui::Text("%s", m_CurrentDirectory.string().c_str());
+        std::filesystem::path relativePath = std::filesystem::relative(m_CurrentDirectory, Project::GetProjectDirectory());
+        ImGui::Text("%s", relativePath.string().c_str());
 
         ImGui::SameLine(ImGui::GetWindowWidth() - 250.0f);
         ImGui::SetNextItemWidth(230.0f);

@@ -16,6 +16,8 @@ namespace RXNEditor {
     {
     public:
         ContentBrowserPanel();
+        void Init();
+
         void OnImGuiRender();
 
         using MaterialOpenCallbackFn = std::function<void(const std::string&)>;

@@ -8,7 +8,8 @@ namespace RXNEditor {
 	class RXNEditor : public Application
 	{
 	public:
-		RXNEditor(const RXNEngine::WindowProps& props) : Application(props)
+		RXNEditor(const RXNEngine::WindowProps& props, RXNEngine::ApplicationCommandLineArgs args)
+			: Application(props, args) 
 		{
 			PushLayer(new EditorLayer());
 		}
@@ -16,7 +17,8 @@ namespace RXNEditor {
 }
 
 namespace RXNEngine {
-	Application* CreateApplication()
+
+	Application* CreateApplication(ApplicationCommandLineArgs args)
 	{
 		RXNEngine::WindowProps props;
 		props.Title = "RXNEngine Editor";
@@ -24,6 +26,6 @@ namespace RXNEngine {
 		props.Height = 900;
 		props.Mode = RXNEngine::WindowMode::Maximized;
 
-		return new RXNEditor::RXNEditor(props);
+		return new RXNEditor::RXNEditor(props, args);
 	}
 }

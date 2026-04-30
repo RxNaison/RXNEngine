@@ -1,5 +1,10 @@
 #include "EnvironmentPanel.h"
+
 #include "UI.h"
+#include "RXNEngine/Project/Project.h"
+#include "RXNEngine/Project/ProjectSerializer.h"
+#include "RXNEngine/Audio/AudioSystem.h"
+#include "RXNEngine/Core/Application.h"
 
 #include <imgui.h>
 
@@ -28,6 +33,24 @@ namespace RXNEditor {
 		float intensity = m_Context->GetScene()->GetSkyboxIntensity();
 		if (UI::DrawFloatControl("Skybox Intensity", intensity, 0.05f, 0.0f, 10.0f))
 			m_Context->GetScene()->SetSkyboxIntensity(intensity);
+
+		ImGui::Separator();
+		ImGui::Text("Project Settings");
+
+		bool useFMOD = RXNEngine::Project::GetConfig().UseFMOD;
+
+		if (UI::DrawCheckbox("Use FMOD Backend", useFMOD))
+		{
+			RXNEngine::Project::GetConfig().UseFMOD = useFMOD;
+
+			RXNEngine::ProjectSerializer serializer(RXNEngine::Project::GetActive());
+			serializer.Serialize(RXNEngine::Project::GetProjectFilePath());
+
+			RXNEngine::Application::Get().GetSubsystem<RXNEngine::AudioSystem>()->ApplyProjectSettings(useFMOD);
+		}
+
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Toggle between FMOD Studio (Premium) and Miniaudio (Open-Source) backends.");
 
 		ImGui::End();
 	}

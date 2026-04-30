@@ -6,6 +6,7 @@
 #include "EnvironmentPanel.h"
 #include "MaterialEditorPanel.h"
 #include "PhysicsMaterialEditorPanel.h"
+#include "LauncherPanel.h"
 #include "RXNEngine/Asset/ModelImporter.h"
 
 using namespace RXNEngine;
@@ -59,6 +60,7 @@ namespace RXNEditor {
 		EnvironmentPanel m_EnvironmentPanel;
 		MaterialEditorPanel m_MaterialEditorPanel;
 		PhysicsMaterialEditorPanel m_PhysicsMaterialEditorPanel;
+		LauncherPanel m_LauncherPanel;
 
 		glm::vec2 m_ViewportBounds[2];
 		bool m_ViewportFocused = false;

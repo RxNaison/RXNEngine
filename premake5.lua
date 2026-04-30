@@ -202,7 +202,8 @@ project "RXNEditor"
     
     defines
     {
-         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING"
+         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+         "YAML_CPP_STATIC_DEFINE"
     }
     
     includedirs

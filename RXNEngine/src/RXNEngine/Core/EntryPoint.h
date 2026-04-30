@@ -4,11 +4,11 @@
 
 #ifdef RXN_PLATFORM_WINDOWS
 
-extern RXNEngine::Application* RXNEngine::CreateApplication();
+extern RXNEngine::Application* RXNEngine::CreateApplication(RXNEngine::ApplicationCommandLineArgs args);
 
 int main(int argc, char** argv)
 {
-	auto app = RXNEngine::CreateApplication();
+	auto app = RXNEngine::CreateApplication({ argc, argv });
 	app->Run();
 	delete app;
 }
