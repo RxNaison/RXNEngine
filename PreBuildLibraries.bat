@@ -38,5 +38,15 @@ cmake --build . --config checked
 cmake --build . --config release
 cd ../../../..
 
+cd CoACD
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DTBB_BUILD_SHARED=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DOPENVDB_CORE_SHARED=OFF -DTBB_TEST=OFF -DCMAKE_CXX_FLAGS="/MD /EHsc /openmp"
+cmake --build . --config Release
+cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DTBB_BUILD_SHARED=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DOPENVDB_CORE_SHARED=OFF -DTBB_TEST=OFF -DCMAKE_CXX_FLAGS="/MDd /EHsc /openmp"
+cmake --build . --config Debug
+cd ../..
+
 echo All libraries built successfully!
 pause

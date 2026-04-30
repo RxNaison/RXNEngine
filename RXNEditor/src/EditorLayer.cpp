@@ -416,9 +416,27 @@ namespace RXNEditor {
             ImGui::Checkbox("Flip UVs (For OpenGL Textures)", &m_ImportSettings.FlipUVs);
             ImGui::Separator();
 
-            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Aggressive Optimizations (May break hierarchy)");
+            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Aggressive Optimizations");
             ImGui::Checkbox("Optimize Graph (Merge Nodes)", &m_ImportSettings.OptimizeGraph);
             ImGui::Checkbox("Optimize Meshes (Merge Geometries)", &m_ImportSettings.OptimizeMeshes);
+            ImGui::Checkbox("Generate CoACD Physics Hulls", &m_ImportSettings.GenerateCoACDHulls);
+
+            if (m_ImportSettings.GenerateCoACDHulls)
+            {
+                ImGui::Indent();
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f), "Warning: Asset baking is a heavy process.");
+                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f), "It may freeze the editor for a few minutes.");
+
+                ImGui::SliderFloat("Threshold", &m_ImportSettings.CoACD_Threshold, 0.01f, 1.0f);
+                ImGui::SliderInt("Max Hulls", &m_ImportSettings.CoACD_MaxHulls, -1, 100);
+                ImGui::SliderInt("Voxel Repair Res", &m_ImportSettings.CoACD_PrepResolution, 20, 100);
+
+                ImGui::Text("MCTS Search (Lower = Faster, Worse Quality)");
+                ImGui::SliderInt("Search Nodes", &m_ImportSettings.CoACD_MctsNodes, 10, 40);
+                ImGui::SliderInt("Search Iters", &m_ImportSettings.CoACD_MctsIterations, 60, 2000);
+                ImGui::SliderInt("Search Depth", &m_ImportSettings.CoACD_MctsMaxDepth, 2, 7);
+                ImGui::Unindent();
+            }
             ImGui::Separator();
 
             if (ImGui::Button("Import", ImVec2(120, 0)))

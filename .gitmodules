@@ -22,3 +22,6 @@
 [submodule "RXNEngine/vendor/SDL"]
 	path = RXNEngine/vendor/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "RXNEngine/vendor/CoACD"]
+	path = RXNEngine/vendor/CoACD
+	url = https://github.com/SarahWeiii/CoACD.git

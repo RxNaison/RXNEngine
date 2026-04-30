@@ -1020,6 +1020,105 @@ namespace RXNEngine {
                     renderSys->DrawWireCapsule(transform, radius, height, glm::vec4(0.0f, 0.8f, 1.0f, 1.0f));
                 }
             }
+            {
+                auto view = m_Registry.view<TransformComponent, MeshColliderComponent>();
+                for (auto entityID : view)
+                {
+                    Entity entity = { entityID, this };
+                    auto [tc, mc] = view.get<TransformComponent, MeshColliderComponent>(entityID);
+
+                    glm::mat4 worldTransform = GetWorldTransform(entity);
+
+                    Ref<StaticMesh> collisionMesh = nullptr;
+
+                    if (!mc.OverrideAssetPath.empty())
+                    {
+                        collisionMesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(mc.OverrideAssetPath);
+                    }
+                    else
+                    {
+                        std::function<Ref<StaticMesh>(Entity)> findMesh = [&](Entity e) -> Ref<StaticMesh>
+                            {
+                                if (e.HasComponent<StaticMeshComponent>())
+                                    return e.GetComponent<StaticMeshComponent>().Mesh;
+
+                                if (e.HasComponent<RelationshipComponent>()) 
+                                {
+                                    for (UUID childID : e.GetComponent<RelationshipComponent>().Children)
+                                    {
+                                        Entity child = GetEntityByUUID(childID);
+                                        if (child)
+                                        {
+                                            Ref<StaticMesh> m = findMesh(child);
+
+                                            if (m)
+                                                return m;
+                                        }
+                                    }
+                                }
+                                return nullptr;
+                            };
+                        collisionMesh = findMesh(entity);
+                    }
+
+                    if (collisionMesh)
+                    {
+                        glm::vec4 color = mc.IsConvex ? glm::vec4(0.8f, 0.2f, 0.8f, 1.0f) : glm::vec4(0.2f, 0.8f, 0.8f, 1.0f);
+
+                        if (mc.IsConvex)
+                        {
+                            bool hasHulls = false;
+                            for (const auto& submesh : collisionMesh->GetSubmeshes())
+                            {
+                                if (!submesh.ConvexHulls.empty())
+                                {
+                                    hasHulls = true;
+                                    for (const auto& hull : submesh.ConvexHulls)
+                                    {
+                                        for (size_t i = 0; i < hull.Indices.size(); i += 3)
+                                        {
+                                            glm::vec3 p0 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(hull.Vertices[hull.Indices[i]], 1.0f));
+                                            glm::vec3 p1 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(hull.Vertices[hull.Indices[i + 1]], 1.0f));
+                                            glm::vec3 p2 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(hull.Vertices[hull.Indices[i + 2]], 1.0f));
+
+                                            renderSys->DrawLine(p0, p1, color);
+                                            renderSys->DrawLine(p1, p2, color);
+                                            renderSys->DrawLine(p2, p0, color);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!hasHulls)
+                                renderSys->DrawWireBox(worldTransform, color);
+                        }
+                        else
+                        {
+                            // Warning: This can be heavy if the mesh is 100k+ polys!
+                            for (const auto& submesh : collisionMesh->GetSubmeshes())
+                            {
+                                const auto& vertices = collisionMesh->GetVertices();
+                                const auto& indices = collisionMesh->GetIndices();
+
+                                for (size_t i = 0; i < submesh.IndexCount; i += 3)
+                                {
+                                    uint32_t idx0 = indices[submesh.BaseIndex + i];
+                                    uint32_t idx1 = indices[submesh.BaseIndex + i + 1];
+                                    uint32_t idx2 = indices[submesh.BaseIndex + i + 2];
+
+                                    glm::vec3 p0 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(vertices[idx0].Position, 1.0f));
+                                    glm::vec3 p1 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(vertices[idx1].Position, 1.0f));
+                                    glm::vec3 p2 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(vertices[idx2].Position, 1.0f));
+
+                                    renderSys->DrawLine(p0, p1, color);
+                                    renderSys->DrawLine(p1, p2, color);
+                                    renderSys->DrawLine(p2, p0, color);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         renderSys->EndScene();
@@ -1448,13 +1547,54 @@ namespace RXNEngine {
 
                 if (mc.IsConvex)
                 {
-                    physx::PxConvexMesh* convexMesh = physicsSys->CreateConvexMesh(collisionMesh);
-                    if (convexMesh)
-                    {
-                        physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
-                        physx::PxConvexMeshGeometry geom(convexMesh, scale);
+                    bool builtCompound = false;
 
-                        shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
+                    for (const auto& submesh : collisionMesh->GetSubmeshes())
+                    {
+                        if (!submesh.ConvexHulls.empty())
+                        {
+                            builtCompound = true;
+                            for (const auto& hull : submesh.ConvexHulls)
+                            {
+                                std::vector<glm::vec3> worldHullVertices(hull.Vertices.size());
+                                for (size_t i = 0; i < hull.Vertices.size(); i++)
+                                    worldHullVertices[i] = glm::vec3(submesh.LocalTransform * glm::vec4(hull.Vertices[i], 1.0f));
+
+                                physx::PxConvexMesh* convexMesh = physicsSys->CreateConvexMesh(worldHullVertices);
+                                if (convexMesh)
+                                {
+                                    physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
+                                    physx::PxConvexMeshGeometry geom(convexMesh, scale);
+
+                                    shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
+
+                                    if (mc.IsTrigger)
+                                    {
+                                        shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+                                        shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
+                                    }
+                                    mc.RuntimeShape = shape;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!builtCompound)
+                    {
+                        physx::PxConvexMesh* convexMesh = physicsSys->CreateConvexMesh(collisionMesh);
+                        if (convexMesh)
+                        {
+                            physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
+                            physx::PxConvexMeshGeometry geom(convexMesh, scale);
+
+                            shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
+                            if (mc.IsTrigger)
+                            {
+                                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+                                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
+                            }
+                            mc.RuntimeShape = shape;
+                        }
                     }
                 }
                 else

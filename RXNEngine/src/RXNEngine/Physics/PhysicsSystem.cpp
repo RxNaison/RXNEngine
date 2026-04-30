@@ -79,6 +79,24 @@ namespace RXNEngine {
         return convexMesh;
     }
 
+    physx::PxConvexMesh* PhysicsSystem::CreateConvexMesh(const std::vector<glm::vec3>& vertices)
+    {
+        if (vertices.empty())
+            return nullptr;
+
+        physx::PxConvexMeshDesc convexDesc;
+        convexDesc.points.count = (physx::PxU32)vertices.size();
+        convexDesc.points.stride = sizeof(glm::vec3);
+        convexDesc.points.data = vertices.data();
+        convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
+        physx::PxTolerancesScale scale;
+        physx::PxCookingParams params(scale);
+
+        physx::PxConvexMeshCookingResult::Enum result;
+        return PxCreateConvexMesh(params, convexDesc, m_Physics->getPhysicsInsertionCallback(), &result);
+    }
+
     physx::PxTriangleMesh* PhysicsSystem::CreateTriangleMesh(Ref<StaticMesh> mesh)
     {
         const auto& vertices = mesh->GetVertices();

@@ -16,6 +16,14 @@ namespace RXNEngine {
 		bool FlipUVs = false;
 		bool OptimizeGraph = false; 
 		bool OptimizeMeshes = false;
+
+		bool GenerateCoACDHulls = false;
+		float CoACD_Threshold = 0.05f;
+		int CoACD_MaxHulls = -1;
+		int CoACD_PrepResolution = 50;
+		int CoACD_MctsNodes = 20;
+		int CoACD_MctsIterations = 150;
+		int CoACD_MctsMaxDepth = 3;
 	};
 
 	struct MaterialDesc
@@ -45,8 +53,10 @@ namespace RXNEngine {
 		static bool LoadModelData(const std::string& filepath, ImporterData& outData, const ModelImportSettings& settings = ModelImportSettings());
 		static Ref<StaticMesh> BuildMeshFromData(const ImporterData& data, const std::string& modelFilepath);
 	private:
-		static void ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data, const glm::mat4& parentTransform, const std::string& parentNodeName);
-		static void ProcessMesh(aiMesh* mesh, const aiScene* scene, ImporterData& data, const std::string& nodeName, const glm::mat4& localTransform);
+		static void ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data,
+			const glm::mat4& parentTransform, const std::string& parentNodeName, const ModelImportSettings& settings);
+		static void ProcessMesh(aiMesh* mesh, const aiScene* scene, ImporterData& data,
+			const std::string& nodeName, const glm::mat4& localTransform, const ModelImportSettings& settings);
 	};
 
 }

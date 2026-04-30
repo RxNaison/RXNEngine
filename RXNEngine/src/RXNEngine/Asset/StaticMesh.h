@@ -16,6 +16,12 @@ namespace RXNEngine {
 		glm::vec2 TexCoord;
 	};
 
+	struct ConvexHullData
+	{
+		std::vector<glm::vec3> Vertices;
+		std::vector<uint32_t> Indices;
+	};
+
 	struct Submesh
 	{
 		uint32_t BaseVertex;
@@ -26,6 +32,7 @@ namespace RXNEngine {
 		AABB BoundingBox;
 		std::string NodeName;
 		glm::mat4 LocalTransform;
+		std::vector<ConvexHullData> ConvexHulls;
 	};
 
 	class StaticMesh

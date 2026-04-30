@@ -17,6 +17,7 @@ namespace RXNEngine {
         inline physx::PxDefaultCpuDispatcher* GetDispatcher() { return m_Dispatcher; }
 
         physx::PxConvexMesh* CreateConvexMesh(Ref<StaticMesh> mesh);
+        physx::PxConvexMesh* CreateConvexMesh(const std::vector<glm::vec3>& vertices);
         physx::PxTriangleMesh* CreateTriangleMesh(Ref<StaticMesh> mesh);
 
     private:

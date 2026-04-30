@@ -38,7 +38,7 @@ namespace RXNEngine {
         const char* magic = "RXN\0";
         out.write(magic, 4);
 
-        uint32_t version = 3;
+        uint32_t version = 4;
         out.write((char*)&version, sizeof(uint32_t));
 
         const auto& vertices = mesh->GetVertices();
@@ -66,6 +66,19 @@ namespace RXNEngine {
             out.write((char*)&submesh.BoundingBox, sizeof(AABB));
             out.write((char*)&submesh.LocalTransform, sizeof(glm::mat4));
             WriteString(out, submesh.NodeName);
+
+            uint32_t hullCount = (uint32_t)submesh.ConvexHulls.size();
+            out.write((char*)&hullCount, sizeof(uint32_t));
+
+            for (const auto& hull : submesh.ConvexHulls)
+            {
+                uint32_t hvCount = (uint32_t)hull.Vertices.size();
+                uint32_t hiCount = (uint32_t)hull.Indices.size();
+                out.write((char*)&hvCount, sizeof(uint32_t));
+                out.write((char*)&hiCount, sizeof(uint32_t));
+                out.write((char*)hull.Vertices.data(), hvCount * sizeof(glm::vec3));
+                out.write((char*)hull.Indices.data(), hiCount * sizeof(uint32_t));
+            }
         }
 
         const auto& materials = mesh->GetMaterials();
@@ -89,7 +102,7 @@ namespace RXNEngine {
 
         uint32_t version;
         in.read((char*)&version, sizeof(uint32_t));
-        if (version != 3)
+        if (version != 4)
         {
             RXN_CORE_WARN("Old model format detected. It will be re-imported.");
             return nullptr;
@@ -118,6 +131,23 @@ namespace RXNEngine {
             in.read((char*)&submeshes[i].BoundingBox, sizeof(AABB));
             in.read((char*)&submeshes[i].LocalTransform, sizeof(glm::mat4));
             submeshes[i].NodeName = ReadString(in);
+
+            uint32_t hullCount;
+            in.read((char*)&hullCount, sizeof(uint32_t));
+            submeshes[i].ConvexHulls.resize(hullCount);
+
+            for (uint32_t h = 0; h < hullCount; h++)
+            {
+                uint32_t hvCount, hiCount;
+                in.read((char*)&hvCount, sizeof(uint32_t));
+                in.read((char*)&hiCount, sizeof(uint32_t));
+
+                submeshes[i].ConvexHulls[h].Vertices.resize(hvCount);
+                submeshes[i].ConvexHulls[h].Indices.resize(hiCount);
+
+                in.read((char*)submeshes[i].ConvexHulls[h].Vertices.data(), hvCount * sizeof(glm::vec3));
+                in.read((char*)submeshes[i].ConvexHulls[h].Indices.data(), hiCount * sizeof(uint32_t));
+            }
         }
 
         uint32_t matCount;

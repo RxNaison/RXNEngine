@@ -22,6 +22,8 @@ IncludeDir["PxShared"] = "RXNEngine/vendor/PhysX/pxshared/include"
 IncludeDir["Tracy"] = "RXNEngine/vendor/tracy/public"
 IncludeDir["CoreCLR"] = "RXNEngine/vendor/coreclr/include"
 IncludeDir["pl_mpeg"] = "RXNEngine/vendor/pl_mpeg/include"
+IncludeDir["CoACD"] = "RXNEngine/vendor/CoACD/public"
+IncludeDir["miniaudio"] = "RXNEngine/vendor/miniaudio/include"
 
 PhysXBinDir = "RXNEngine/vendor/PhysX/physx/bin/win.x86_64.vc143.md"
 
@@ -86,7 +88,9 @@ project "RXNEngine"
         "%{IncludeDir.PxShared}",
         "%{IncludeDir.Tracy}",
         "%{IncludeDir.CoreCLR}",
-        "%{IncludeDir.pl_mpeg}"
+        "%{IncludeDir.pl_mpeg}",
+        "%{IncludeDir.CoACD}",
+        "%{IncludeDir.miniaudio}"
     }
 
     links { "Glad", "Imgui", "opengl32.lib", "ws2_32.lib", "dbghelp.lib" }
@@ -125,7 +129,8 @@ project "RXNEngine"
           PhysXBinDir .. "/debug/PhysXExtensions_static_64.lib",
           PhysXBinDir .. "/debug/PhysXPvdSDK_static_64.lib",
           PhysXBinDir .. "/debug/PhysXCharacterKinematic_static_64.lib",
-          PhysXBinDir .. "/debug/PhysXCooking_64.lib"
+          PhysXBinDir .. "/debug/PhysXCooking_64.lib",
+          "RXNEngine/vendor/CoACD/build/Debug/_coacd.lib"
       }
     filter "configurations:Release"
       defines { "RXN_RELEASE", "NDEBUG", "TRACY_ENABLE" }
@@ -143,7 +148,8 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXExtensions_static_64.lib",
           PhysXBinDir .. "/release/PhysXPvdSDK_static_64.lib",
           PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib",
-          PhysXBinDir .. "/release/PhysXCooking_64.lib"
+          PhysXBinDir .. "/release/PhysXCooking_64.lib",
+          "RXNEngine/vendor/CoACD/build/Release/_coacd.lib"
       }
     filter "configurations:Dist"
       defines { "RXN_DIST", "NDEBUG" }
@@ -161,7 +167,8 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXExtensions_static_64.lib",
           PhysXBinDir .. "/release/PhysXPvdSDK_static_64.lib",
           PhysXBinDir .. "/release/PhysXCharacterKinematic_static_64.lib",
-          PhysXBinDir .. "/release/PhysXCooking_64.lib"
+          PhysXBinDir .. "/release/PhysXCooking_64.lib",
+          "RXNEngine/vendor/CoACD/build/Release/_coacd.lib"
       }
 
 
@@ -222,7 +229,8 @@ project "RXNEditor"
        postbuildcommands
        {
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/debug/*.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Debug/*.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Debug/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Debug/lib_coacd.dll\" \"%{cfg.targetdir}\""
        }
 
     filter "configurations:Release"
@@ -239,7 +247,8 @@ project "RXNEditor"
        postbuildcommands
        {
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\""
        }
 
     filter "configurations:Dist"
@@ -256,7 +265,8 @@ project "RXNEditor"
        postbuildcommands
        {
            "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\""
        }
 
 group "Scripting"

@@ -12,6 +12,8 @@
 #include <assimp/postprocess.h>
 #include <filesystem>
 #include <fstream>
+#include <coacd.h>
+
 
 namespace RXNEngine {
 
@@ -128,7 +130,8 @@ namespace RXNEngine {
 		return mesh;
 	}
 
-	void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data, const glm::mat4& parentTransform, const std::string& parentNodeName)
+	void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data,
+		const glm::mat4& parentTransform, const std::string& parentNodeName, const ModelImportSettings& settings)
 	{
 		glm::mat4 localTransform = parentTransform * AssimpToGLM(node->mTransformation);
 		std::string nodeName = node->mName.C_Str();
@@ -141,16 +144,17 @@ namespace RXNEngine {
 		for (uint32_t i = 0; i < node->mNumMeshes; i++)
 		{
 			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-			ProcessMesh(mesh, scene, data, nodeName, localTransform);
+			ProcessMesh(mesh, scene, data, nodeName, localTransform, settings);
 		}
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++)
 		{
-			ProcessNode(node->mChildren[i], scene, data, localTransform, nodeName);
+			ProcessNode(node->mChildren[i], scene, data, localTransform, nodeName, settings);
 		}
 	}
 
-	void ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* scene, ImporterData& data, const std::string& nodeName, const glm::mat4& localTransform)
+	void ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* scene, ImporterData& data,
+		const std::string& nodeName, const glm::mat4& localTransform, const ModelImportSettings& settings)
 	{
 		Submesh submesh;
 		submesh.NodeName = nodeName;
@@ -193,6 +197,96 @@ namespace RXNEngine {
 			for (uint32_t j = 0; j < face.mNumIndices; j++)
 				data.Indices.push_back(face.mIndices[j] + submesh.BaseVertex);
 		}
+
+		if (settings.GenerateCoACDHulls)
+		{
+			try
+			{
+				CoACD_Mesh coacd_mesh;
+
+				std::vector<double> flat_vertices;
+				flat_vertices.reserve(mesh->mNumVertices * 3);
+				for (uint32_t i = 0; i < mesh->mNumVertices; i++)
+				{
+					flat_vertices.push_back(mesh->mVertices[i].x);
+					flat_vertices.push_back(mesh->mVertices[i].y);
+					flat_vertices.push_back(mesh->mVertices[i].z);
+				}
+				coacd_mesh.vertices_ptr = flat_vertices.data();
+				coacd_mesh.vertices_count = mesh->mNumVertices;
+
+				std::vector<int> flat_indices;
+				flat_indices.reserve(mesh->mNumFaces * 3);
+				for (uint32_t i = 0; i < mesh->mNumFaces; i++) 
+				{
+					aiFace face = mesh->mFaces[i];
+					if (face.mNumIndices == 3)
+					{
+						flat_indices.push_back(face.mIndices[0]);
+						flat_indices.push_back(face.mIndices[1]);
+						flat_indices.push_back(face.mIndices[2]);
+					}
+				}
+				coacd_mesh.triangles_ptr = flat_indices.data();
+				coacd_mesh.triangles_count = flat_indices.size() / 3;
+
+				CoACD_setLogLevel("error");
+
+				CoACD_MeshArray arr = CoACD_run(
+					coacd_mesh,
+					settings.CoACD_Threshold,      // threshold
+					settings.CoACD_MaxHulls,       // max_convex_hull
+					0,                             // preprocess_mode (auto)
+					settings.CoACD_PrepResolution, // prep_resolution
+					2000,                          // sample_resolution
+					settings.CoACD_MctsNodes,      // mcts_nodes
+					settings.CoACD_MctsIterations, // mcts_iteration
+					settings.CoACD_MctsMaxDepth,   // mcts_max_depth
+					false,  // pca
+					true,   // merge
+					false,  // decimate
+					256,    // max_ch_vertex
+					false,  // extrude
+					0.01,   // extrude_margin
+					0,      // apx_mode (0 = Convex Hull)
+					0,      // seed
+					false   // real_metric
+				);
+
+				for (uint64_t i = 0; i < arr.meshes_count; ++i)
+				{
+					ConvexHullData hullData;
+					CoACD_Mesh& m = arr.meshes_ptr[i];
+
+					for (uint64_t v = 0; v < m.vertices_count; ++v)
+					{
+						hullData.Vertices.push_back({
+							(float)m.vertices_ptr[3 * v],
+							(float)m.vertices_ptr[3 * v + 1],
+							(float)m.vertices_ptr[3 * v + 2]
+							});
+					}
+
+					for (uint64_t f = 0; f < m.triangles_count; ++f)
+					{
+						hullData.Indices.push_back((uint32_t)m.triangles_ptr[3 * f]);
+						hullData.Indices.push_back((uint32_t)m.triangles_ptr[3 * f + 1]);
+						hullData.Indices.push_back((uint32_t)m.triangles_ptr[3 * f + 2]);
+					}
+					submesh.ConvexHulls.push_back(hullData);
+				}
+
+				CoACD_freeMeshArray(arr);
+
+				RXN_CORE_INFO("CoACD: Shattered '{0}' into {1} convex hulls (Manifold Auto-Repair Applied).", nodeName, submesh.ConvexHulls.size());
+			}
+			catch (const std::exception& e)
+			{
+				RXN_CORE_WARN("CoACD failed for mesh '{0}': {1}", nodeName, e.what());
+				RXN_CORE_WARN("Falling back to standard Convex Hull generation.");
+			}
+		}
+
 
 		data.Submeshes.push_back(submesh);
 	}
@@ -328,7 +422,7 @@ namespace RXNEngine {
 			outData.Materials.push_back(desc);
 		}
 
-		ProcessNode(scene->mRootNode, scene, outData, glm::mat4(1.0f), "Root");
+		ProcessNode(scene->mRootNode, scene, outData, glm::mat4(1.0f), "Root", settings);
 		return true;
 	}
 
