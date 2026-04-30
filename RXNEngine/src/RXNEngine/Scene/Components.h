@@ -260,6 +260,22 @@ namespace RXNEngine {
 		CharacterControllerComponent(const CharacterControllerComponent&) = default;
 	};
 
+	struct AudioSourceComponent
+	{
+		std::string AudioClipPath = "";
+		bool PlayOnAwake = true;
+		bool Looping = false;
+		float Volume = 1.0f;
+		float MinDistance = 1.0f;
+		float MaxDistance = 50.0f;
+
+		void* RuntimeSound = nullptr;
+		bool IsPlaying = false;
+
+		AudioSourceComponent() = default;
+		AudioSourceComponent(const AudioSourceComponent&) = default;
+	};
+
 	template<typename... Component>
 	struct ComponentGroup {};
 
@@ -278,6 +294,7 @@ namespace RXNEngine {
 		SphereColliderComponent,
 		CapsuleColliderComponent,
 		MeshColliderComponent,
-		CharacterControllerComponent
+		CharacterControllerComponent,
+		AudioSourceComponent
 	>;
 }

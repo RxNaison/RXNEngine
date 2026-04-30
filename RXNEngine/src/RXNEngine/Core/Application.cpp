@@ -9,6 +9,7 @@
 #include "RXNEngine/Physics/PhysicsSystem.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Asset/AssetManager.h"
+#include "RXNEngine/Audio/AudioSystem.h"
 
 namespace RXNEngine {
 
@@ -32,6 +33,7 @@ namespace RXNEngine {
 		AddSubsystem<PhysicsSystem>();
 		AddSubsystem<ScriptEngine>();
 		AddSubsystem<AssetManager>();
+		AddSubsystem<AudioSystem>();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);

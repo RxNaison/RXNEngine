@@ -85,6 +85,16 @@ namespace RXNScriptHost
         public IntPtr Entity_CapsuleCollider_Set;
 
         public IntPtr CharacterController_Move;
+
+        public IntPtr NativeAudioSource_Play;
+        public IntPtr NativeAudioSource_Stop;
+        public IntPtr NativeAudioSource_SetVolume;
+        public IntPtr NativeAudioSource_SetParameter;
+
+        // Audio
+        public IntPtr NativeAudio_PlayOneShot;
+        public IntPtr NativeAudio_LoadBank;
+        public IntPtr NativeAudio_UnloadBank;
     }
 
     public static class Interop

@@ -83,6 +83,16 @@ namespace RXNEngine {
         void* NativeCapsuleCollider_Set = nullptr;
 
         void* NativeCharacterController_Move = nullptr;
+
+        void* NativeAudioSource_Play = nullptr;
+        void* NativeAudioSource_Stop = nullptr;
+        void* NativeAudioSource_SetVolume = nullptr;
+        void* NativeAudioSource_SetParameter = nullptr;
+
+        // Audio
+        void* NativeAudio_PlayOneShot = nullptr;
+        void* NativeAudio_LoadBank = nullptr;
+        void* NativeAudio_UnloadBank = nullptr;
     };
 
     class ScriptInterop

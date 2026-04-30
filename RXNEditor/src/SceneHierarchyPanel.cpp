@@ -358,6 +358,7 @@ namespace RXNEditor {
             ShowAddComponentEntry<MeshColliderComponent>("Mesh Collider", selectedEntity);
             ShowAddComponentEntry<ScriptComponent>("Script Component", selectedEntity, selectedEntity.GetComponent<TagComponent>().Tag);
             ShowAddComponentEntry<CharacterControllerComponent>("Character Controller", selectedEntity);
+            ShowAddComponentEntry<AudioSourceComponent>("Audio Source", selectedEntity);
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();
@@ -834,6 +835,38 @@ namespace RXNEditor {
                     }
                 }
             });
+
+            DrawComponent<AudioSourceComponent>("Audio Source", entity, [](auto& component)
+                {
+                    ImGui::Text("Audio Clip");
+                    ImGui::SameLine(100.0f);
+                    std::string clipName = component.AudioClipPath.empty() ? "None" : component.AudioClipPath.substr(component.AudioClipPath.find_last_of("/\\") + 1);
+
+                    ImGui::Button(clipName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                        {
+                            std::string path = (const char*)payload->Data;
+                            if (path.ends_with(".wav") || path.ends_with(".mp3") || path.ends_with(".flac"))
+                                component.AudioClipPath = path;
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+
+                    if (!component.AudioClipPath.empty())
+                    {
+                        if (ImGui::Button("Clear Audio", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+                            component.AudioClipPath = "";
+                    }
+
+                    ImGui::Separator();
+                    UI::DrawCheckbox("Play On Awake", component.PlayOnAwake);
+                    UI::DrawCheckbox("Looping", component.Looping);
+                    UI::DrawFloatControl("Volume", component.Volume, 0.05f, 0.0f, 10.0f);
+                    UI::DrawFloatControl("Min Distance", component.MinDistance, 0.5f, 0.0f, 1000.0f);
+                    UI::DrawFloatControl("Max Distance", component.MaxDistance, 0.5f, 0.0f, 1000.0f);
+                });
     }
 
     template<typename T, typename UIFunction>

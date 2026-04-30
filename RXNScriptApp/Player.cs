@@ -280,6 +280,8 @@ public class Player : Entity
         BulletsShot++;
         Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
 
+        Audio.PlayOneShot("assets/audio/shoot.wav");
+
         Input.SetGamepadVibration(0, 1.0f, 1.0f);
 
         yield return new WaitForSeconds(0.15f);

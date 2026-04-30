@@ -287,6 +287,22 @@ namespace RXNEngine {
 			out << YAML::EndMap; // ScriptComponent
 		}
 
+		if (entity.HasComponent<AudioSourceComponent>())
+		{
+			out << YAML::Key << "AudioSourceComponent";
+			out << YAML::BeginMap;
+
+			auto& ac = entity.GetComponent<AudioSourceComponent>();
+			out << YAML::Key << "AudioClipPath" << YAML::Value << GetRelativePath(ac.AudioClipPath);
+			out << YAML::Key << "PlayOnAwake" << YAML::Value << ac.PlayOnAwake;
+			out << YAML::Key << "Looping" << YAML::Value << ac.Looping;
+			out << YAML::Key << "Volume" << YAML::Value << ac.Volume;
+			out << YAML::Key << "MinDistance" << YAML::Value << ac.MinDistance;
+			out << YAML::Key << "MaxDistance" << YAML::Value << ac.MaxDistance;
+
+			out << YAML::EndMap;
+		}
+
 		out << YAML::EndMap; // Entity
 	}
 
@@ -591,17 +607,70 @@ namespace RXNEngine {
 
 					switch ((ScriptFieldType)type)
 					{
-						case ScriptFieldType::Float: { float data = field.second["Data"].as<float>(); memcpy(fieldInstance.Data.data(), &data, sizeof(float)); break; }
-						case ScriptFieldType::Bool: { bool data = field.second["Data"].as<bool>(); memcpy(fieldInstance.Data.data(), &data, sizeof(bool)); break; }
-						case ScriptFieldType::Int: { int data = field.second["Data"].as<int>(); memcpy(fieldInstance.Data.data(), &data, sizeof(int)); break; }
-						case ScriptFieldType::Vector2: { glm::vec2 data = field.second["Data"].as<glm::vec2>(); memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec2)); break; }
-						case ScriptFieldType::Vector3: { glm::vec3 data = field.second["Data"].as<glm::vec3>(); memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec3)); break; }
-						case ScriptFieldType::Vector4: { glm::vec4 data = field.second["Data"].as<glm::vec4>(); memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec4)); break; }
-						case ScriptFieldType::Entity: { uint64_t data = field.second["Data"].as<uint64_t>(); memcpy(fieldInstance.Data.data(), &data, sizeof(uint64_t)); break; }
+						case ScriptFieldType::Float:
+						{
+							float data = field.second["Data"].as<float>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(float));
+							break;
+						}
+						case ScriptFieldType::Bool:
+						{
+							bool data = field.second["Data"].as<bool>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(bool));
+							break;
+						}
+						case ScriptFieldType::Int:
+						{
+							int data = field.second["Data"].as<int>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(int));
+							break;
+						}
+						case ScriptFieldType::Vector2:
+						{
+							glm::vec2 data = field.second["Data"].as<glm::vec2>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec2));
+							break;
+						}
+						case ScriptFieldType::Vector3:
+						{
+							glm::vec3 data = field.second["Data"].as<glm::vec3>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec3));
+							break;
+						}
+						case ScriptFieldType::Vector4:
+						{
+							glm::vec4 data = field.second["Data"].as<glm::vec4>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(glm::vec4));
+							break;
+						}
+						case ScriptFieldType::Entity:
+						{
+							uint64_t data = field.second["Data"].as<uint64_t>();
+							memcpy(fieldInstance.Data.data(), &data, sizeof(uint64_t));
+							break;
+						}
 					}
 					sc.FieldInstances[name] = fieldInstance;
 				}
 			}
+		}
+
+		auto audioSourceComponent = entity["AudioSourceComponent"];
+		if (audioSourceComponent)
+		{
+			auto& ac = deserializedEntity.AddComponent<AudioSourceComponent>();
+			if (audioSourceComponent["AudioClipPath"])
+				ac.AudioClipPath = audioSourceComponent["AudioClipPath"].as<std::string>();
+			if (audioSourceComponent["PlayOnAwake"])
+				ac.PlayOnAwake = audioSourceComponent["PlayOnAwake"].as<bool>();
+			if (audioSourceComponent["Looping"])
+				ac.Looping = audioSourceComponent["Looping"].as<bool>();
+			if (audioSourceComponent["Volume"])
+				ac.Volume = audioSourceComponent["Volume"].as<float>();
+			if (audioSourceComponent["MinDistance"])
+				ac.MinDistance = audioSourceComponent["MinDistance"].as<float>();
+			if (audioSourceComponent["MaxDistance"])
+				ac.MaxDistance = audioSourceComponent["MaxDistance"].as<float>();
 		}
 
 	}

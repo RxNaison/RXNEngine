@@ -8,6 +8,7 @@
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Asset/AssetManager.h"
+#include "RXNEngine/Audio/AudioSystem.h"
 
 namespace RXNEngine {
 
@@ -273,6 +274,17 @@ namespace RXNEngine {
             }
         }
 
+        if (entity.HasComponent<AudioSourceComponent>())
+        {
+            auto& ac = entity.GetComponent<AudioSourceComponent>();
+            if (ac.RuntimeSound)
+            {
+                auto audioBackend = Application::Get().GetSubsystem<AudioSystem>()->GetBackend();
+                audioBackend->DestroySoundSource(ac.RuntimeSound);
+                ac.RuntimeSound = nullptr;
+            }
+        }
+
         auto& rc = entity.GetComponent<RelationshipComponent>();
 
         std::vector<UUID> childrenToDestroy = rc.Children;
@@ -440,18 +452,12 @@ namespace RXNEngine {
 
             if (!entities.empty())
             {
-                uint32_t threadCount = Application::Get().GetSubsystem<JobSystem>()->GetThreadCount();
-                uint32_t groupSize = (uint32_t)entities.size() / threadCount;
-                if (groupSize == 0) groupSize = 1;
-
-                Application::Get().GetSubsystem<JobSystem>()->Dispatch(entities.size(), groupSize, [this, &entities, deltaTime](JobDispatchArgs args)
-                    {
-                        RXN_PROFILE_SCOPE_NAMED("Run C# Fixed Update");
-                        Entity entity = { entities[args.JobIndex], this };
-                        Application::Get().GetSubsystem<ScriptEngine>()->OnFixedUpdateEntity(entity, deltaTime);
-                    });
-
-                Application::Get().GetSubsystem<JobSystem>()->Wait();
+                RXN_PROFILE_SCOPE_NAMED("Run C# Fixed Update");
+                for (auto e : entities)
+                {
+                    Entity entity = { e, this };
+                    Application::Get().GetSubsystem<ScriptEngine>()->OnFixedUpdateEntity(entity, deltaTime);
+                }
             }
 
             UpdateWorldTransforms();
@@ -1144,6 +1150,29 @@ namespace RXNEngine {
                 sl.CookieVideo->Update(deltaTime);
         }
 
+        Entity cameraEntity = GetPrimaryCameraEntity();
+        if (cameraEntity)
+        {
+            glm::mat4 camTransform = GetWorldTransform(cameraEntity);
+            glm::vec3 camPos = glm::vec3(camTransform[3]);
+            glm::vec3 camForward = -glm::normalize(glm::vec3(camTransform[2]));
+            glm::vec3 camUp = glm::normalize(glm::vec3(camTransform[1]));
+
+            Application::Get().GetSubsystem<AudioSystem>()->GetBackend()->UpdateListener(camPos, camForward, camUp);
+        }
+
+        auto audioBackend = Application::Get().GetSubsystem<AudioSystem>()->GetBackend();
+        auto audioView = m_Registry.view<TransformComponent, AudioSourceComponent>();
+        for (auto e : audioView)
+        {
+            auto [tc, ac] = audioView.get<TransformComponent, AudioSourceComponent>(e);
+            if (ac.RuntimeSound)
+            {
+                glm::vec3 worldPos = glm::vec3(GetWorldTransform({ e, this })[3]);
+                audioBackend->UpdateSoundSource(ac.RuntimeSound, worldPos, ac.Volume, 1.0f);
+            }
+        }
+
         auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
 
@@ -1170,18 +1199,12 @@ namespace RXNEngine {
 
         if (!entities.empty())
         {
-            uint32_t threadCount = jobSys->GetThreadCount();
-            uint32_t groupSize = (uint32_t)entities.size() / threadCount;
-            if (groupSize == 0) groupSize = 1;
-
-            jobSys->Dispatch(entities.size(), groupSize, [this, &entities, deltaTime, &scriptSys](JobDispatchArgs args)
-                {
-                    RXN_PROFILE_SCOPE_NAMED("Run C# Update");
-                    Entity entity = { entities[args.JobIndex], this };
-                    scriptSys->OnUpdateEntity(entity, deltaTime);
-                });
-
-            jobSys->Wait();
+            RXN_PROFILE_SCOPE_NAMED("Run C# Update");
+            for (auto e : entities)
+            {
+                Entity entity = { e, this };
+                scriptSys->OnUpdateEntity(entity, deltaTime);
+            }
         }
 
         for (auto entityID : m_EntitiesToDestroy)
@@ -1350,11 +1373,29 @@ namespace RXNEngine {
                 sl.CookieVideo->Rewind();
         }
 
+        auto audioBackend = Application::Get().GetSubsystem<AudioSystem>()->GetBackend();
+        auto audioView = m_Registry.view<AudioSourceComponent>();
+        for (auto e : audioView)
+        {
+            auto& ac = audioView.get<AudioSourceComponent>(e);
+            if (!ac.AudioClipPath.empty())
+            {
+                ac.RuntimeSound = audioBackend->CreateSoundSource(ac.AudioClipPath, ac.Looping, ac.MinDistance, ac.MaxDistance);
+                if (ac.RuntimeSound && ac.PlayOnAwake)
+                {
+                    audioBackend->PlaySoundSource(ac.RuntimeSound);
+                    ac.IsPlaying = true;
+                }
+            }
+        }
+
         m_IsRunning = true;
     }
 
     void Scene::OnRuntimeStop()
     {
+        m_IsRunning = false;
+
         OnSimulationStop();
         Application::Get().GetSubsystem<ScriptEngine>()->OnRuntimeStop();
 
@@ -1366,7 +1407,18 @@ namespace RXNEngine {
                 sl.CookieVideo->Rewind();
         }
 
-        m_IsRunning = false;
+        auto audioBackend = Application::Get().GetSubsystem<AudioSystem>()->GetBackend();
+        auto audioView = m_Registry.view<AudioSourceComponent>();
+        for (auto e : audioView)
+        {
+            auto& ac = audioView.get<AudioSourceComponent>(e);
+            if (ac.RuntimeSound)
+            {
+                audioBackend->DestroySoundSource(ac.RuntimeSound);
+                ac.RuntimeSound = nullptr;
+                ac.IsPlaying = false;
+            }
+        }
     }
 
     void Scene::CreatePhysicsBody(Entity entity)

@@ -347,4 +347,44 @@ namespace RXNEngine
             }
         }
     }
+
+    public class AudioSourceComponent : Component
+    {
+        public void Play()
+        {
+            unsafe
+            {
+                ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeAudioSource_Play)(EntityHandle.ID);
+            }
+        }
+
+        public void Stop()
+        {
+            unsafe
+            {
+                ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeAudioSource_Stop)(EntityHandle.ID);
+            }
+        }
+
+        public float Volume
+        {
+            set
+            {
+                unsafe
+                {
+                    ((delegate* unmanaged<ulong, float, void>)Interop.NativeFunctions.NativeAudioSource_SetVolume)(EntityHandle.ID, value);
+                }
+            }
+        }
+
+        public void SetParameter(string paramName, float value)
+        {
+            unsafe
+            {
+                IntPtr namePtr = Marshal.StringToHGlobalAnsi(paramName);
+                ((delegate* unmanaged<ulong, IntPtr, float, void>)Interop.NativeFunctions.NativeAudioSource_SetParameter)(EntityHandle.ID, namePtr, value);
+                Marshal.FreeHGlobal(namePtr);
+            }
+        }
+    }
 }

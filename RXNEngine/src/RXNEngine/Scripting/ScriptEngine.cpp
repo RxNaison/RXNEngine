@@ -355,7 +355,9 @@ namespace RXNEngine {
     void ScriptEngine::OnCreateEntity(Entity entity)
     {
         const auto& sc = entity.GetComponent<ScriptComponent>();
-        if (sc.ClassName.empty()) return;
+
+        if (sc.ClassName.empty())
+            return;
 
         if (EntityClassExists(sc.ClassName))
         {
