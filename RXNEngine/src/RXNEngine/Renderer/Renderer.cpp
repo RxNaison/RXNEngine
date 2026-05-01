@@ -601,6 +601,135 @@ namespace RXNEngine {
         }
     }
 
+    void Renderer::DrawWireCone(const glm::mat4& transform, float length, float angleDegrees, const glm::vec4& color)
+    {
+        RXN_PROFILE_SCOPE();
+
+        const int segments = 32;
+        const float angleStep = glm::two_pi<float>() / segments;
+        const float coneRadius = length * glm::tan(glm::radians(angleDegrees));
+
+        for (int i = 0; i < segments; i++)
+        {
+            float a0 = i * angleStep;
+            float a1 = (i + 1) * angleStep;
+
+            glm::vec3 p0 = glm::vec3(glm::cos(a0) * coneRadius, glm::sin(a0) * coneRadius, -length);
+            glm::vec3 p1 = glm::vec3(glm::cos(a1) * coneRadius, glm::sin(a1) * coneRadius, -length);
+
+            DrawLine(transform * glm::vec4(p0, 1.0f), transform * glm::vec4(p1, 1.0f), color);
+
+            if (i % (segments / 10) == 0)
+                DrawLine(transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), transform * glm::vec4(p0, 1.0f), color);
+        }
+    }
+
+    void Renderer::DrawArrow(const glm::mat4& transform, const glm::vec4& color)
+    {
+        RXN_PROFILE_SCOPE();
+
+        DrawLine(transform * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), transform * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f), color);
+
+        DrawLine(transform * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f), transform * glm::vec4(0.25f, 0.0f, -1.5f, 1.0f), color);
+        DrawLine(transform * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f), transform * glm::vec4(-0.25f, 0.0f, -1.5f, 1.0f), color);
+        DrawLine(transform * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f), transform * glm::vec4(0.0f, 0.25f, -1.5f, 1.0f), color);
+        DrawLine(transform * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f), transform * glm::vec4(0.0f, -0.25f, -1.5f, 1.0f), color);
+    }
+
+    void Renderer::DrawProjectedSphere(const glm::mat4& transform, float radius, const glm::vec4& color, Ref<Shader> shader, Ref<VertexArray> vao, uint32_t indexCount)
+    {
+        RenderCommand::SetCullFace(RendererAPI::CullFace::None);
+        RenderCommand::SetDepthTest(false);
+        RenderCommand::SetBlend(true);
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::One);
+
+        shader->Bind();
+        shader->SetMat4("u_ViewProjection", m_Data->ViewProjectionMatrix);
+        shader->SetMat4("u_InverseViewProjection", glm::inverse(m_Data->ViewProjectionMatrix));
+
+        glm::mat4 model = glm::scale(transform, glm::vec3(radius));
+        shader->SetMat4("u_Model", model);
+        shader->SetFloat3("u_LightPos", glm::vec3(transform[3]));
+        shader->SetFloat("u_Radius", radius);
+        shader->SetFloat4("u_Color", color);
+
+        vao->Bind();
+        RenderCommand::DrawIndexed(vao, indexCount);
+
+        RenderCommand::SetDepthTest(true);
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
+    }
+
+    void Renderer::DrawProjectedCone(const glm::mat4& transform, float radius, float angle, const glm::vec3& dir, const glm::vec4& color, Ref<Shader> shader, Ref<VertexArray> vao, uint32_t indexCount)
+    {
+        RenderCommand::SetCullFace(RendererAPI::CullFace::None);
+        RenderCommand::SetDepthTest(false);
+        RenderCommand::SetBlend(true);
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::One);
+
+        shader->Bind();
+        shader->SetMat4("u_ViewProjection", m_Data->ViewProjectionMatrix);
+        shader->SetMat4("u_InverseViewProjection", glm::inverse(m_Data->ViewProjectionMatrix));
+
+        float baseRadius = radius * glm::tan(glm::radians(angle));
+        glm::mat4 model = glm::scale(transform, glm::vec3(baseRadius, baseRadius, radius));
+
+        shader->SetMat4("u_Model", model);
+        shader->SetFloat3("u_LightPos", glm::vec3(transform[3]));
+        shader->SetFloat3("u_LightDir", dir);
+        shader->SetFloat("u_Radius", radius);
+        shader->SetFloat("u_CutoffCos", glm::cos(glm::radians(angle)));
+        shader->SetFloat4("u_Color", color);
+
+        vao->Bind();
+        RenderCommand::DrawIndexed(vao, indexCount);
+
+        RenderCommand::SetDepthTest(true);
+        RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
+    }
+
+    void Renderer::DrawFrustum(const glm::mat4& transform, const glm::mat4& projection, const glm::vec4& color)
+    {
+        RXN_PROFILE_SCOPE();
+
+        glm::mat4 invProj = glm::inverse(projection);
+
+        glm::vec3 nearCorners[4];
+        glm::vec3 farCorners[4];
+
+        glm::vec2 ndc[4] = { {-1.0f, -1.0f}, { 1.0f, -1.0f}, { 1.0f,  1.0f}, {-1.0f,  1.0f} };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            glm::vec4 n = invProj * glm::vec4(ndc[i], -1.0f, 1.0f);
+            glm::vec4 f = invProj * glm::vec4(ndc[i], 1.0f, 1.0f);
+
+            glm::vec3 viewNear = glm::vec3(n) / n.w;
+            glm::vec3 viewFar = glm::vec3(f) / f.w;
+
+            nearCorners[i] = glm::vec3(transform * glm::vec4(viewNear, 1.0f));
+            farCorners[i] = glm::vec3(transform * glm::vec4(viewFar, 1.0f));
+        }
+
+        // Near Plane
+        DrawLine(nearCorners[0], nearCorners[1], color);
+        DrawLine(nearCorners[1], nearCorners[2], color);
+        DrawLine(nearCorners[2], nearCorners[3], color);
+        DrawLine(nearCorners[3], nearCorners[0], color);
+
+        // Far Plane
+        DrawLine(farCorners[0], farCorners[1], color);
+        DrawLine(farCorners[1], farCorners[2], color);
+        DrawLine(farCorners[2], farCorners[3], color);
+        DrawLine(farCorners[3], farCorners[0], color);
+
+        // Connecting Lines
+        DrawLine(nearCorners[0], farCorners[0], color);
+        DrawLine(nearCorners[1], farCorners[1], color);
+        DrawLine(nearCorners[2], farCorners[2], color);
+        DrawLine(nearCorners[3], farCorners[3], color);
+    }
+
     void Renderer::DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader)
     {
         InstanceData data;

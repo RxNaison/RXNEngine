@@ -8,6 +8,7 @@
 #include "PhysicsMaterialEditorPanel.h"
 #include "LauncherPanel.h"
 #include "RXNEngine/Asset/ModelImporter.h"
+#include "CommandHistory.h"
 
 using namespace RXNEngine;
 
@@ -37,6 +38,7 @@ namespace RXNEditor {
 		void OnSceneStop();
 
 		Ray CastRayFromMouse(float mx, float my);
+		void DropSelectedToFloor();
 	private:
 		enum class SceneState
 		{
@@ -75,5 +77,24 @@ namespace RXNEditor {
 		std::string m_PendingImportPath;
 		bool m_ShowImportDialog = false;
 		ModelImportSettings m_ImportSettings;
+
+		Ref<RenderTarget> m_PIPRenderTarget;
+		Ref<SceneRenderer> m_PIPRenderer;
+		Ref<Texture2D> m_IconCamera;
+		Ref<Texture2D> m_IconDirLight;
+		Ref<Texture2D> m_IconPointLight;
+		Ref<Texture2D> m_IconSpotLight;
+		Ref<Texture2D> m_IconAudio;
+
+		struct IconHitbox
+		{
+			Entity Ent;
+			ImVec2 Min;
+			ImVec2 Max;
+		};
+		std::vector<IconHitbox> m_IconHitboxes;
+
+		bool m_WasGizmoUsing = false;
+		std::vector<std::pair<RXNEngine::UUID, RXNEngine::TransformComponent>> m_GizmoStartTransforms;
 	};
 }

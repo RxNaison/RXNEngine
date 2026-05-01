@@ -32,6 +32,16 @@ namespace RXNEngine {
 		m_ViewMatrix = glm::inverse(m_ViewMatrix);
 	}
 
+	void EditorCamera::Focus(const glm::vec3& focusPoint)
+	{
+		m_FocalPoint = focusPoint;
+
+		if (m_Distance < 2.0f)
+			m_Distance = 10.0f;
+
+		UpdateView();
+	}
+
 	std::pair<float, float> EditorCamera::PanSpeed() const
 	{
 		float x = std::min(m_ViewportWidth / 1000.0f, 2.4f);
@@ -63,39 +73,56 @@ namespace RXNEngine {
 
 		auto inputSys = Application::Get().GetSubsystem<Input>();
 
-		const glm::vec2& mouse{ inputSys->GetMouseX(), inputSys->GetMouseY() };
-		glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
-		m_InitialMousePosition = mouse;
+		auto [dx, dy] = inputSys->GetMouseDelta();
+		glm::vec2 delta = glm::vec2(dx, dy) * 0.003f;
 
-		if (inputSys->IsKeyPressed(KeyCode::LeftAlt))
+		bool alt = inputSys->IsKeyPressed(KeyCode::LeftAlt) || inputSys->IsKeyPressed(KeyCode::RightAlt);
+		bool lmb = inputSys->IsMouseButtonPressed(MouseCode::ButtonLeft);
+		bool mmb = inputSys->IsMouseButtonPressed(MouseCode::ButtonMiddle);
+		bool rmb = inputSys->IsMouseButtonPressed(MouseCode::ButtonRight);
+
+		if (alt)
 		{
-			if (inputSys->IsMouseButtonPressed(MouseCode::ButtonMiddle))
-				MousePan(delta);
-			else if (inputSys->IsMouseButtonPressed(MouseCode::ButtonLeft))
+			if (lmb)
 				MouseRotate(delta);
-			else if (inputSys->IsMouseButtonPressed(MouseCode::ButtonRight))
-				MouseZoom(delta.y);
+			else if (rmb)
+				MouseZoom(delta.x - delta.y);
+			else if (mmb)
+				MousePan(delta);
 		}
-		else if (inputSys->IsMouseButtonPressed(MouseCode::ButtonRight))
+		else
 		{
-			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
-			m_Yaw += yawSign * delta.x * RotationSpeed();
-			m_Pitch += delta.y * RotationSpeed();
+			if (rmb)
+			{
+				MouseRotate(delta);
 
-			float moveSpeed = 15.0f;
-			if (inputSys->IsKeyPressed(KeyCode::LeftShift))
-				moveSpeed *= 3.0f;
+				float moveSpeed = m_CameraSpeed;
+				if (inputSys->IsKeyPressed(KeyCode::LeftShift)) moveSpeed *= 3.0f;
 
-			m_Position = CalculatePosition();
+				if (inputSys->IsKeyPressed(KeyCode::W))
+					m_FocalPoint += GetForwardDirection() * moveSpeed * deltaTime;
+				if (inputSys->IsKeyPressed(KeyCode::S))
+					m_FocalPoint -= GetForwardDirection() * moveSpeed * deltaTime;
+				if (inputSys->IsKeyPressed(KeyCode::A))
+					m_FocalPoint -= GetRightDirection() * moveSpeed * deltaTime;
+				if (inputSys->IsKeyPressed(KeyCode::D))
+					m_FocalPoint += GetRightDirection() * moveSpeed * deltaTime;
+				if (inputSys->IsKeyPressed(KeyCode::E))
+					m_FocalPoint += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
+				if (inputSys->IsKeyPressed(KeyCode::Q))
+					m_FocalPoint -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
+			}
+			else if (lmb)
+			{
+				float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
+				m_Yaw += yawSign * delta.x * RotationSpeed();
 
-			if (inputSys->IsKeyPressed(KeyCode::W)) m_Position += GetForwardDirection() * moveSpeed * deltaTime;
-			if (inputSys->IsKeyPressed(KeyCode::S)) m_Position -= GetForwardDirection() * moveSpeed * deltaTime;
-			if (inputSys->IsKeyPressed(KeyCode::A)) m_Position -= GetRightDirection() * moveSpeed * deltaTime;
-			if (inputSys->IsKeyPressed(KeyCode::D)) m_Position += GetRightDirection() * moveSpeed * deltaTime;
-			if (inputSys->IsKeyPressed(KeyCode::Q)) m_Position -= glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
-			if (inputSys->IsKeyPressed(KeyCode::E)) m_Position += glm::vec3(0.0f, 1.0f, 0.0f) * moveSpeed * deltaTime;
-
-			m_FocalPoint = m_Position + GetForwardDirection() * m_Distance;
+				m_FocalPoint += GetForwardDirection() * (-delta.y) * m_Distance * 2.0f;
+			}
+			else if (mmb)
+			{
+				MousePan(delta);
+			}
 		}
 
 		UpdateView();
@@ -109,9 +136,19 @@ namespace RXNEngine {
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
 	{
-		float delta = e.GetYOffset() * 0.1f;
-		MouseZoom(delta);
-		UpdateView();
+		auto inputSys = Application::Get().GetSubsystem<Input>();
+
+		if (inputSys->IsMouseButtonPressed(MouseCode::ButtonRight))
+		{
+			m_CameraSpeed += e.GetYOffset() * 2.0f;
+			m_CameraSpeed = glm::max(m_CameraSpeed, 0.5f);
+		}
+		else
+		{
+			float delta = e.GetYOffset() * 0.1f;
+			MouseZoom(delta);
+			UpdateView();
+		}
 		return false;
 	}
 

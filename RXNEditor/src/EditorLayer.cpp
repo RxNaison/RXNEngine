@@ -5,11 +5,53 @@
 #include "RXNEngine/Audio/AudioSystem.h"
 #include "RXNEngine/Project/Project.h"
 #include "RXNEngine/Project/ProjectSerializer.h"
+#include "RXNEngine/Serialization/PrefabSerializer.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
 
 #include <glm/gtc/type_ptr.hpp>
+
+namespace {
+    // Möller-Trumbore ray-triangle intersection algorithm
+    bool RayTriangleIntersect(const glm::vec3& orig, const glm::vec3& dir,
+        const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, float& t)
+    {
+        glm::vec3 edge1 = v1 - v0;
+        glm::vec3 edge2 = v2 - v0;
+        glm::vec3 h = glm::cross(dir, edge2);
+        float a = glm::dot(edge1, h);
+        if (a > -0.0001f && a < 0.0001f)
+            return false;
+
+        float f = 1.0f / a;
+        glm::vec3 s = orig - v0;
+        float u = f * glm::dot(s, h);
+        if (u < 0.0f || u > 1.0f)
+            return false;
+
+        glm::vec3 q = glm::cross(s, edge1);
+        float v = f * glm::dot(dir, q);
+        if (v < 0.0f || u + v > 1.0f)
+            return false;
+
+        t = f * glm::dot(edge2, q);
+        return t > 0.0001f;
+    }
+
+    // Fast broadphase check for vertical rays
+    bool IntersectVerticalRayAABB(const glm::vec3& orig, const RXNEngine::AABB& aabb)
+    {
+        if (orig.x < aabb.Min.x || orig.x > aabb.Max.x)
+            return false;
+        if (orig.z < aabb.Min.z || orig.z > aabb.Max.z)
+            return false;
+        if (orig.y < aabb.Min.y)
+            return false;
+
+        return true;
+    }
+}
 
 namespace RXNEditor {
 
@@ -33,6 +75,15 @@ namespace RXNEditor {
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_EnvironmentPanel.SetContext(m_SceneRenderer);
+
+        m_PIPRenderer = CreateRef<SceneRenderer>(m_ActiveScene);
+
+        auto loadIcon = [](const std::string& path) { return std::filesystem::exists(path) ? Texture2D::Create(path) : Texture2D::WhiteTexture(); };
+        m_IconCamera = loadIcon("res/icons/Camera.png");
+        m_IconDirLight = loadIcon("res/icons/DirLight.png");
+        m_IconPointLight = loadIcon("res/icons/PointLight.png");
+        m_IconSpotLight = loadIcon("res/icons/SpotLight.png");
+        m_IconAudio = loadIcon("res/icons/Audio.png");
 
         m_SceneHierarchyPanel.SetMeshDropCallback([this](const std::string& path)
             {
@@ -91,6 +142,7 @@ namespace RXNEditor {
 
 	void EditorLayer::OnDetach()
 	{
+        CommandHistory::Clear();
 	}
 
 	void EditorLayer::OnUpdate(float deltaTime)
@@ -113,7 +165,15 @@ namespace RXNEditor {
             inputSys->IsMouseButtonPressed(MouseCode::ButtonLeft);
 
         if (!isAnyMouseButtonDown)
-            m_AllowViewportCamera = m_ViewportHovered;
+            m_AllowViewportCamera = m_ViewportHovered && !ImGuizmo::IsOver();
+
+        if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+        {
+            if (m_AllowViewportCamera && isAnyMouseButtonDown && !ImGuizmo::IsUsing())
+                Application::Get().GetWindow().SetCursorMode(CursorMode::Locked);
+            else
+                Application::Get().GetWindow().SetCursorMode(CursorMode::Normal);
+        }
 
         switch (m_SceneState)
         {
@@ -123,6 +183,16 @@ namespace RXNEditor {
                     m_EditorCamera->OnUpdate(deltaTime);
 
                 m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
+
+                auto selected = m_SceneHierarchyPanel.GetSelectedEntities();
+                if (selected.size() == 1 && selected[0] && selected[0].HasComponent<CameraComponent>())
+                {
+                    SceneCamera pipCam = selected[0].GetComponent<CameraComponent>().Camera;
+                    pipCam.SetViewportSize(320, 180);
+                    m_PIPRenderer->SetScene(m_ActiveScene);
+                    m_PIPRenderer->RenderToTarget(320, 180, pipCam, m_ActiveScene->GetWorldTransform(selected[0]));
+                }
+
                 Application::Get().GetSubsystem<ScriptEngine>()->ReloadIfModified(deltaTime);
                 break;
             }
@@ -173,32 +243,49 @@ namespace RXNEditor {
                     if (m_ViewportHovered && !ImGuizmo::IsOver() && !Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftAlt))
                     {
                         auto [mx, my] = ImGui::GetMousePos();
+                        bool isCtrlHeld = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
 
-                        mx -= m_ViewportBounds[0].x;
-                        my -= m_ViewportBounds[0].y;
-
-                        glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-                        if (mx >= 0 && my >= 0 && mx < viewportSize.x && my < viewportSize.y)
+                        bool hitIcon = false;
+                        for (auto it = m_IconHitboxes.rbegin(); it != m_IconHitboxes.rend(); ++it)
                         {
-                            my = viewportSize.y - my;
-
-                            int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)mx, (int)my, *m_EditorCamera);
-                            bool isCtrlHeld = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
-
-                            if (pickedID > -1)
+                            if (mx >= it->Min.x && mx <= it->Max.x && my >= it->Min.y && my <= it->Max.y)
                             {
-                                Entity pickedEntity = { (entt::entity)pickedID, m_ActiveScene.get() };
-                                pickedEntity = m_SceneHierarchyPanel.ResolvePickedEntity(pickedEntity);
-
+                                hitIcon = true;
                                 if (isCtrlHeld)
-                                    m_SceneHierarchyPanel.ToggleSelection(pickedEntity);
-                                else
-                                    m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
+                                    m_SceneHierarchyPanel.ToggleSelection(it->Ent);
+                                else 
+                                    m_SceneHierarchyPanel.SetSelectedEntity(it->Ent);
+                                break;
                             }
-                            else
+                        }
+
+                        if (!hitIcon)
+                        {
+                            float relX = mx - m_ViewportBounds[0].x;
+                            float relY = my - m_ViewportBounds[0].y;
+
+                            glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+                            if (relX >= 0 && relY >= 0 && relX < viewportSize.x && relY < viewportSize.y)
                             {
-                                if (!isCtrlHeld)
-                                    m_SceneHierarchyPanel.ClearSelection();
+                                relY = viewportSize.y - relY;
+
+                                int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)relX, (int)relY, *m_EditorCamera);
+
+                                if (pickedID > -1)
+                                {
+                                    Entity pickedEntity = { (entt::entity)pickedID, m_ActiveScene.get() };
+                                    pickedEntity = m_SceneHierarchyPanel.ResolvePickedEntity(pickedEntity);
+
+                                    if (isCtrlHeld)
+                                        m_SceneHierarchyPanel.ToggleSelection(pickedEntity);
+                                    else
+                                        m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
+                                }
+                                else
+                                {
+                                    if (!isCtrlHeld)
+                                        m_SceneHierarchyPanel.ClearSelection();
+                                }
                             }
                         }
                     }
@@ -337,11 +424,72 @@ namespace RXNEditor {
         ImGui::Image((void*)(uint64_t)textureID, viewportSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
         const std::vector<Entity>& selectedEntities = m_SceneHierarchyPanel.GetSelectedEntities();
+
+        if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+        {
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+            m_IconHitboxes.clear();
+
+            auto drawIcon = [&](Entity entity, Ref<Texture2D> icon)
+                {
+                    glm::mat4 transform = m_ActiveScene->GetWorldTransform(entity);
+                    glm::vec3 worldPos = glm::vec3(transform[3]);
+                    glm::vec4 clipPos = m_EditorCamera->GetViewProjection() * glm::vec4(worldPos, 1.0f);
+
+                    if (clipPos.w > 0.1f)
+                    {
+                        glm::vec3 ndcPos = glm::vec3(clipPos) / clipPos.w;
+                        if (ndcPos.z > -1.0f && ndcPos.z < 1.0f && ndcPos.x > -1.0f && ndcPos.x < 1.0f && ndcPos.y > -1.0f && ndcPos.y < 1.0f)
+                        {
+                            float screenX = m_ViewportBounds[0].x + (ndcPos.x + 1.0f) * 0.5f * (m_ViewportBounds[1].x - m_ViewportBounds[0].x);
+                            float screenY = m_ViewportBounds[0].y + (1.0f - ndcPos.y) * 0.5f * (m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+
+                            float distance = clipPos.w;
+                            float iconSize = glm::clamp(400.0f / distance, 24.0f, 150.0f);
+
+                            ImVec2 minPos = ImVec2(screenX - iconSize / 2, screenY - iconSize / 2);
+                            ImVec2 maxPos = ImVec2(screenX + iconSize / 2, screenY + iconSize / 2);
+
+                            drawList->AddImage((void*)(uint64_t)icon->GetRendererID(), minPos, maxPos, ImVec2(0, 1), ImVec2(1, 0));
+
+                            m_IconHitboxes.push_back({ entity, minPos, maxPos });
+                        }
+                    }
+                };
+
+            for (auto e : m_ActiveScene->GetRaw().view<CameraComponent>())
+                drawIcon(Entity(e, m_ActiveScene.get()), m_IconCamera);
+
+            for (auto e : m_ActiveScene->GetRaw().view<DirectionalLightComponent>())
+                drawIcon(Entity(e, m_ActiveScene.get()), m_IconDirLight);
+
+            for (auto e : m_ActiveScene->GetRaw().view<PointLightComponent>())
+                drawIcon(Entity(e, m_ActiveScene.get()), m_IconPointLight);
+
+            for (auto e : m_ActiveScene->GetRaw().view<SpotLightComponent>())
+                drawIcon(Entity(e, m_ActiveScene.get()), m_IconSpotLight);
+
+            for (auto e : m_ActiveScene->GetRaw().view<AudioSourceComponent>())
+                drawIcon(Entity(e, m_ActiveScene.get()), m_IconAudio);
+
+            if (selectedEntities.size() == 1 && selectedEntities[0].HasComponent<CameraComponent>())
+            {
+                float pipWidth = 320.0f;
+                float pipHeight = 180.0f;
+                ImVec2 pipPos = ImVec2(m_ViewportBounds[1].x - pipWidth - 20.0f, m_ViewportBounds[1].y - pipHeight - 20.0f);
+
+                drawList->AddRectFilled(ImVec2(pipPos.x - 2, pipPos.y - 2), ImVec2(pipPos.x + pipWidth + 2, pipPos.y + pipHeight + 2), IM_COL32(50, 50, 50, 255));
+                drawList->AddImage((void*)(uint64_t)m_PIPRenderer->GetFinalColorAttachmentRendererID(), pipPos, ImVec2(pipPos.x + pipWidth, pipPos.y + pipHeight), ImVec2(0, 1), ImVec2(1, 0));
+                drawList->AddText(ImVec2(pipPos.x + 5, pipPos.y + 5), IM_COL32(255, 255, 255, 255), "Camera Preview");
+            }
+        }
+
         if (!selectedEntities.empty() && m_GizmoType != -1 && m_SceneState != SceneState::Play)
         {
             ImGuizmo::SetOrthographic(false);
             ImGuizmo::SetDrawlist();
-			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+            ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
 
             const glm::mat4& cameraView = m_EditorCamera->GetViewMatrix();
             const glm::mat4& cameraProj = m_EditorCamera->GetProjection();
@@ -353,6 +501,15 @@ namespace RXNEditor {
             Entity primaryEntity = selectedEntities[0];
             glm::mat4 groupTransform = m_ActiveScene->GetWorldTransform(primaryEntity);
             glm::mat4 deltaMatrix(1.0f);
+
+            bool isUsing = ImGuizmo::IsUsing();
+            if (isUsing && !m_WasGizmoUsing)
+            {
+                m_WasGizmoUsing = true;
+                m_GizmoStartTransforms.clear();
+                for (Entity entity : selectedEntities)
+                    m_GizmoStartTransforms.push_back({ entity.GetUUID(), entity.GetComponent<TransformComponent>() });
+            }
 
             ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,
                 ImGuizmo::LOCAL, glm::value_ptr(groupTransform), glm::value_ptr(deltaMatrix), snap ? snapValues : nullptr);
@@ -403,6 +560,33 @@ namespace RXNEditor {
                 }
             }
 
+            if (!isUsing && m_WasGizmoUsing)
+            {
+                m_WasGizmoUsing = false;
+
+                std::vector<ChangeMultiTransformCommand::TransformData> transforms;
+
+                for (const auto& [id, startTransform] : m_GizmoStartTransforms)
+                {
+                    Entity entity = m_ActiveScene->GetEntityByUUID(id);
+                    if (entity)
+                    {
+                        TransformComponent endTransform = entity.GetComponent<TransformComponent>();
+
+                        if (startTransform.Translation != endTransform.Translation ||
+                            startTransform.Rotation != endTransform.Rotation ||
+                            startTransform.Scale != endTransform.Scale)
+                        {
+                            transforms.push_back({ id, startTransform, endTransform });
+                        }
+                    }
+                }
+
+                if (!transforms.empty())
+                {
+                    CommandHistory::Push(CreateScope<ChangeMultiTransformCommand>(m_ActiveScene, transforms));
+                }
+            }
         }
 
         if (ImGui::BeginDragDropTarget())
@@ -419,6 +603,15 @@ namespace RXNEditor {
                 else if(path.contains(".rxns"))
                 {
                     OpenScene(std::filesystem::path(path).string());
+                }
+                else if (path.ends_with(".rxnpb"))
+                {
+                    Entity prefabRoot = PrefabSerializer::Deserialize(m_ActiveScene, path);
+                    if (prefabRoot)
+                    {
+                        m_SceneHierarchyPanel.SetSelectedEntity(prefabRoot);
+                        CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, prefabRoot));
+                    }
                 }
                 else if (!path.empty() && (path.ends_with(".gltf") || path.ends_with(".glb") || path.ends_with(".obj") || path.ends_with(".fbx")))
                 {
@@ -499,6 +692,8 @@ namespace RXNEditor {
                 Entity importedEntity = ModelImporter::InstantiateToScene(m_ActiveScene, m_PendingImportPath, m_ImportSettings);
 
                 m_SceneHierarchyPanel.SetSelectedEntity(importedEntity);
+
+                CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, importedEntity));
 
                 ImGui::CloseCurrentPopup();
                 m_PendingImportPath.clear();
@@ -642,12 +837,11 @@ namespace RXNEditor {
                 case KeyCode::Delete:
                 {
                     const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
-                    for (Entity entity : selected)
+                    if (!selected.empty())
                     {
-                        if (entity)
-                            m_ActiveScene->DestroyEntity(entity);
+                        CommandHistory::AddAndExecute(CreateScope<DeleteEntitiesCommand>(m_ActiveScene, selected));
+                        m_SceneHierarchyPanel.ClearSelection();
                     }
-                    m_SceneHierarchyPanel.ClearSelection();
                     break;
                 }
                 case KeyCode::D:
@@ -657,15 +851,83 @@ namespace RXNEditor {
                         auto selected = m_SceneHierarchyPanel.GetSelectedEntities();
                         m_SceneHierarchyPanel.ClearSelection();
 
-                        for (Entity entity : selected)
+                        std::vector<Entity> topLevelEntities;
+                        for (Entity e : selected)
+                        {
+                            bool hasSelectedAncestor = false;
+                            Entity current = e;
+                            while (current.GetComponent<RelationshipComponent>().ParentHandle != 0)
+                            {
+                                Entity parent = m_ActiveScene->GetEntityByUUID(current.GetComponent<RelationshipComponent>().ParentHandle);
+
+                                if (!parent)
+                                    break;
+
+                                if (std::find(selected.begin(), selected.end(), parent) != selected.end())
+                                {
+                                    hasSelectedAncestor = true;
+                                    break;
+                                }
+                                current = parent;
+                            }
+
+                            if (!hasSelectedAncestor)
+                                topLevelEntities.push_back(e);
+                        }
+
+                        for (Entity entity : topLevelEntities)
                         {
                             if (entity)
                             {
                                 Entity duplicate = m_ActiveScene->DuplicateEntity(entity);
+                                CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, duplicate));
                                 m_SceneHierarchyPanel.ToggleSelection(duplicate);
                             }
                         }
                     }
+                    break;
+                }
+                case KeyCode::Z:
+                {
+                    if (control)
+                    {
+                        if (shift)
+                            CommandHistory::Redo();
+                        else
+                            CommandHistory::Undo();
+                        return true;
+                    }
+                    break;
+                }
+                case KeyCode::Y:
+                {
+                    if (control)
+                    {
+                        CommandHistory::Redo();
+                        return true;
+                    }
+                    break;
+                }
+                case KeyCode::F:
+                {
+                    const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
+                    if (!selected.empty())
+                    {
+                        glm::vec3 center(0.0f);
+                        for (Entity entity : selected)
+                        {
+                            glm::mat4 transform = m_ActiveScene->GetWorldTransform(entity);
+                            center += glm::vec3(transform[3]);
+                        }
+
+                        center /= (float)selected.size();
+                        m_EditorCamera->Focus(center);
+                    }
+                    break;
+                }
+                case KeyCode::End:
+                {
+                    DropSelectedToFloor();
                     break;
                 }
             }
@@ -741,7 +1003,10 @@ namespace RXNEditor {
                 }
             }
         }
+
+        CommandHistory::Clear();
     }
+
     void EditorLayer::NewScene()
     {
         if (m_SceneState != SceneState::Edit)
@@ -749,10 +1014,12 @@ namespace RXNEditor {
 
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
+        m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
 
         m_ActiveScenePath = {};
+        CommandHistory::Clear();
     }
 
     void EditorLayer::OnScenePlay()
@@ -815,5 +1082,158 @@ namespace RXNEditor {
 
         if (selectedUUID != 0)
             m_SceneHierarchyPanel.SetSelectedEntity(m_ActiveScene->GetEntityByUUID(selectedUUID));
+    }
+
+    void EditorLayer::DropSelectedToFloor()
+    {
+        const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
+        if (selected.empty())
+            return;
+
+        std::vector<ChangeMultiTransformCommand::TransformData> transforms;
+        auto meshView = m_ActiveScene->GetRaw().view<StaticMeshComponent, TransformComponent>();
+
+        for (Entity entity : selected)
+        {
+            if (!entity)
+                continue;
+
+            glm::mat4 worldTransform = m_ActiveScene->GetWorldTransform(entity);
+            glm::vec3 position(worldTransform[3]);
+
+            glm::vec3 minAABB(FLT_MAX);
+            glm::vec3 maxAABB(-FLT_MAX);
+            bool hasMeshes = false;
+
+            auto findBounds = [&](Entity currentEnt, auto& self) -> void
+                {
+                    if (currentEnt.HasComponent<StaticMeshComponent>())
+                    {
+                        auto& mc = currentEnt.GetComponent<StaticMeshComponent>();
+                        if (mc.Mesh)
+                        {
+                            glm::mat4 wt = m_ActiveScene->GetWorldTransform(currentEnt);
+                            const auto& submesh = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex];
+
+                            AABB worldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, wt);
+
+                            minAABB = glm::min(minAABB, worldAABB.Min);
+                            maxAABB = glm::max(maxAABB, worldAABB.Max);
+                            hasMeshes = true;
+                        }
+                    }
+
+                    if (currentEnt.HasComponent<RelationshipComponent>())
+                    {
+                        for (UUID childID : currentEnt.GetComponent<RelationshipComponent>().Children)
+                        {
+                            Entity child = m_ActiveScene->GetEntityByUUID(childID);
+
+                            if (child)
+                                self(child, self);
+                        }
+                    }
+                };
+
+            findBounds(entity, findBounds);
+
+            if (!hasMeshes)
+                continue;
+
+            glm::vec3 rayOrigin;
+            rayOrigin.x = (minAABB.x + maxAABB.x) * 0.5f;
+            rayOrigin.z = (minAABB.z + maxAABB.z) * 0.5f;
+            rayOrigin.y = maxAABB.y + 1.0f;
+
+            glm::vec3 rayDir(0.0f, -1.0f, 0.0f);
+            float closestT = FLT_MAX;
+            bool hasHit = false;
+
+            for (auto e : meshView)
+            {
+                Entity other = { e, m_ActiveScene.get() };
+
+                if (std::find(selected.begin(), selected.end(), other) != selected.end())
+                    continue;
+
+                if (m_ActiveScene->IsDescendantOf(other, entity))
+                    continue;
+
+                auto& mc = other.GetComponent<StaticMeshComponent>();
+                if (!mc.Mesh)
+                    continue;
+
+                glm::mat4 otherTransform = m_ActiveScene->GetWorldTransform(other);
+                const auto& submesh = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex];
+                AABB otherWorldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, otherTransform);
+
+                if (IntersectVerticalRayAABB(rayOrigin, otherWorldAABB))
+                {
+                    glm::mat4 invTransform = glm::inverse(otherTransform * submesh.LocalTransform);
+                    glm::vec3 localRayOrig = glm::vec3(invTransform * glm::vec4(rayOrigin, 1.0f));
+                    glm::vec3 localRayDir = glm::normalize(glm::vec3(invTransform * glm::vec4(rayDir, 0.0f)));
+
+                    const auto& vertices = mc.Mesh->GetVertices();
+                    const auto& indices = mc.Mesh->GetIndices();
+
+                    for (uint32_t i = 0; i < submesh.IndexCount; i += 3)
+                    {
+                        uint32_t i0 = indices[submesh.BaseIndex + i];
+                        uint32_t i1 = indices[submesh.BaseIndex + i + 1];
+                        uint32_t i2 = indices[submesh.BaseIndex + i + 2];
+
+                        float t;
+                        if (RayTriangleIntersect(localRayOrig, localRayDir,
+                            vertices[i0].Position, vertices[i1].Position, vertices[i2].Position, t))
+                        {
+                            glm::vec3 localHitPoint = localRayOrig + localRayDir * t;
+                            glm::vec3 worldHitPoint = glm::vec3(otherTransform * submesh.LocalTransform * glm::vec4(localHitPoint, 1.0f));
+
+                            float worldT = rayOrigin.y - worldHitPoint.y;
+
+                            if (worldT > -0.001f && worldT < closestT)
+                            {
+                                closestT = worldT;
+                                hasHit = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (hasHit)
+            {
+                TransformComponent oldTransform = entity.GetComponent<TransformComponent>();
+                TransformComponent newTransform = oldTransform;
+
+                float hitY = rayOrigin.y - closestT;
+
+                float offsetY = hitY - minAABB.y;
+
+                glm::vec3 newWorldPos = position;
+                newWorldPos.y += offsetY;
+
+                auto& rc = entity.GetComponent<RelationshipComponent>();
+                if (rc.ParentHandle != 0)
+                {
+                    Entity parent = m_ActiveScene->GetEntityByUUID(rc.ParentHandle);
+                    if (parent)
+                    {
+                        glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
+                        glm::vec3 localPos = glm::inverse(parentTransform) * glm::vec4(newWorldPos, 1.0f);
+                        newTransform.Translation = localPos;
+                    }
+                }
+                else
+                {
+                    newTransform.Translation.y = newWorldPos.y;
+                }
+
+                transforms.push_back({ entity.GetUUID(), oldTransform, newTransform });
+            }
+        }
+
+        if (!transforms.empty())
+            CommandHistory::AddAndExecute(CreateScope<ChangeMultiTransformCommand>(m_ActiveScene, transforms));
     }
 }

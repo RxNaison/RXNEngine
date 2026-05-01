@@ -91,6 +91,7 @@ namespace RXNEngine {
             m_FinalPass->Resize(width, height);
             m_PickingPass->Resize(width, height);
             m_OutlineMaskPass->Resize(width, height);
+            m_Scene->OnViewportResize(width, height);
 
             m_BloomMips.clear();
 
@@ -170,7 +171,7 @@ namespace RXNEngine {
         RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
         RenderCommand::Clear();
 
-        m_Scene->OnRenderEditor(deltaTime, camera, m_GeoPass, m_Settings.ShowColliders);
+        m_Scene->OnRenderEditor(deltaTime, camera, m_GeoPass, m_Settings.ShowColliders, selectedEntities);
 
         m_GeoPass->Bind();
 
@@ -196,10 +197,7 @@ namespace RXNEngine {
         RXN_PROFILE_SCOPE();
 
         if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
-        {
             SetViewportSize(targetWidth, targetHeight);
-            m_Scene->OnViewportResize(targetWidth, targetHeight);
-        }
 
         m_OutlineMaskPass->Bind();
         RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
@@ -220,6 +218,30 @@ namespace RXNEngine {
         RenderCommand::Clear();
 
         m_Scene->OnRender(camera, transform, m_GeoPass, m_Settings.ShowColliders);
+
+        m_GeoPass->Unbind();
+
+        RenderBloom();
+        RenderPostProcess();
+    }
+
+    void SceneRenderer::RenderToTarget(uint32_t width, uint32_t height, Camera& camera, const glm::mat4& cameraTransform)
+    {
+        RXN_PROFILE_SCOPE();
+
+        SetViewportSize(width, height);
+
+        m_OutlineMaskPass->Bind();
+        RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+        RenderCommand::Clear();
+        m_OutlineMaskPass->Unbind();
+
+        m_GeoPass->Bind();
+        RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+        RenderCommand::SetDepthTest(true);
+        RenderCommand::Clear();
+
+        m_Scene->OnRender(camera, cameraTransform, m_GeoPass, false);
 
         m_GeoPass->Unbind();
 

@@ -75,6 +75,13 @@ namespace RXNEngine {
         void DrawWireBox(const glm::mat4& transform, const glm::vec4& color);
         void DrawWireSphere(const glm::mat4& transform, const glm::vec4& color);
         void DrawWireCapsule(const glm::mat4& transform, float radius, float height, const glm::vec4& color);
+        void DrawWireCone(const glm::mat4& transform, float length, float angleDegrees, const glm::vec4& color);
+        void DrawArrow(const glm::mat4& transform, const glm::vec4& color);
+
+        void DrawProjectedSphere(const glm::mat4& transform, float radius, const glm::vec4& color, Ref<Shader> shader, Ref<VertexArray> vao, uint32_t indexCount);
+        void DrawProjectedCone(const glm::mat4& transform, float radius, float angle, const glm::vec3& dir, const glm::vec4& color, Ref<Shader> shader, Ref<VertexArray> vao, uint32_t indexCount);
+
+        void DrawFrustum(const glm::mat4& transform, const glm::mat4& projection, const glm::vec4& color);
 
         void DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader);
 

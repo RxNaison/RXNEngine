@@ -48,6 +48,7 @@ namespace RXNEngine {
 
         void RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
         void RenderRuntime(uint32_t targetWidth, uint32_t targetHeight);
+        void RenderToTarget(uint32_t width, uint32_t height, Camera& camera, const glm::mat4& cameraTransform);
 
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }
         uint32_t GetFinalColorAttachmentRendererID() { return m_FinalPass->GetColorAttachmentRendererID(); }

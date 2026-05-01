@@ -17,6 +17,8 @@ namespace RXNEngine {
 		void OnUpdate(float deltaTime);
 		void OnEvent(Event& e);
 
+		void Focus(const glm::vec3& focusPoint);
+
 		inline float GetDistance() const { return m_Distance; }
 		inline void SetDistance(float distance) { m_Distance = distance; }
 
@@ -31,9 +33,12 @@ namespace RXNEngine {
 		const glm::vec3& GetPosition() const { return m_Position; }
 		glm::quat GetOrientation() const;
 
-		float GetPitch() const { return m_Pitch; }
-		float GetYaw() const { return m_Yaw; }
-		float GetFOV() const { return m_FOV; }
+		inline float GetPitch() const { return m_Pitch; }
+		inline float GetYaw() const { return m_Yaw; }
+		inline float GetFOV() const { return m_FOV; }
+
+		inline float GetCameraSpeed() const { return m_CameraSpeed; }
+		inline void SetCameraSpeed(float speed) { m_CameraSpeed = speed; }
 	private:
 		void UpdateProjection();
 		void UpdateView();
@@ -56,7 +61,7 @@ namespace RXNEngine {
 		glm::vec3 m_Position = { 0.0f, 0.0f, 0.0f };
 		glm::vec3 m_FocalPoint = { 0.0f, 0.0f, 0.0f };
 
-		glm::vec2 m_InitialMousePosition = { 0.0f, 0.0f };
+		float m_CameraSpeed = 15.0f;
 
 		float m_Distance = 10.0f;
 		float m_Pitch = 0.0f, m_Yaw = 0.0f;

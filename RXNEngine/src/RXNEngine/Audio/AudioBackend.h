@@ -17,7 +17,7 @@ namespace RXNEngine {
         virtual void PlayOneShot(const std::string& filepath, float volume) = 0;
 
         virtual void* CreateSoundSource(const std::string& filepath, bool looping, float minDistance, float maxDistance) = 0;
-        virtual void UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch) = 0;
+        virtual void UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch, float minDistance, float maxDistance) = 0;
         virtual void PlaySoundSource(void* sourceData) = 0;
         virtual void StopSoundSource(void* sourceData) = 0;
         virtual void DestroySoundSource(void* sourceData) = 0;

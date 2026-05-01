@@ -107,7 +107,7 @@ namespace RXNEngine {
         }
         else
         {
-            FMOD_MODE mode = FMOD_3D | (looping ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF);
+            FMOD_MODE mode = FMOD_3D | FMOD_3D_LINEARROLLOFF | (looping ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF);
             m_CoreSystem->createSound(filepath.c_str(), mode, nullptr, &source->Sound);
 
             if (source->Sound)
@@ -117,7 +117,7 @@ namespace RXNEngine {
         return source;
     }
 
-    void FMODBackend::UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch)
+    void FMODBackend::UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch, float minDistance, float maxDistance)
     {
         if (!sourceData)
             return;
@@ -140,6 +140,7 @@ namespace RXNEngine {
             source->Channel->set3DAttributes(&pos, nullptr);
             source->Channel->setVolume(volume);
             source->Channel->setPitch(pitch);
+            source->Channel->set3DMinMaxDistance(minDistance, maxDistance);
         }
     }
 

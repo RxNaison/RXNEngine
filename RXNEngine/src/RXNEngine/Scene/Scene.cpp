@@ -164,6 +164,13 @@ namespace RXNEngine {
 
     Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
     {
+        if (m_EntityMap.find(uuid) != m_EntityMap.end())
+        {
+            entt::entity oldEnt = m_EntityMap[uuid];
+            if (m_Registry.valid(oldEnt))
+                m_Registry.destroy(oldEnt);
+        }
+
         Entity entity = { m_Registry.create(), this };
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<TransformComponent>();
@@ -765,7 +772,7 @@ namespace RXNEngine {
         renderSys->EndScene();
     }
 
-    void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders)
+    void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders, const std::vector<Entity>& selectedEntities)
     {
         RXN_PROFILE_SCOPE();
 
@@ -1127,6 +1134,55 @@ namespace RXNEngine {
             }
         }
 
+        for (Entity selected : selectedEntities)
+        {
+            if (!selected)
+                continue;
+
+            glm::mat4 transform = GetWorldTransform(selected);
+
+            glm::vec3 wTranslation, wRotation, wScale;
+            Math::DecomposeTransform(transform, wTranslation, wRotation, wScale);
+            glm::mat4 unscaledTransform = glm::translate(glm::mat4(1.0f), wTranslation) * glm::toMat4(glm::quat(wRotation));
+
+            if (selected.HasComponent<CameraComponent>())
+            {
+                auto& cc = selected.GetComponent<CameraComponent>();
+                renderSys->DrawFrustum(transform, cc.Camera.GetProjection(), glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
+            }
+
+            if (selected.HasComponent<DirectionalLightComponent>())
+            {
+                auto& dlc = selected.GetComponent<DirectionalLightComponent>();
+                glm::mat4 transform = GetWorldTransform(selected);
+                renderSys->DrawArrow(transform, glm::vec4(1.0f, 0.9f, 0.1f, 1.0f));
+            }
+
+            if (selected.HasComponent<PointLightComponent>())
+            {
+                auto& plc = selected.GetComponent<PointLightComponent>();
+                glm::mat4 scaleTransform = glm::scale(unscaledTransform, glm::vec3(plc.Radius));
+                renderSys->DrawWireSphere(scaleTransform, glm::vec4(1.0f, 0.8f, 0.1f, 1.0f));
+            }
+
+            if (selected.HasComponent<SpotLightComponent>())
+            {
+                auto& slc = selected.GetComponent<SpotLightComponent>();
+                renderSys->DrawWireCone(unscaledTransform, slc.Radius, slc.InnerAngle, glm::vec4(1.0f, 0.8f, 0.1f, 0.3f));
+                renderSys->DrawWireCone(unscaledTransform, slc.Radius, slc.OuterAngle, glm::vec4(1.0f, 0.8f, 0.1f, 1.0f));
+            }
+
+            if (selected.HasComponent<AudioSourceComponent>())
+            {
+                auto& ac = selected.GetComponent<AudioSourceComponent>();
+                glm::mat4 minTransform = glm::scale(unscaledTransform, glm::vec3(ac.MinDistance));
+                glm::mat4 maxTransform = glm::scale(unscaledTransform, glm::vec3(ac.MaxDistance));
+
+                renderSys->DrawWireSphere(minTransform, glm::vec4(0.2f, 0.8f, 0.2f, 1.0f));
+                renderSys->DrawWireSphere(maxTransform, glm::vec4(0.8f, 0.2f, 0.2f, 1.0f));
+            }
+        }
+
         renderSys->EndScene();
 
         for (auto entityID : m_EntitiesToDestroy)
@@ -1169,7 +1225,7 @@ namespace RXNEngine {
             if (ac.RuntimeSound)
             {
                 glm::vec3 worldPos = glm::vec3(GetWorldTransform({ e, this })[3]);
-                audioBackend->UpdateSoundSource(ac.RuntimeSound, worldPos, ac.Volume, 1.0f);
+                audioBackend->UpdateSoundSource(ac.RuntimeSound, worldPos, ac.Volume, 1.0f, ac.MinDistance, ac.MaxDistance);
             }
         }
 

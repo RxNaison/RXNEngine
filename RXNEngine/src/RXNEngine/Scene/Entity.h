@@ -32,7 +32,7 @@ namespace RXNEngine {
 		}
 
 		template<typename T>
-		bool HasComponent()
+		const bool HasComponent() const
 		{
 			return m_Scene->m_Registry.all_of<T>(m_EntityHandle);
 		}

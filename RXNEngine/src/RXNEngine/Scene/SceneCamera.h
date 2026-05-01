@@ -44,7 +44,7 @@ namespace RXNEngine {
 		float m_OrthographicSize = 10.0f;
 		float m_OrthographicNear = -1.0f, m_OrthographicFar = 1.0f;
 
-		float m_AspectRatio = 0.0f;
+		float m_AspectRatio = 1.778f;
 	};
 
 }

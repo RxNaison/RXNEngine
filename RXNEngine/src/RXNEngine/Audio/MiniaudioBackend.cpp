@@ -41,6 +41,7 @@ namespace RXNEngine {
             return nullptr;
         }
 
+        ma_sound_set_attenuation_model(sound, ma_attenuation_model_linear);
         ma_sound_set_looping(sound, looping ? MA_TRUE : MA_FALSE);
         ma_sound_set_min_distance(sound, minDistance);
         ma_sound_set_max_distance(sound, maxDistance);
@@ -48,7 +49,7 @@ namespace RXNEngine {
         return sound;
     }
 
-    void MiniaudioBackend::UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch)
+    void MiniaudioBackend::UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch, float minDistance, float maxDistance)
     {
         if (!sourceData)
             return;
@@ -57,6 +58,8 @@ namespace RXNEngine {
         ma_sound_set_position(sound, position.x, position.y, position.z);
         ma_sound_set_volume(sound, volume);
         ma_sound_set_pitch(sound, pitch);
+        ma_sound_set_min_distance(sound, minDistance);
+        ma_sound_set_max_distance(sound, maxDistance);
     }
 
     void MiniaudioBackend::PlaySoundSource(void* sourceData)

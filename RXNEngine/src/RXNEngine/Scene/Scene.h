@@ -32,7 +32,7 @@ namespace RXNEngine {
 
 		void OnUpdateSimulation(float deltaTime);
 		void OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders);
-		void OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders);
+		void OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders, const std::vector<Entity>& selectedEntities);
 		void OnUpdateRuntime(float deltaTime);
 
 		void OnRuntimeStart();
