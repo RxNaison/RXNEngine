@@ -3,6 +3,7 @@
 #include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Serialization/YamlHelpers.h"
+#include "RXNEngine/Utils/PlatformUtils.h"
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
@@ -34,12 +35,12 @@ namespace RXNEngine {
 
         out << YAML::Key << "Textures";
         out << YAML::BeginMap;
-        out << YAML::Key << "AlbedoMap" << YAML::Value << m_Material->GetAlbedoPath();
-        out << YAML::Key << "NormalMap" << YAML::Value << m_Material->GetNormalPath();
-        out << YAML::Key << "MetalMap" << YAML::Value << m_Material->GetMetalPath();
-        out << YAML::Key << "RoughMap" << YAML::Value << m_Material->GetRoughPath();
-        out << YAML::Key << "AOMap" << YAML::Value << m_Material->GetAOPath();
-        out << YAML::Key << "EmissiveMap" << YAML::Value << m_Material->GetEmissivePath();
+        out << YAML::Key << "AlbedoMap" << YAML::Value << FileSystem::GetRelativePath(m_Material->GetAlbedoPath());
+        out << YAML::Key << "NormalMap" << YAML::Value << FileSystem::GetRelativePath(m_Material->GetNormalPath());
+        out << YAML::Key << "MetalMap" << YAML::Value << FileSystem::GetRelativePath(m_Material->GetMetalPath());
+        out << YAML::Key << "RoughMap" << YAML::Value << FileSystem::GetRelativePath(m_Material->GetRoughPath());
+        out << YAML::Key << "AOMap" << YAML::Value << FileSystem::GetRelativePath(m_Material->GetAOPath());
+        out << YAML::Key << "EmissiveMap" << YAML::Value << FileSystem::GetRelativePath(m_Material->GetEmissivePath());
         out << YAML::EndMap;
 
         out << YAML::EndMap;

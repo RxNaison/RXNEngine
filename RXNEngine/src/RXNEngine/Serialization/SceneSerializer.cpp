@@ -7,21 +7,11 @@
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Serialization/YamlHelpers.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
+#include "RXNEngine/Utils/PlatformUtils.h"
 
 #include <fstream>
 
 namespace RXNEngine {
-
-	static std::string GetRelativePath(const std::string& path)
-	{
-		std::filesystem::path filePath(path);
-		std::filesystem::path currentPath = std::filesystem::current_path();
-
-		if (filePath.is_absolute())
-			return std::filesystem::relative(filePath, currentPath).generic_string();
-
-		return filePath.generic_string();
-	}
 
 	SceneSerializer::SceneSerializer(const Ref<Scene>& scene)
 		: m_Scene(scene)
@@ -108,9 +98,9 @@ namespace RXNEngine {
 
 			auto& mc = entity.GetComponent<StaticMeshComponent>();
 
-			out << YAML::Key << "AssetPath" << YAML::Value << GetRelativePath(mc.AssetPath);
+			out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mc.AssetPath);
 			out << YAML::Key << "SubmeshIndex" << YAML::Value << mc.SubmeshIndex;
-			out << YAML::Key << "MaterialAssetPath" << YAML::Value << GetRelativePath(mc.MaterialAssetPath);
+			out << YAML::Key << "MaterialAssetPath" << YAML::Value << FileSystem::GetRelativePath(mc.MaterialAssetPath);
 
 			out << YAML::EndMap;
 		}
@@ -191,7 +181,7 @@ namespace RXNEngine {
 			out << YAML::Key << "HalfExtents" << YAML::Value << bc.HalfExtents;
 			out << YAML::Key << "Offset" << YAML::Value << bc.Offset;
 			out << YAML::Key << "IsTrigger" << YAML::Value << bc.IsTrigger;
-			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(bc.PhysicsMaterialPath);
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << FileSystem::GetRelativePath(bc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // BoxColliderComponent
 		}
@@ -205,7 +195,7 @@ namespace RXNEngine {
 			out << YAML::Key << "Radius" << YAML::Value << sc.Radius;
 			out << YAML::Key << "Offset" << YAML::Value << sc.Offset;
 			out << YAML::Key << "IsTrigger" << YAML::Value << sc.IsTrigger;
-			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(sc.PhysicsMaterialPath);
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << FileSystem::GetRelativePath(sc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // SphereColliderComponent
 		}
@@ -220,7 +210,7 @@ namespace RXNEngine {
 			out << YAML::Key << "Height" << YAML::Value << cc.Height;
 			out << YAML::Key << "Offset" << YAML::Value << cc.Offset;
 			out << YAML::Key << "IsTrigger" << YAML::Value << cc.IsTrigger;
-			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(cc.PhysicsMaterialPath);
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << FileSystem::GetRelativePath(cc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // CapsuleColliderComponent
 		}
@@ -232,9 +222,9 @@ namespace RXNEngine {
 
 			auto& mc = entity.GetComponent<MeshColliderComponent>();
 			out << YAML::Key << "IsConvex" << YAML::Value << mc.IsConvex;
-			out << YAML::Key << "OverrideAssetPath" << YAML::Value << mc.OverrideAssetPath;
+			out << YAML::Key << "OverrideAssetPath" << YAML::Value << FileSystem::GetRelativePath(mc.OverrideAssetPath);
 			out << YAML::Key << "IsTrigger" << YAML::Value << mc.IsTrigger;
-			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << GetRelativePath(mc.PhysicsMaterialPath);
+			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << FileSystem::GetRelativePath(mc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // MeshColliderComponent
 		}
@@ -293,7 +283,7 @@ namespace RXNEngine {
 			out << YAML::BeginMap;
 
 			auto& ac = entity.GetComponent<AudioSourceComponent>();
-			out << YAML::Key << "AudioClipPath" << YAML::Value << GetRelativePath(ac.AudioClipPath);
+			out << YAML::Key << "AudioClipPath" << YAML::Value << FileSystem::GetRelativePath(ac.AudioClipPath);
 			out << YAML::Key << "PlayOnAwake" << YAML::Value << ac.PlayOnAwake;
 			out << YAML::Key << "Looping" << YAML::Value << ac.Looping;
 			out << YAML::Key << "Volume" << YAML::Value << ac.Volume;
@@ -690,7 +680,7 @@ namespace RXNEngine {
 			out << YAML::Key << "Skybox";
 			out << YAML::BeginMap;
 
-			out << YAML::Key << "TexturePath" << YAML::Value << GetRelativePath(m_Scene->m_Skybox->GetPath());
+			out << YAML::Key << "TexturePath" << YAML::Value << FileSystem::GetRelativePath(m_Scene->m_Skybox->GetPath());
 
 			out << YAML::Key << "Intensity" << YAML::Value << m_Scene->m_SkyboxIntensity;
 

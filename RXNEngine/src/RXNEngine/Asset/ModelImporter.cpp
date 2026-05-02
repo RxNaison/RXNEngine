@@ -7,6 +7,7 @@
 #include "RXNEngine/Scene/Entity.h"
 #include "RXNEngine/Serialization/ModelSerializer.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
+#include "RXNEngine/Utils/PlatformUtils.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -64,7 +65,7 @@ namespace RXNEngine {
 					}
 				}
 
-				return assetManager->GetTexture(extractedPath);
+				return assetManager->GetTexture(FileSystem::GetRelativePath(extractedPath));
 			}
 			else
 			{
@@ -72,7 +73,7 @@ namespace RXNEngine {
 				std::replace(filename.begin(), filename.end(), '\\', '/');
 				std::string filepath = directory + "/" + filename;
 
-				return assetManager->GetTexture(filepath);
+				return assetManager->GetTexture(FileSystem::GetRelativePath(filepath));
 			}
 		}
 		return nullptr;
@@ -99,7 +100,7 @@ namespace RXNEngine {
 
 				std::string filename = std::string(str.C_Str());
 				std::replace(filename.begin(), filename.end(), '\\', '/');
-				return directory + "/" + filename;
+				return FileSystem::GetRelativePath(directory + "/" + filename);
 			}
 		}
 		return "";
@@ -441,6 +442,7 @@ namespace RXNEngine {
 		for (const auto& desc : data.Materials)
 		{
 			std::string matPath = directory + "/" + desc.Name + ".rxnmat";
+			matPath = FileSystem::GetRelativePath(matPath);
 
 			if (std::filesystem::exists(matPath))
 			{

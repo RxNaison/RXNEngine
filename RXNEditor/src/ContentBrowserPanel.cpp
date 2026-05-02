@@ -5,6 +5,7 @@
 #include "RXNEngine/Serialization/MaterialSerializer.h"
 #include "RXNEngine/Serialization/PhysicsMaterialSerializer.h"
 #include "RXNEngine/Project/Project.h"
+#include "RXNEngine/Utils/PlatformUtils.h"
 
 #include <imgui.h>
 
@@ -294,7 +295,7 @@ namespace RXNEditor {
 
             if (ImGui::BeginDragDropSource())
             {
-                std::string itemPath = item.Path.string();
+                std::string itemPath = RXNEngine::FileSystem::GetRelativePath(item.Path.string());
                 ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size() + 1);
                 ImGui::Image((ImTextureID)icon->GetRendererID(), { 64, 64 }, { 0, 1 }, { 1, 0 });
                 ImGui::Text("%s", item.Filename.c_str());
@@ -315,12 +316,12 @@ namespace RXNEditor {
                     else if (item.Path.extension() == ".rxnmat")
                     {
                         if (m_MaterialOpenCallback)
-                            m_MaterialOpenCallback(item.Path.string());
+                            m_MaterialOpenCallback(RXNEngine::FileSystem::GetRelativePath(item.Path.string()));
                     }
                     else if (item.Path.extension() == ".rxnphys")
                     {
                         if (m_PhysMaterialOpenCallback)
-                            m_PhysMaterialOpenCallback(item.Path.string());
+                            m_PhysMaterialOpenCallback(RXNEngine::FileSystem::GetRelativePath(item.Path.string()));
                     }
                 }
             }

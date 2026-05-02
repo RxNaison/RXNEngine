@@ -1,6 +1,8 @@
 #include "rxnpch.h"
 #include "ModelSerializer.h"
 #include "RXNEngine/Asset/AssetManager.h"
+#include "RXNEngine/Utils/PlatformUtils.h"
+
 #include <fstream>
 
 namespace RXNEngine {
@@ -86,7 +88,7 @@ namespace RXNEngine {
         out.write((char*)&matCount, sizeof(uint32_t));
 
         for (const auto& mat : materials)
-            WriteString(out, mat->GetAssetPath());
+            WriteString(out, FileSystem::GetRelativePath(mat->GetAssetPath()));
 
         out.close();
     }
