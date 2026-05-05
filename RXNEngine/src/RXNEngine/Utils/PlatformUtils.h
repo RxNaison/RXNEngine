@@ -16,7 +16,8 @@ namespace RXNEngine {
 	public:
 		static inline std::string GetRelativePath(const std::string& path)
 		{
-			if (path.empty()) return "";
+			if (path.empty())
+				return "";
 
 			std::filesystem::path filePath(path);
 

@@ -35,6 +35,12 @@ namespace RXNEngine {
             return GetProjectDirectory() / s_ActiveProject->m_Config.AssetDirectory;
         }
 
+        static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path)
+        {
+            RXN_CORE_ASSERT(s_ActiveProject);
+            return GetAssetDirectory() / path;
+        }
+
         static ProjectConfig& GetConfig() { return s_ActiveProject->m_Config; }
         static Ref<Project> GetActive() { return s_ActiveProject; }
 

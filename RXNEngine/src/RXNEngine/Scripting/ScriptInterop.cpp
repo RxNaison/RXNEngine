@@ -9,6 +9,8 @@
 #include "RXNEngine/Physics/PhysicsWorld.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Audio/AudioSystem.h"
+#include "RXNEngine/Utils/PlatformUtils.h"
+#include "RXNEngine/Project/Project.h"
 
 #include <coreclr_delegates.h>
 #include <PxPhysicsAPI.h>
@@ -134,7 +136,8 @@ namespace RXNEngine {
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeAssetManager_LoadMeshAsync(const char* filepath, uint64_t entityID)
     {
-        Application::Get().GetSubsystem<AssetManager>()->LoadMeshAsync(filepath, entityID);
+        std::string fullPath = Project::GetAssetFileSystemPath(filepath).string();
+        Application::Get().GetSubsystem<AssetManager>()->LoadMeshAsync(fullPath, entityID);
     }
 #pragma endregion
 
@@ -497,19 +500,24 @@ namespace RXNEngine {
         if (!entity)
             return;
 
-        std::string tag = entity.GetComponent<StaticMeshComponent>().AssetPath;
+        std::string assetPath = entity.GetComponent<StaticMeshComponent>().AssetPath;
 
-        strncpy_s(outBuffer, maxLength, tag.c_str(), _TRUNCATE);
+        strncpy_s(outBuffer, maxLength, assetPath.c_str(), _TRUNCATE);
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeStaticMesh_SetAssetPath(uint64_t entityID, const char* inTag)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeStaticMesh_SetAssetPath(uint64_t entityID, const char* inPath)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
 
         if (!entity)
             return;
 
-        entity.GetComponent<StaticMeshComponent>().AssetPath = inTag;
+        auto& smc = entity.GetComponent<StaticMeshComponent>();
+
+        smc.AssetPath = inPath;
+        std::string fullPath = Project::GetAssetFileSystemPath(inPath).string();
+
+        smc.Mesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(fullPath);
     }
      
     //CameraComponent
@@ -648,14 +656,14 @@ namespace RXNEngine {
         strncpy_s(outBuffer, maxLength, scriptPath.c_str(), _TRUNCATE);
     }
 
-    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Set(uint64_t entityID, const char* inTag)
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeScript_Set(uint64_t entityID, const char* inClassName)
     {
         Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
 
         if (!entity)
             return;
 
-        entity.GetComponent<ScriptComponent>().ClassName = inTag;
+        entity.GetComponent<ScriptComponent>().ClassName = inClassName;
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeRigidbody_Get(uint64_t entityID, RigidbodyDataInterop* outData)
@@ -877,17 +885,20 @@ namespace RXNEngine {
 #pragma region Audio
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeAudio_PlayOneShot(const char* filepath, float volume)
     {
-        Application::Get().GetSubsystem<AudioSystem>()->GetBackend()->PlayOneShot(filepath, volume);
+        std::string fullPath = Project::GetAssetFileSystemPath(filepath).string();
+        Application::Get().GetSubsystem<AudioSystem>()->GetBackend()->PlayOneShot(fullPath, volume);
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeAudio_LoadBank(const char* filepath)
     {
-        Application::Get().GetSubsystem<AudioSystem>()->LoadFMODBank(filepath);
+        std::string fullPath = Project::GetAssetFileSystemPath(filepath).string();
+        Application::Get().GetSubsystem<AudioSystem>()->LoadFMODBank(fullPath);
     }
 
     extern "C" void CORECLR_DELEGATE_CALLTYPE NativeAudio_UnloadBank(const char* filepath)
     {
-        Application::Get().GetSubsystem<AudioSystem>()->UnloadFMODBank(filepath);
+        std::string fullPath = Project::GetAssetFileSystemPath(filepath).string();
+        Application::Get().GetSubsystem<AudioSystem>()->UnloadFMODBank(fullPath);
     }
 #pragma endregion
 
