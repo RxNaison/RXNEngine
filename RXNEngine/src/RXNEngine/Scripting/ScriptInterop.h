@@ -7,7 +7,8 @@ namespace RXNEngine {
         //Logging & Core
         void* LogMessage = nullptr;
         void* ScriptField_Register = nullptr;
-        void* NativeAssetManager_LoadMeshAsync = nullptr;
+        void* AssetManager_LoadMeshAsync = nullptr;
+        void* SceneManager_LoadScene = nullptr;
 
         //Input
         void* Input_IsKeyDown = nullptr;
@@ -93,6 +94,23 @@ namespace RXNEngine {
         void* NativeAudio_PlayOneShot = nullptr;
         void* NativeAudio_LoadBank = nullptr;
         void* NativeAudio_UnloadBank = nullptr;
+
+        // UI
+        void* Entity_UICanvas_GetActive = nullptr;
+        void* Entity_UICanvas_SetActive = nullptr;
+
+        void* Entity_UITransform_Get = nullptr;
+        void* Entity_UITransform_Set = nullptr;
+
+        void* Entity_UIImage_GetTintColor = nullptr;
+        void* Entity_UIImage_SetTintColor = nullptr;
+        void* Entity_UIImage_GetTexture = nullptr;
+        void* Entity_UIImage_SetTexture = nullptr;
+
+        void* Entity_UIText_GetText = nullptr;
+        void* Entity_UIText_SetText = nullptr;
+        void* Entity_UIText_GetData = nullptr;
+        void* Entity_UIText_SetData = nullptr;
     };
 
     class ScriptInterop

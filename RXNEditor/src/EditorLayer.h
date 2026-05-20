@@ -96,5 +96,6 @@ namespace RXNEditor {
 
 		bool m_WasGizmoUsing = false;
 		std::vector<std::pair<RXNEngine::UUID, RXNEngine::TransformComponent>> m_GizmoStartTransforms;
+		std::vector<std::pair<RXNEngine::UUID, RXNEngine::UITransformComponent>> m_GizmoStartUITransforms;
 	};
 }

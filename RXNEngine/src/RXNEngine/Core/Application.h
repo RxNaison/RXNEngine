@@ -3,6 +3,7 @@
 #include "Base.h"
 #include "RXNEngine/Core/Log.h"
 #include "RXNEngine/Core/Assert.h"
+#include <cassert>
 #include "Window.h"
 #include "RXNEngine/Core/LayerStack.h"
 #include "RXNEngine/Events/Event.h"
@@ -22,7 +23,7 @@ namespace RXNEngine {
 
 		const char* operator[](int index) const
 		{
-			RXN_CORE_ASSERT(index < Count);
+			assert(index < Count);
 			return Args[index];
 		}
 	};

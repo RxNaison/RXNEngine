@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace RXNEngine
 {
@@ -86,6 +86,24 @@ namespace RXNEngine
 
         internal IntPtr RuntimeShape;
         internal IntPtr RuntimeMaterial;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct UITransformData
+    {
+        public Vector2 AnchorMin;
+        public Vector2 AnchorMax;
+        public Vector2 OffsetMin;
+        public Vector2 OffsetMax;
+        public int ZIndex;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct UITextData
+    {
+        public Vector4 Color;
+        public float LineSpacing;
+        public float Kerning;
     }
 
 }

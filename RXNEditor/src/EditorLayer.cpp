@@ -1,11 +1,14 @@
 #include "rxnpch.h"
 #include "EditorLayer.h"
 #include "RXNEngine/Asset/ModelImporter.h"
+#include "RXNEngine/Scene/SceneManager.h"
+#include "CommandHistory.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Audio/AudioSystem.h"
 #include "RXNEngine/Project/Project.h"
 #include "RXNEngine/Project/ProjectSerializer.h"
 #include "RXNEngine/Serialization/PrefabSerializer.h"
+#include "RXNEngine/Physics/PhysicsWorld.h"
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -175,12 +178,25 @@ namespace RXNEditor {
                 Application::Get().GetWindow().SetCursorMode(CursorMode::Normal);
         }
 
+        if (m_SceneState == SceneState::Play)
+        {
+            Ref<Scene> smScene = Application::Get().GetSubsystem<SceneManager>()->GetActiveScene();
+            if (smScene && smScene != m_ActiveScene)
+            {
+                m_ActiveScene = smScene;
+                m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+                m_SceneRenderer->SetScene(m_ActiveScene);
+            }
+        }
+
         switch (m_SceneState)
         {
             case SceneState::Edit:
             {
                 if (m_AllowViewportCamera)
                     m_EditorCamera->OnUpdate(deltaTime);
+
+                m_ActiveScene->OnUpdateEditor(deltaTime);
 
                 m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
 
@@ -200,6 +216,8 @@ namespace RXNEditor {
             {
                 if (m_AllowViewportCamera)
                     m_EditorCamera->OnUpdate(deltaTime);
+
+                m_ActiveScene->OnUpdateEditor(deltaTime);
 
                 m_SceneRenderer->RenderEditor(m_ViewportWidth, m_ViewportHeight, deltaTime, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
                 break;
@@ -483,23 +501,110 @@ namespace RXNEditor {
                 drawList->AddImage((void*)(uint64_t)m_PIPRenderer->GetFinalColorAttachmentRendererID(), pipPos, ImVec2(pipPos.x + pipWidth, pipPos.y + pipHeight), ImVec2(0, 1), ImVec2(1, 0));
                 drawList->AddText(ImVec2(pipPos.x + 5, pipPos.y + 5), IM_COL32(255, 255, 255, 255), "Camera Preview");
             }
+
+            for (Entity entity : selectedEntities)
+            {
+                if (entity.HasComponent<UITransformComponent>())
+                {
+                    auto& ui = entity.GetComponent<UITransformComponent>();
+                    
+                    bool isScreenSpace = true;
+                    Entity curr = entity;
+                    while (curr)
+                    {
+                        if (curr.HasComponent<UICanvasComponent>())
+                        {
+                            isScreenSpace = curr.GetComponent<UICanvasComponent>().RenderMode == CanvasRenderMode::ScreenSpaceOverlay;
+                            break;
+                        }
+
+                        if (curr.HasComponent<RelationshipComponent>())
+                        {
+                            UUID pid = curr.GetComponent<RelationshipComponent>().ParentHandle;
+                            curr = pid != 0 ? m_ActiveScene->GetEntityByUUID(pid) : Entity{};
+                        } 
+                        else break;
+                    }
+
+                    if (isScreenSpace)
+                    {
+                        float yMin = m_ViewportBounds[1].y - ui.ComputedBoundsMin.y;
+                        float yMax = m_ViewportBounds[1].y - ui.ComputedBoundsMax.y;
+                        
+                        ImVec2 minPos(m_ViewportBounds[0].x + ui.ComputedBoundsMin.x, yMax);
+                        ImVec2 maxPos(m_ViewportBounds[0].x + ui.ComputedBoundsMax.x, yMin);
+                        
+                        drawList->AddRect(minPos, maxPos, IM_COL32(255, 200, 0, 255), 0.0f, 0, 2.0f);
+                        
+                        glm::vec2 parentSize(0.0f);
+                        if (entity.HasComponent<RelationshipComponent>())
+                        {
+                            UUID pid = entity.GetComponent<RelationshipComponent>().ParentHandle;
+                            if (pid != 0)
+                            {
+                                Entity parent = m_ActiveScene->GetEntityByUUID(pid);
+                                if (parent && parent.HasComponent<UITransformComponent>())
+                                    parentSize = parent.GetComponent<UITransformComponent>().ComputedSize;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if (!selectedEntities.empty() && m_GizmoType != -1 && m_SceneState != SceneState::Play)
         {
-            ImGuizmo::SetOrthographic(false);
+            Entity primaryEntity = selectedEntities[0];
+
+            bool isUI = false;
+            bool isScreenSpace = false;
+            
+            if (primaryEntity.HasComponent<UITransformComponent>())
+            {
+                isUI = true;
+                
+                if (primaryEntity.HasComponent<UICanvasComponent>())
+                {
+                    if (primaryEntity.GetComponent<UICanvasComponent>().RenderMode == CanvasRenderMode::WorldSpace)
+                    {
+                        isUI = false;
+                    }
+                }
+                
+                if (isUI)
+                {
+                    Entity curr = primaryEntity;
+                    while (curr) {
+                        if (curr.HasComponent<UICanvasComponent>()) {
+                            isScreenSpace = curr.GetComponent<UICanvasComponent>().RenderMode == CanvasRenderMode::ScreenSpaceOverlay;
+                            break;
+                        }
+                        if (curr.HasComponent<RelationshipComponent>()) {
+                            UUID pid = curr.GetComponent<RelationshipComponent>().ParentHandle;
+                            curr = pid != 0 ? m_ActiveScene->GetEntityByUUID(pid) : Entity{};
+                        } else break;
+                    }
+                }
+            }
+
+            ImGuizmo::SetOrthographic(isScreenSpace);
             ImGuizmo::SetDrawlist();
             ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
 
-            const glm::mat4& cameraView = m_EditorCamera->GetViewMatrix();
-            const glm::mat4& cameraProj = m_EditorCamera->GetProjection();
+            glm::mat4 cameraView = m_EditorCamera->GetViewMatrix();
+            glm::mat4 cameraProj = m_EditorCamera->GetProjection();
+
+            if (isScreenSpace)
+            {
+                cameraProj = glm::ortho(0.0f, (float)m_ViewportWidth, 0.0f, (float)m_ViewportHeight, -1.0f, 1.0f);
+                cameraView = glm::mat4(1.0f);
+            }
 
             bool snap = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
             float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 5.0f : 0.5f;
             float snapValues[3] = { snapValue, snapValue, snapValue };
 
-            Entity primaryEntity = selectedEntities[0];
-            glm::mat4 groupTransform = m_ActiveScene->GetWorldTransform(primaryEntity);
+            glm::mat4 groupTransform = isUI ? primaryEntity.GetComponent<UITransformComponent>().ComputedTransform : m_ActiveScene->GetWorldTransform(primaryEntity);
             glm::mat4 deltaMatrix(1.0f);
 
             bool isUsing = ImGuizmo::IsUsing();
@@ -507,8 +612,13 @@ namespace RXNEditor {
             {
                 m_WasGizmoUsing = true;
                 m_GizmoStartTransforms.clear();
+                m_GizmoStartUITransforms.clear();
                 for (Entity entity : selectedEntities)
+                {
                     m_GizmoStartTransforms.push_back({ entity.GetUUID(), entity.GetComponent<TransformComponent>() });
+                    if (entity.HasComponent<UITransformComponent>())
+                        m_GizmoStartUITransforms.push_back({ entity.GetUUID(), entity.GetComponent<UITransformComponent>() });
+                }
             }
 
             ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,
@@ -516,47 +626,74 @@ namespace RXNEditor {
 
             if (ImGuizmo::IsUsing())
             {
-                glm::mat4 primaryOriginalTransform = m_ActiveScene->GetWorldTransform(primaryEntity);
+                glm::mat4 primaryOriginalTransform = isUI ? primaryEntity.GetComponent<UITransformComponent>().ComputedTransform : m_ActiveScene->GetWorldTransform(primaryEntity);
                 glm::vec3 pivotTranslation, tempRot, tempScale;
                 Math::DecomposeTransform(primaryOriginalTransform, pivotTranslation, tempRot, tempScale);
                 glm::mat4 pivot = glm::translate(glm::mat4(1.0f), pivotTranslation);
 
                 for (Entity entity : selectedEntities)
                 {
-                    auto& entityTC = entity.GetComponent<TransformComponent>();
-                    auto& entityRC = entity.GetComponent<RelationshipComponent>();
-
-                    glm::mat4 entityWorldTransform;
-
-                    if (entity == primaryEntity)
+                    if (isUI && entity.HasComponent<UITransformComponent>())
                     {
-                        entityWorldTransform = groupTransform;
+                        auto& ui = entity.GetComponent<UITransformComponent>();
+                        
+                        glm::vec3 deltaTranslation, deltaRotation, deltaScale;
+                        Math::DecomposeTransform(deltaMatrix, deltaTranslation, deltaRotation, deltaScale);
+                        
+                        if (m_GizmoType == ImGuizmo::OPERATION::TRANSLATE)
+                        {
+                            ui.OffsetMin.x += deltaTranslation.x;
+                            ui.OffsetMax.x += deltaTranslation.x;
+                            ui.OffsetMin.y += deltaTranslation.y;
+                            ui.OffsetMax.y += deltaTranslation.y;
+                        }
+                        else if (m_GizmoType == ImGuizmo::OPERATION::SCALE)
+                        {
+                            glm::vec2 size = ui.OffsetMax - ui.OffsetMin;
+                            glm::vec2 center = ui.OffsetMin + (size * 0.5f);
+                            glm::vec2 newSize = size * glm::vec2(deltaScale.x, deltaScale.y);
+                            ui.OffsetMin = center - (newSize * 0.5f);
+                            ui.OffsetMax = center + (newSize * 0.5f);
+                        }
+                        ui.IsDirty = true;
                     }
                     else
                     {
-                        glm::mat4 oldEntityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
-                        entityWorldTransform = pivot * deltaMatrix * glm::inverse(pivot) * oldEntityWorldTransform;
-                    }
+                        auto& entityTC = entity.GetComponent<TransformComponent>();
+                        auto& entityRC = entity.GetComponent<RelationshipComponent>();
 
-                    if (entityRC.ParentHandle != 0)
-                    {
-                        Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
-                        if (parent)
+                        glm::mat4 entityWorldTransform;
+
+                        if (entity == primaryEntity)
                         {
-                            glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
-                            entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                            entityWorldTransform = groupTransform;
                         }
+                        else
+                        {
+                            glm::mat4 oldEntityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
+                            entityWorldTransform = pivot * deltaMatrix * glm::inverse(pivot) * oldEntityWorldTransform;
+                        }
+
+                        if (entityRC.ParentHandle != 0)
+                        {
+                            Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
+                            if (parent)
+                            {
+                                glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
+                                entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                            }
+                        }
+
+                        glm::vec3 translation, rotation, scale;
+                        Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
+
+                        entityTC.Translation = translation;
+                        entityTC.Rotation = rotation;
+                        entityTC.Scale = scale;
+
+                        if (m_SceneState == SceneState::Simulate)
+                            RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
                     }
-
-                    glm::vec3 translation, rotation, scale;
-                    Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
-
-                    entityTC.Translation = translation;
-                    entityTC.Rotation = rotation;
-                    entityTC.Scale = scale;
-
-                    if (m_SceneState == SceneState::Simulate)
-                        m_ActiveScene->SyncTransformToPhysics(entity);
                 }
             }
 
@@ -565,14 +702,12 @@ namespace RXNEditor {
                 m_WasGizmoUsing = false;
 
                 std::vector<ChangeMultiTransformCommand::TransformData> transforms;
-
                 for (const auto& [id, startTransform] : m_GizmoStartTransforms)
                 {
                     Entity entity = m_ActiveScene->GetEntityByUUID(id);
                     if (entity)
                     {
                         TransformComponent endTransform = entity.GetComponent<TransformComponent>();
-
                         if (startTransform.Translation != endTransform.Translation ||
                             startTransform.Rotation != endTransform.Rotation ||
                             startTransform.Scale != endTransform.Scale)
@@ -581,11 +716,25 @@ namespace RXNEditor {
                         }
                     }
                 }
-
                 if (!transforms.empty())
-                {
                     CommandHistory::Push(CreateScope<ChangeMultiTransformCommand>(m_ActiveScene, transforms));
+                    
+                std::vector<ChangeMultiUITransformCommand::UITransformData> uiTransforms;
+                for (const auto& [id, startTransform] : m_GizmoStartUITransforms)
+                {
+                    Entity entity = m_ActiveScene->GetEntityByUUID(id);
+                    if (entity && entity.HasComponent<UITransformComponent>())
+                    {
+                        UITransformComponent endTransform = entity.GetComponent<UITransformComponent>();
+                        if (startTransform.OffsetMin != endTransform.OffsetMin ||
+                            startTransform.OffsetMax != endTransform.OffsetMax)
+                        {
+                            uiTransforms.push_back({ id, startTransform, endTransform });
+                        }
+                    }
                 }
+                if (!uiTransforms.empty())
+                    CommandHistory::Push(CreateScope<ChangeMultiUITransformCommand>(m_ActiveScene, uiTransforms));
             }
         }
 
@@ -1030,6 +1179,7 @@ namespace RXNEditor {
         UUID selectedUUID = selected ? selected.GetUUID() : UUID::Null;
 
         m_ActiveScene = Scene::Copy(m_EditorScene);
+        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(m_ActiveScene);
         m_ActiveScene->OnRuntimeStart();
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -1049,6 +1199,7 @@ namespace RXNEditor {
             m_ActiveScene->OnSimulationStop();
 
         m_SceneState = SceneState::Edit;
+        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(nullptr);
 
         Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
         UUID selectedUUID = selected ? selected.GetUUID() : UUID::Null;

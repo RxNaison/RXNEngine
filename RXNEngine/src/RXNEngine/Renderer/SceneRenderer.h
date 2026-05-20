@@ -56,9 +56,11 @@ namespace RXNEngine {
         Settings& GetSettings() { return m_Settings; }
         int GetEntityIDAtMouse(int x, int y, const EditorCamera& camera);
 
-     private:
         void RenderPostProcess();
         void RenderBloom();
+        void RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace);
+        void RenderUIPicking(const EditorCamera& camera);
+		void RenderScene(const Camera& camera, const glm::mat4& cameraTransform, bool showColliders, float deltaTime = 0.0f, const std::vector<Entity>& selectedEntities = {});
     private:
         Ref<Scene> m_Scene;
         SceneRendererSpecification m_Specification;
@@ -69,6 +71,8 @@ namespace RXNEngine {
 
         Ref<RenderTarget> m_PickingPass;
         Ref<Shader> m_PickingShader;
+        Ref<Shader> m_UIPickingShader;
+        Ref<VertexArray> m_UIPickingQuadVAO;
 
         Ref<Shader> m_PostProcessShader;
         Ref<VertexArray> m_ScreenQuadVAO;

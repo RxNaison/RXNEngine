@@ -5,10 +5,13 @@
 #include "RXNEngine/Renderer/RenderTarget.h"
 #include "RXNEngine/Math/Math.h"
 #include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VertexArray.h"
 
 #include "RXNEngine/Core/Subsystem.h"
 #include <typeindex>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <entt.hpp>
 
@@ -30,18 +33,18 @@ namespace RXNEngine {
 		bool IsDescendantOf(Entity entity, Entity potentialAscendant);
 		glm::mat4 GetWorldTransform(Entity entity);
 
+		void OnUpdateEditor(float deltaTime);
 		void OnUpdateSimulation(float deltaTime);
-		void OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders);
-		void OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders, const std::vector<Entity>& selectedEntities);
 		void OnUpdateRuntime(float deltaTime);
+
+		uint32_t GetViewportWidth() const { return m_ViewportWidth; }
+		uint32_t GetViewportHeight() const { return m_ViewportHeight; }
 
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 
 		void OnSimulationStart();
 		void OnSimulationStop();
-
-		void SyncTransformToPhysics(Entity entity);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 
@@ -56,7 +59,8 @@ namespace RXNEngine {
 		float GetSkyboxIntensity() const { return m_SkyboxIntensity; }
 		void SetSkyboxIntensity(float intensity) { m_SkyboxIntensity = intensity; }
 
-		const entt::registry& GetRaw() { return m_Registry; }
+		entt::registry& GetRaw() { return m_Registry; }
+		const entt::registry& GetRaw() const { return m_Registry; }
 
 		static Ref<Scene> Copy(Ref<Scene> other);
 
@@ -65,9 +69,9 @@ namespace RXNEngine {
 
 	private:
 		void UpdateWorldTransforms();
+		void ProcessDeletedEntities();
 		void OnCameraComponentAdded(entt::registry& registry, entt::entity entity);
 		void RemoveEntity(Entity entity);
-		void CreatePhysicsBody(Entity entity);
 
 	private:
 		entt::registry m_Registry;
@@ -87,6 +91,7 @@ namespace RXNEngine {
 
 		friend class Entity;
 		friend class SceneSerializer;
+		friend class SceneRenderer;
+		friend class UISystem;
 	};
-
 }

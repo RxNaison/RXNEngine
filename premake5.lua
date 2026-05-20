@@ -26,12 +26,75 @@ IncludeDir["CoACD"] = "RXNEngine/vendor/CoACD/public"
 IncludeDir["miniaudio"] = "RXNEngine/vendor/miniaudio/include"
 IncludeDir["FMODCore"] = "RXNEngine/vendor/fmod/api/core/inc"
 IncludeDir["FMODStudio"] = "RXNEngine/vendor/fmod/api/studio/inc"
+IncludeDir["freetype"] = "RXNEngine/vendor/freetype/include"
+IncludeDir["msdfgen"] = "RXNEngine/vendor/msdf-atlas-gen/msdfgen"
+IncludeDir["msdf_atlas_gen"] = "RXNEngine/vendor/msdf-atlas-gen/msdf-atlas-gen"
+IncludeDir["msdfgen_config"] = "RXNEngine/vendor/msdfgen_config"
 
 PhysXBinDir = "RXNEngine/vendor/PhysX/physx/bin/win.x86_64.vc143.md"
 
 group "Dependencies"
     include "RXNEngine/vendor/Glad"
     include "RXNEngine/vendor/imgui"
+
+    project "msdf-atlas-gen"
+        location "RXNEngine/vendor/msdf-atlas-gen"
+        kind "StaticLib"
+        language "C++"
+        cppdialect "C++11"
+        staticruntime "off"
+
+        targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+        objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+        files
+        {
+            "RXNEngine/vendor/msdf-atlas-gen/msdfgen/core/**.h",
+            "RXNEngine/vendor/msdf-atlas-gen/msdfgen/core/**.cpp",
+            "RXNEngine/vendor/msdf-atlas-gen/msdfgen/ext/**.h",
+            "RXNEngine/vendor/msdf-atlas-gen/msdfgen/ext/**.cpp",
+            "RXNEngine/vendor/msdf-atlas-gen/msdf-atlas-gen/**.h",
+            "RXNEngine/vendor/msdf-atlas-gen/msdf-atlas-gen/**.cpp"
+        }
+
+        removefiles
+        {
+            "RXNEngine/vendor/msdf-atlas-gen/msdf-atlas-gen/main.cpp",
+            "RXNEngine/vendor/msdf-atlas-gen/msdfgen/main.cpp"
+        }
+
+        defines
+        {
+            "_CRT_SECURE_NO_WARNINGS",
+            "MSDFGEN_EXTENSIONS",
+            "MSDF_ATLAS_NO_ARTERY_FONT",
+            "MSDFGEN_DISABLE_SVG"
+        }
+
+        includedirs
+        {
+            "%{IncludeDir.freetype}",
+            "RXNEngine/vendor/freetype/build/include",
+            "%{IncludeDir.msdfgen}",
+            "%{IncludeDir.msdf_atlas_gen}",
+            "RXNEngine/vendor/msdf-atlas-gen/msdfgen/include",
+            "%{IncludeDir.msdfgen_config}"
+        }
+
+        filter "configurations:Debug"
+            runtime "Debug"
+            symbols "on"
+
+        filter "configurations:Release"
+            runtime "Release"
+            optimize "on"
+
+        filter "configurations:Dist"
+            runtime "Release"
+            optimize "on"
+
+        filter "system:windows"
+            systemversion "latest"
 
 group ""
 
@@ -66,10 +129,13 @@ project "RXNEngine"
    
     defines
     {
-	    "_CRT_SECURE_NO_WARNINGS",
+        "_CRT_SECURE_NO_WARNINGS",
         "GLFW_INCLUDE_NONE",
         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
-        "YAML_CPP_STATIC_DEFINE"
+        "YAML_CPP_STATIC_DEFINE",
+        "MSDFGEN_EXTENSIONS",
+        "MSDF_ATLAS_NO_ARTERY_FONT",
+        "MSDFGEN_DISABLE_SVG"
     }
    
     includedirs
@@ -94,10 +160,16 @@ project "RXNEngine"
         "%{IncludeDir.CoACD}",
         "%{IncludeDir.miniaudio}",
         "%{IncludeDir.FMODCore}",
-        "%{IncludeDir.FMODStudio}"
+        "%{IncludeDir.FMODStudio}",
+        "%{IncludeDir.freetype}",
+        "%{prj.name}/vendor/freetype/build/include",
+        "%{IncludeDir.msdfgen}",
+        "%{IncludeDir.msdf_atlas_gen}",
+        "%{prj.name}/vendor/msdf-atlas-gen/msdfgen/include",
+        "%{IncludeDir.msdfgen_config}"
     }
 
-    links { "Glad", "Imgui", "opengl32.lib", "ws2_32.lib", "dbghelp.lib" }
+    links { "Glad", "Imgui", "msdf-atlas-gen", "opengl32.lib", "ws2_32.lib", "dbghelp.lib" }
 
     removefiles
     {
@@ -136,7 +208,8 @@ project "RXNEngine"
           PhysXBinDir .. "/debug/PhysXCooking_64.lib",
           "RXNEngine/vendor/CoACD/build/Debug/_coacd.lib",
           "RXNEngine/vendor/fmod/api/core/lib/x64/fmodL_vc.lib",
-          "RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL_vc.lib"
+          "RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL_vc.lib",
+          "RXNEngine/vendor/freetype/build/Debug/freetyped.lib"
       }
     filter "configurations:Release"
       defines { "RXN_RELEASE", "NDEBUG", "TRACY_ENABLE" }
@@ -157,7 +230,8 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCooking_64.lib",
           "RXNEngine/vendor/CoACD/build/Release/_coacd.lib",
           "RXNEngine/vendor/fmod/api/core/lib/x64/fmod_vc.lib",
-          "RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio_vc.lib"
+          "RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio_vc.lib",
+          "RXNEngine/vendor/freetype/build/Release/freetype.lib"
       }
     filter "configurations:Dist"
       defines { "RXN_DIST", "NDEBUG" }
@@ -178,7 +252,8 @@ project "RXNEngine"
           PhysXBinDir .. "/release/PhysXCooking_64.lib",
           "RXNEngine/vendor/CoACD/build/Release/_coacd.lib",
           "RXNEngine/vendor/fmod/api/core/lib/x64/fmod_vc.lib",
-          "RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio_vc.lib"
+          "RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio_vc.lib",
+          "RXNEngine/vendor/freetype/build/Release/freetype.lib"
       }
 
 
@@ -219,7 +294,10 @@ project "RXNEditor"
         "%{IncludeDir.ImGuizmo}",
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.PxShared}",
-        "%{IncludeDir.Tracy}"
+        "%{IncludeDir.Tracy}",
+        "%{IncludeDir.freetype}",
+        "%{IncludeDir.msdfgen}",
+        "%{IncludeDir.msdf_atlas_gen}"
     }
     links "RXNEngine"
     
@@ -247,7 +325,7 @@ project "RXNEditor"
        }
 
     filter "configurations:Release"
-       defines { "RXN_RELEASE", "TRACY_ENABLE" }
+       defines { "RXN_RELEASE", "TRACY_ENABLE", "NDEBUG" }
        runtime "Release"
        optimize "on"
 
@@ -267,7 +345,7 @@ project "RXNEditor"
        }
 
     filter "configurations:Dist"
-       defines { "RXN_DIST" }
+       defines { "RXN_DIST", "NDEBUG" }
        runtime "Release"
        optimize "on"
 

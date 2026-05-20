@@ -9,6 +9,7 @@
 #include "RXNEngine/Physics/PhysicsWorld.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Audio/AudioSystem.h"
+#include "RXNEngine/Scene/SceneManager.h"
 #include "RXNEngine/Utils/PlatformUtils.h"
 #include "RXNEngine/Project/Project.h"
 
@@ -138,6 +139,11 @@ namespace RXNEngine {
     {
         std::string fullPath = Project::GetAssetFileSystemPath(filepath).string();
         Application::Get().GetSubsystem<AssetManager>()->LoadMeshAsync(fullPath, entityID);
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeSceneManager_LoadScene(const char* path)
+    {
+        Application::Get().GetSubsystem<SceneManager>()->LoadScene(path);
     }
 #pragma endregion
 
@@ -384,11 +390,24 @@ namespace RXNEngine {
         if (type == "PointLightComponent") return entity.HasComponent<PointLightComponent>() ? 1 : 0;
         if (type == "SpotLightComponent") return entity.HasComponent<SpotLightComponent>() ? 1 : 0;
         if (type == "ScriptComponent") return entity.HasComponent<ScriptComponent>() ? 1 : 0;
+
+        // Physics
         if (type == "RigidbodyComponent") return entity.HasComponent<RigidbodyComponent>() ? 1 : 0;
         if (type == "BoxColliderComponent") return entity.HasComponent<BoxColliderComponent>() ? 1 : 0;
         if (type == "SphereColliderComponent") return entity.HasComponent<SphereColliderComponent>() ? 1 : 0;
         if (type == "CapsuleColliderComponent") return entity.HasComponent<CapsuleColliderComponent>() ? 1 : 0;
+        if (type == "MeshColliderComponent") return entity.HasComponent<MeshColliderComponent>() ? 1 : 0;
         if (type == "CharacterControllerComponent") return entity.HasComponent<CharacterControllerComponent>() ? 1 : 0;
+
+        // Audio
+        if (type == "AudioSourceComponent") return entity.HasComponent<AudioSourceComponent>() ? 1 : 0;
+
+        // UI
+        if (type == "UICanvasComponent") return entity.HasComponent<UICanvasComponent>() ? 1 : 0;
+        if (type == "UITransformComponent") return entity.HasComponent<UITransformComponent>() ? 1 : 0;
+        if (type == "UIImageComponent") return entity.HasComponent<UIImageComponent>() ? 1 : 0;
+        if (type == "UITextComponent") return entity.HasComponent<UITextComponent>() ? 1 : 0;
+        if (type == "UIButtonComponent") return entity.HasComponent<UIButtonComponent>() ? 1 : 0;
 
         return 0;
     }
@@ -409,11 +428,25 @@ namespace RXNEngine {
         else if (type == "PointLightComponent") entity.AddComponent<PointLightComponent>();
         else if (type == "SpotLightComponent") entity.AddComponent<SpotLightComponent>();
         else if (type == "ScriptComponent") entity.AddComponent<ScriptComponent>();
+
+        // Physics
         else if (type == "RigidbodyComponent") entity.AddComponent<RigidbodyComponent>();
         else if (type == "BoxColliderComponent") entity.AddComponent<BoxColliderComponent>();
         else if (type == "SphereColliderComponent") entity.AddComponent<SphereColliderComponent>();
         else if (type == "CapsuleColliderComponent") entity.AddComponent<CapsuleColliderComponent>();
+        else if (type == "MeshColliderComponent") entity.AddComponent<MeshColliderComponent>();
         else if (type == "CharacterControllerComponent") entity.AddComponent<CharacterControllerComponent>();
+
+        // Audio
+        else if (type == "AudioSourceComponent") entity.AddComponent<AudioSourceComponent>();
+
+        // UI
+        else if (type == "UICanvasComponent") entity.AddComponent<UICanvasComponent>();
+        else if (type == "UITransformComponent") entity.AddComponent<UITransformComponent>();
+        else if (type == "UIImageComponent") entity.AddComponent<UIImageComponent>();
+        else if (type == "UITextComponent") entity.AddComponent<UITextComponent>();
+        else if (type == "UIButtonComponent") entity.AddComponent<UIButtonComponent>();
+
         else
         {
             RXN_CORE_WARN("ScriptInterop: Attempted to add unknown component type '{0}'!", type);
@@ -902,6 +935,144 @@ namespace RXNEngine {
     }
 #pragma endregion
 
+#pragma region UI
+
+    extern "C" bool CORECLR_DELEGATE_CALLTYPE NativeEntity_UICanvas_GetActive(uint64_t entityID)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+
+        if (!entity.HasComponent<UICanvasComponent>())
+            return false;
+
+        return entity.GetComponent<UICanvasComponent>().Active;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UICanvas_SetActive(uint64_t entityID, bool active)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UICanvasComponent>())
+            entity.GetComponent<UICanvasComponent>().Active = active;
+    }
+
+    struct UITransformData
+    {
+        glm::vec2 AnchorMin;
+        glm::vec2 AnchorMax;
+        glm::vec2 OffsetMin;
+        glm::vec2 OffsetMax;
+        int ZIndex;
+    };
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UITransform_Get(uint64_t entityID, UITransformData* outData)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UITransformComponent>())
+        {
+            auto& comp = entity.GetComponent<UITransformComponent>();
+            outData->AnchorMin = comp.AnchorMin;
+            outData->AnchorMax = comp.AnchorMax;
+            outData->OffsetMin = comp.OffsetMin;
+            outData->OffsetMax = comp.OffsetMax;
+            outData->ZIndex = comp.ZIndex;
+        }
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UITransform_Set(uint64_t entityID, UITransformData* inData)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UITransformComponent>())
+        {
+            auto& comp = entity.GetComponent<UITransformComponent>();
+            comp.AnchorMin = inData->AnchorMin;
+            comp.AnchorMax = inData->AnchorMax;
+            comp.OffsetMin = inData->OffsetMin;
+            comp.OffsetMax = inData->OffsetMax;
+            comp.ZIndex = inData->ZIndex;
+        }
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIImage_GetTintColor(uint64_t entityID, glm::vec4* outColor)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UIImageComponent>())
+            *outColor = entity.GetComponent<UIImageComponent>().TintColor;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIImage_SetTintColor(uint64_t entityID, glm::vec4* inColor)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UIImageComponent>())
+            entity.GetComponent<UIImageComponent>().TintColor = *inColor;
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIImage_GetTexture(uint64_t entityID, char* outPath, uint32_t maxLength)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UIImageComponent>())
+        {
+            auto& comp = entity.GetComponent<UIImageComponent>();
+            strncpy(outPath, comp.TextureAssetPath.c_str(), maxLength - 1);
+            outPath[maxLength - 1] = '\0';
+        }
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIImage_SetTexture(uint64_t entityID, const char* path)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UIImageComponent>())
+            entity.GetComponent<UIImageComponent>().TextureAssetPath = path ? path : "";
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIText_GetText(uint64_t entityID, char* outText, uint32_t maxLength)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UITextComponent>())
+        {
+            auto& comp = entity.GetComponent<UITextComponent>();
+            strncpy(outText, comp.Text.c_str(), maxLength - 1);
+            outText[maxLength - 1] = '\0';
+        }
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIText_SetText(uint64_t entityID, const char* text)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UITextComponent>())
+            entity.GetComponent<UITextComponent>().Text = text ? text : "";
+    }
+
+    struct UITextData
+    {
+        glm::vec4 Color;
+        float LineSpacing;
+        float Kerning;
+    };
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIText_GetData(uint64_t entityID, UITextData* outData)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UITextComponent>())
+        {
+            auto& comp = entity.GetComponent<UITextComponent>();
+            outData->Color = comp.Color;
+            outData->LineSpacing = comp.LineSpacing;
+            outData->Kerning = comp.Kerning;
+        }
+    }
+
+    extern "C" void CORECLR_DELEGATE_CALLTYPE NativeEntity_UIText_SetData(uint64_t entityID, UITextData* inData)
+    {
+        Entity entity = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext()->GetEntityByUUID(entityID);
+        if (entity.HasComponent<UITextComponent>())
+        {
+            auto& comp = entity.GetComponent<UITextComponent>();
+            comp.Color = inData->Color;
+            comp.LineSpacing = inData->LineSpacing;
+            comp.Kerning = inData->Kerning;
+        }
+    }
+
+#pragma endregion
 
     void ScriptInterop::RegisterFunctions(InternalCalls* outCalls)
     {
@@ -910,7 +1081,8 @@ namespace RXNEngine {
         //Logging & Core
         outCalls->LogMessage = (void*)NativeLogMessage;
         outCalls->ScriptField_Register = (void*)NativeScriptField_Register;
-        outCalls->NativeAssetManager_LoadMeshAsync = (void*)NativeAssetManager_LoadMeshAsync;
+        outCalls->AssetManager_LoadMeshAsync = (void*)NativeAssetManager_LoadMeshAsync;
+        outCalls->SceneManager_LoadScene = (void*)NativeSceneManager_LoadScene;
 
         //Input
         outCalls->Input_IsKeyDown = (void*)NativeInput_IsKeyDown;
@@ -996,6 +1168,23 @@ namespace RXNEngine {
         outCalls->NativeAudio_LoadBank = (void*)NativeAudio_LoadBank;
         outCalls->NativeAudioSource_SetParameter = (void*)NativeAudioSource_SetParameter;
         outCalls->NativeAudio_UnloadBank = (void*)NativeAudio_UnloadBank;
+
+        // UI
+        outCalls->Entity_UICanvas_GetActive = (void*)NativeEntity_UICanvas_GetActive;
+        outCalls->Entity_UICanvas_SetActive = (void*)NativeEntity_UICanvas_SetActive;
+
+        outCalls->Entity_UITransform_Get = (void*)NativeEntity_UITransform_Get;
+        outCalls->Entity_UITransform_Set = (void*)NativeEntity_UITransform_Set;
+
+        outCalls->Entity_UIImage_GetTintColor = (void*)NativeEntity_UIImage_GetTintColor;
+        outCalls->Entity_UIImage_SetTintColor = (void*)NativeEntity_UIImage_SetTintColor;
+        outCalls->Entity_UIImage_GetTexture = (void*)NativeEntity_UIImage_GetTexture;
+        outCalls->Entity_UIImage_SetTexture = (void*)NativeEntity_UIImage_SetTexture;
+
+        outCalls->Entity_UIText_GetText = (void*)NativeEntity_UIText_GetText;
+        outCalls->Entity_UIText_SetText = (void*)NativeEntity_UIText_SetText;
+        outCalls->Entity_UIText_GetData = (void*)NativeEntity_UIText_GetData;
+        outCalls->Entity_UIText_SetData = (void*)NativeEntity_UIText_SetData;
     }
 
 }

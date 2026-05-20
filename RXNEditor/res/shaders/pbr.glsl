@@ -202,8 +202,8 @@ float ShadowCalculation(vec3 fragPosWorld)
 
     if (projCoords.z > 1.0) return 0.0;
 
-    float minBias = 0.00003;
-    float maxBias = 0.0003;
+    float minBias = 0.00005;
+    float maxBias = 0.0005;
     float cascadeMultiplier = float(layer + 1);
     float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias) * cascadeMultiplier;
 

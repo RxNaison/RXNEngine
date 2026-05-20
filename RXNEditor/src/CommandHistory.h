@@ -1,4 +1,6 @@
 #pragma once
+#include "RXNEngine/Physics/PhysicsWorld.h"
+
 #include <RXNEngine.h>
 #include <vector>
 #include <string>
@@ -43,7 +45,7 @@ namespace RXNEditor {
                 if constexpr (std::is_same_v<T, RXNEngine::TransformComponent>)
                 {
                     if (m_Scene->IsSimulating())
-                        m_Scene->SyncTransformToPhysics(entity);
+                        RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
                 }
             }
         }
@@ -57,7 +59,7 @@ namespace RXNEditor {
                 if constexpr (std::is_same_v<T, RXNEngine::TransformComponent>)
                 {
                     if (m_Scene->IsSimulating())
-                        m_Scene->SyncTransformToPhysics(entity);
+                        RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
                 }
             }
         }
@@ -194,5 +196,24 @@ namespace RXNEditor {
     private:
         RXNEngine::Ref<RXNEngine::Scene> m_Scene;
         std::vector<TransformData> m_Transforms;
+    };
+
+    class ChangeMultiUITransformCommand : public EditorCommand
+    {
+    public:
+        struct UITransformData
+        {
+            RXNEngine::UUID EntityID;
+            RXNEngine::UITransformComponent OldTransform;
+            RXNEngine::UITransformComponent NewTransform;
+        };
+
+        ChangeMultiUITransformCommand(RXNEngine::Ref<RXNEngine::Scene> scene, const std::vector<UITransformData>& transforms);
+        virtual void Execute() override;
+        virtual void Undo() override;
+
+    private:
+        RXNEngine::Ref<RXNEngine::Scene> m_Scene;
+        std::vector<UITransformData> m_Transforms;
     };
 }

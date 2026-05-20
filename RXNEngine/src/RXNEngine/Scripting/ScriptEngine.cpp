@@ -142,6 +142,7 @@ namespace RXNEngine {
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_destroy_fn)(uint64_t entityID);
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_update_fn)(uint64_t entityID, float deltaTime);
     typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_on_fixed_update_fn)(uint64_t entityID, float deltaTime);
+    typedef void (CORECLR_DELEGATE_CALLTYPE* invoke_method_fn)(uint64_t entityID, const char* methodName);
     typedef int32_t(CORECLR_DELEGATE_CALLTYPE* entity_class_exists_fn)(const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* reflect_class_fn)(const char* className);
     typedef void (CORECLR_DELEGATE_CALLTYPE* get_field_value_fn)(uint64_t entityID, const char* fieldName, void* outBuffer);
@@ -164,6 +165,7 @@ namespace RXNEngine {
         invoke_on_destroy_fn InvokeOnDestroy = nullptr;
         invoke_on_update_fn InvokeOnUpdate = nullptr;
 		invoke_on_fixed_update_fn InvokeOnFixedUpdate = nullptr;
+		invoke_method_fn InvokeMethod = nullptr;
 
         entity_class_exists_fn CheckEntityClassExists = nullptr;
         reflect_class_fn ReflectClass = nullptr;
@@ -230,6 +232,7 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnDestroy, m_Data->InvokeOnDestroy);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnUpdate, m_Data->InvokeOnUpdate);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnFixedUpdate, m_Data->InvokeOnFixedUpdate);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeMethod, m_Data->InvokeMethod);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", EntityClassExists, m_Data->CheckEntityClassExists);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ReflectClass, m_Data->ReflectClass);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", GetFieldValue, m_Data->GetFieldValue);
@@ -401,6 +404,15 @@ namespace RXNEngine {
         if (it != m_Data->EntityInstances.end())
             it->second->InvokeOnFixedUpdate(deltaTime);
     }
+
+    void ScriptEngine::InvokeMethod(Entity entity, const std::string& methodName)
+    {
+        UUID entityID = entity.GetUUID();
+
+        auto it = m_Data->EntityInstances.find(entityID);
+        if (it != m_Data->EntityInstances.end())
+            it->second->InvokeMethod(methodName);
+    }
 #pragma endregion
 
 #pragma region Physics Events
@@ -491,6 +503,14 @@ namespace RXNEngine {
 
         if (data->InvokeOnFixedUpdate)
             data->InvokeOnFixedUpdate(m_Entity.GetUUID(), deltaTime);
+    }
+
+    void ScriptInstance::InvokeMethod(const std::string& methodName)
+    {
+        auto data = m_Engine->GetData();
+
+        if (data->InvokeMethod)
+            data->InvokeMethod(m_Entity.GetUUID(), methodName.c_str());
     }
 
     bool ScriptInstance::GetFieldValueInternal(const std::string& name, void* outBuffer)

@@ -3,30 +3,18 @@
 #include "Components.h"
 #include "Entity.h"
 #include "RXNEngine/Renderer/Renderer.h"
+#include "RXNEngine/Renderer/Renderer2D.h"
 #include "RXNEngine/Physics/PhysicsSystem.h"
 #include "RXNEngine/Physics/PhysicsWorld.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Core/JobSystem.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Audio/AudioSystem.h"
+#include "RXNEngine/Core/Input.h"
+#include "RXNEngine/Renderer/RenderCommand.h"
+#include "RXNEngine/UI/UISystem.h"
 
 namespace RXNEngine {
-
-    namespace PhysicsUtils {
-        inline physx::PxVec3 GLMToPhysX(const glm::vec3& vec) { return { vec.x, vec.y, vec.z }; }
-        inline glm::vec3 PhysXToGLM(const physx::PxVec3& vec) { return { vec.x, vec.y, vec.z }; }
-
-        inline physx::PxQuat GLMToPhysX(const glm::quat& q) { return { q.x, q.y, q.z, q.w }; }
-        inline glm::quat PhysXToGLM(const physx::PxQuat& q) { return { q.w, q.x, q.y, q.z }; }
-
-        static glm::vec4 UnpackPhysXColor(physx::PxU32 color)
-        {
-            float b = (float)((color >> 16) & 0xFF) / 255.0f;
-            float g = (float)((color >> 8) & 0xFF) / 255.0f;
-            float r = (float)((color >> 0) & 0xFF) / 255.0f;
-            return { r, g, b, 1.0f };
-        }
-    }
 
     struct ViewFrustum
     {
@@ -52,7 +40,8 @@ namespace RXNEngine {
             for (int i = 0; i < 4; ++i)
                 Planes[5][i] = viewProj[i][3] - viewProj[i][2]; // Far
 
-            for (int i = 0; i < 6; ++i) {
+            for (int i = 0; i < 6; ++i)
+            {
                 float length = glm::length(glm::vec3(Planes[i]));
                 Planes[i] /= length;
             }
@@ -60,7 +49,8 @@ namespace RXNEngine {
 
         bool IsSphereVisible(const glm::vec3& center, float radius) const
         {
-            for (int i = 0; i < 6; ++i) {
+            for (int i = 0; i < 6; ++i)
+            {
                 if (glm::dot(glm::vec3(Planes[i]), center) + Planes[i].w < -radius)
                     return false;
             }
@@ -121,7 +111,6 @@ namespace RXNEngine {
     Ref<Scene> Scene::Copy(Ref<Scene> other)
     {
         RXN_PROFILE_SCOPE();
-
         Ref<Scene> newScene = CreateRef<Scene>();
 
         newScene->OnViewportResize(other->m_ViewportWidth, other->m_ViewportHeight);
@@ -143,7 +132,6 @@ namespace RXNEngine {
         }
 
         CopyAllComponents(dstSceneRegistry, srcSceneRegistry, enttMap, AllComponents{});
-
         return newScene;
     }
 
@@ -151,6 +139,7 @@ namespace RXNEngine {
     {
         m_Registry.on_construct<CameraComponent>().connect<&Scene::OnCameraComponentAdded>(this);
         AddSubsystem<PhysicsWorld>();
+        AddSubsystem<UISystem>(this);
     }
 
     Scene::~Scene()
@@ -179,7 +168,6 @@ namespace RXNEngine {
         tag.Tag = name.empty() ? "Entity" : name;
 
         m_EntityMap[uuid] = (entt::entity)entity;
-
         return entity;
     }
 
@@ -195,91 +183,10 @@ namespace RXNEngine {
         if (m_IsRunning && entity.HasComponent<ScriptComponent>())
             Application::Get().GetSubsystem<ScriptEngine>()->OnDestroyEntity(entity);
 
-        if (entity.HasComponent<RigidbodyComponent>())
-        {
-            auto& rb = entity.GetComponent<RigidbodyComponent>();
-            if (rb.RuntimeActor)
-            {
-                physx::PxRigidActor* actor = (physx::PxRigidActor*)rb.RuntimeActor;
+        auto physicsWorld = GetSubsystem<PhysicsWorld>();
 
-                auto physicsWorld = GetSubsystem<PhysicsWorld>();
-                if (physicsWorld && physicsWorld->GetScene())
-                    physicsWorld->GetScene()->removeActor(*actor);
-
-                actor->release();
-                rb.RuntimeActor = nullptr;
-            }
-        }
-
-        if (entity.HasComponent<BoxColliderComponent>())
-        {
-            auto& bc = entity.GetComponent<BoxColliderComponent>();
-            if (bc.RuntimeShape)
-            {
-                ((physx::PxShape*)bc.RuntimeShape)->release();
-                bc.RuntimeShape = nullptr;
-            }
-            if (bc.RuntimeMaterial)
-            {
-                ((physx::PxMaterial*)bc.RuntimeMaterial)->release();
-                bc.RuntimeMaterial = nullptr;
-            }
-        }
-
-        if (entity.HasComponent<SphereColliderComponent>())
-        {
-            auto& sc = entity.GetComponent<SphereColliderComponent>();
-            if (sc.RuntimeShape)
-            {
-                ((physx::PxShape*)sc.RuntimeShape)->release();
-                sc.RuntimeShape = nullptr;
-            }
-            if (sc.RuntimeMaterial)
-            {
-                ((physx::PxMaterial*)sc.RuntimeMaterial)->release();
-                sc.RuntimeMaterial = nullptr;
-            }
-        }
-
-        if (entity.HasComponent<CapsuleColliderComponent>())
-        {
-            auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-            if (cc.RuntimeShape) 
-            {
-                ((physx::PxShape*)cc.RuntimeShape)->release();
-                cc.RuntimeShape = nullptr;
-            }
-            if (cc.RuntimeMaterial) 
-            {
-                ((physx::PxMaterial*)cc.RuntimeMaterial)->release();
-                cc.RuntimeMaterial = nullptr;
-            }
-        }
-
-        if (entity.HasComponent<MeshColliderComponent>())
-        {
-            auto& mc = entity.GetComponent<MeshColliderComponent>();
-            if (mc.RuntimeShape)
-            {
-                ((physx::PxShape*)mc.RuntimeShape)->release();
-                mc.RuntimeShape = nullptr;
-            }
-            if (mc.RuntimeMaterial)
-            { 
-                ((physx::PxMaterial*)mc.RuntimeMaterial)->release();
-                mc.RuntimeMaterial = nullptr;
-            }
-        }
-
-        if (entity.HasComponent<CharacterControllerComponent>())
-        {
-            auto& cct = entity.GetComponent<CharacterControllerComponent>();
-            if (cct.RuntimeController)
-            {
-                ((physx::PxController*)cct.RuntimeController)->release();
-                cct.RuntimeController = nullptr;
-            }
-        }
+        if (physicsWorld)
+            physicsWorld->DestroyPhysicsBody(entity);
 
         if (entity.HasComponent<AudioSourceComponent>())
         {
@@ -293,7 +200,6 @@ namespace RXNEngine {
         }
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
-
         std::vector<UUID> childrenToDestroy = rc.Children;
         for (auto childID : childrenToDestroy)
         {
@@ -318,6 +224,19 @@ namespace RXNEngine {
         m_Registry.destroy(entity);
     }
 
+    void Scene::ProcessDeletedEntities()
+    {
+        if (m_EntitiesToDestroy.empty())
+            return;
+
+        for (auto entityID : m_EntitiesToDestroy)
+        {
+            if (m_Registry.valid(entityID))
+                RemoveEntity({ entityID, this });
+        }
+        m_EntitiesToDestroy.clear();
+    }
+
     void Scene::ParentEntity(Entity entity, Entity parent)
     {
         if (entity == parent)
@@ -327,7 +246,6 @@ namespace RXNEngine {
             return;
 
         auto& rc = entity.GetComponent<RelationshipComponent>();
-
         if (rc.ParentHandle != 0)
         {
             Entity oldParent = GetEntityByUUID(rc.ParentHandle);
@@ -341,7 +259,6 @@ namespace RXNEngine {
         }
 
         rc.ParentHandle = parent ? parent.GetUUID() : UUID::Null;
-
         if (parent)
         {
             auto& parentRC = parent.GetComponent<RelationshipComponent>();
@@ -392,7 +309,8 @@ namespace RXNEngine {
                 for (UUID childID : rc.Children)
                 {
                     Entity child = GetEntityByUUID(childID);
-                    if (child) nextGen.push_back((entt::entity)child);
+                    if (child)
+                        nextGen.push_back((entt::entity)child);
                 }
             }
 
@@ -401,15 +319,10 @@ namespace RXNEngine {
                 generations.push_back(nextGen);
                 currentGen++;
             }
-            else
-            {
-                break;
-            }
-
+            else break;
         }
 
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
-
         uint32_t threadCount = jobSys->GetThreadCount();
 
         for (size_t i = 0; i < generations.size(); i++)
@@ -431,7 +344,6 @@ namespace RXNEngine {
                     {
                         auto& rc = m_Registry.get<RelationshipComponent>(e);
                         Entity parent = GetEntityByUUID(rc.ParentHandle);
-
                         auto& parentTc = parent.GetComponent<TransformComponent>();
                         tc.WorldTransform = parentTc.WorldTransform * tc.GetTransform();
                     }
@@ -446,10 +358,18 @@ namespace RXNEngine {
         return entity.GetComponent<TransformComponent>().WorldTransform;
     }
 
-    void Scene::OnUpdateSimulation(float deltaTime)
+    void Scene::OnUpdateEditor(float deltaTime)
     {
         RXN_PROFILE_SCOPE();
 
+        ProcessDeletedEntities();
+        UpdateWorldTransforms();
+        GetSubsystem<UISystem>()->Update(deltaTime);
+    }
+
+    void Scene::OnUpdateSimulation(float deltaTime)
+    {
+        RXN_PROFILE_SCOPE();
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
 
         if (m_IsRunning)
@@ -469,729 +389,39 @@ namespace RXNEngine {
 
             UpdateWorldTransforms();
 
-            physicsWorld->LockWrite();
-
-            auto transformView = m_Registry.view<TransformComponent>();
-            for (auto e : transformView)
+            if (physicsWorld)
             {
-                auto& tc = transformView.get<TransformComponent>(e);
+                physicsWorld->LockWrite();
 
-                if (tc.IsDirty)
+                auto transformView = m_Registry.view<TransformComponent>();
+                for (auto e : transformView)
                 {
-                    Entity entity = { e, this };
-                    if (entity.HasComponent<RigidbodyComponent>())
+                    auto& tc = transformView.get<TransformComponent>(e);
+                    if (tc.IsDirty)
                     {
-                        SyncTransformToPhysics(entity);
+                        Entity entity = { e, this };
+
+                        if (entity.HasComponent<RigidbodyComponent>())
+                            physicsWorld->SyncTransformToPhysics(entity);
+
+                        tc.IsDirty = false;
                     }
-                    tc.IsDirty = false;
                 }
-            }
 
-            physicsWorld->UnlockWrite();
-        }
-
-        auto rbView = m_Registry.view<RigidbodyComponent>();
-        for (auto e : rbView)
-        {
-            auto& rb = rbView.get<RigidbodyComponent>(e);
-
-            if (rb.Type != RigidbodyComponent::BodyType::Static && rb.RuntimeActor && rb.UseCCD)
-            {
-                physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)rb.RuntimeActor;
-
-                float sqrVelocity = actor->getLinearVelocity().magnitudeSquared();
-                float sqrThreshold = rb.CCDVelocityThreshold * rb.CCDVelocityThreshold;
-
-                actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, sqrVelocity > sqrThreshold);
+                physicsWorld->UnlockWrite();
             }
         }
+
+        if (physicsWorld)
+            physicsWorld->UpdateCCDFlags(this);
 
         for (auto& subsystem : m_SubsystemList)
             subsystem->Update(deltaTime);
 
-        auto view = m_Registry.view<TransformComponent, RigidbodyComponent>();
-        for (auto e : view)
-        {
-            Entity entity = { e, this };
-            auto& tc = entity.GetComponent<TransformComponent>();
-            auto& rb = entity.GetComponent<RigidbodyComponent>();
-            auto& rc = entity.GetComponent<RelationshipComponent>();
+        if (physicsWorld)
+            physicsWorld->SyncPhysicsToTransforms(this);
 
-            if (rb.Type != RigidbodyComponent::BodyType::Static && rb.RuntimeActor)
-            {
-                physx::PxRigidDynamic* actor = (physx::PxRigidDynamic*)rb.RuntimeActor;
-                physx::PxTransform pxTransform = actor->getGlobalPose();
-
-                glm::vec3 worldPos = PhysicsUtils::PhysXToGLM(pxTransform.p);
-                glm::quat worldRot = PhysicsUtils::PhysXToGLM(pxTransform.q);
-
-                glm::quat currentRot = glm::quat(tc.Rotation);
-                bool physicsRotated = glm::abs(glm::dot(currentRot, worldRot)) < 0.9999f;
-
-                if (rc.ParentHandle != 0)
-                {
-                    Entity parent = GetEntityByUUID(rc.ParentHandle);
-                    if (parent)
-                    {
-                        glm::mat4 parentWorldTransform = GetWorldTransform(parent);
-                        glm::mat4 entityWorldTransform = glm::translate(glm::mat4(1.0f), worldPos) * glm::toMat4(worldRot) * glm::scale(glm::mat4(1.0f), tc.Scale);
-                        glm::mat4 localTransform = glm::inverse(parentWorldTransform) * entityWorldTransform;
-
-                        glm::vec3 localPos, localRotEuler, localScale;
-                        Math::DecomposeTransform(localTransform, localPos, localRotEuler, localScale);
-
-                        tc.Translation = localPos;
-                        if (physicsRotated)
-                            tc.Rotation = localRotEuler;
-                    }
-                }
-                else
-                {
-                    tc.Translation = worldPos;
-                    if (physicsRotated)
-                        tc.Rotation = glm::eulerAngles(worldRot);
-                }
-            }
-        }
-
-        auto cctView = m_Registry.view<TransformComponent, CharacterControllerComponent>();
-        for (auto e : cctView)
-        {
-            auto [tc, cct] = cctView.get<TransformComponent, CharacterControllerComponent>(e);
-            if (cct.RuntimeController)
-            {
-                physx::PxController* controller = (physx::PxController*)cct.RuntimeController;
-                const physx::PxExtendedVec3& pos = controller->getPosition();
-                tc.Translation = glm::vec3((float)pos.x, (float)pos.y, (float)pos.z);
-            }
-        }
-    }
-
-    void Scene::OnRender(const Camera& camera, const glm::mat4& cameraTransform, Ref<RenderTarget>& renderTarget, bool showColliders)
-    {
-        RXN_PROFILE_SCOPE();
-
-        LightEnvironment lightEnv;
-        {
-            auto view = m_Registry.view<DirectionalLightComponent, TransformComponent>();
-            for (auto entity : view)
-            {
-                auto [light, transform] = view.get<DirectionalLightComponent, TransformComponent>(entity);
-
-                glm::vec3 direction = glm::toMat3(glm::quat(transform.Rotation)) * glm::vec3(0, 0, -1);
-
-                lightEnv.DirLight.Direction = direction;
-                lightEnv.DirLight.Color = light.Color;
-                lightEnv.DirLight.Intensity = light.Intensity;
-            }
-        }
-        {
-            auto group = m_Registry.group<PointLightComponent>();
-            for (auto entity : group)
-            {
-                auto light = group.get<PointLightComponent>(entity);
-                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-
-                PointLight pl;
-                pl.Position = glm::vec3(worldTransform[3]);
-                pl.Color = light.Color;
-                pl.Intensity = light.Intensity;
-                pl.Radius = light.Radius;
-                pl.Falloff = light.Falloff;
-                pl.CastsShadows = light.CastsShadows;
-                lightEnv.PointLights.push_back(pl);
-            }
-        }
-        {
-            auto group = m_Registry.group<SpotLightComponent>();
-            for (auto entity : group)
-            {
-                auto light = group.get<SpotLightComponent>(entity);
-                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-
-                SpotLight sl;
-                sl.Position = glm::vec3(worldTransform[3]);
-                sl.Direction = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
-
-                glm::vec3 up = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
-
-                glm::mat4 lightView = glm::lookAt(sl.Position, sl.Position + sl.Direction, up);
-                glm::mat4 lightProj = glm::perspective(glm::radians(light.OuterAngle * 2.0f), 1.0f, 0.1f, light.Radius);
-                sl.LightSpaceMatrix = lightProj * lightView;
-
-                sl.Color = light.Color;
-                sl.Intensity = light.Intensity;
-                sl.Radius = light.Radius;
-                sl.Falloff = light.Falloff;
-                sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
-                sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
-                sl.CastsShadows = light.CastsShadows;
-
-                sl.CookieTexture = light.IsVideo ?
-                    (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;
-
-                sl.CookieSize = light.CookieSize;
-
-                lightEnv.SpotLights.push_back(sl);
-            }
-        }
-
-        glm::vec3 cameraPos = glm::vec3(cameraTransform[3]);
-        glm::vec3 cameraForward = -glm::normalize(glm::vec3(cameraTransform[2]));
-        glm::vec3 focusPoint = cameraPos + cameraForward * 5.0f;
-
-        std::sort(lightEnv.PointLights.begin(), lightEnv.PointLights.end(), [&focusPoint](const PointLight& a, const PointLight& b)
-            {
-                return glm::distance(a.Position, focusPoint) < glm::distance(b.Position, focusPoint);
-            });
-
-        std::sort(lightEnv.SpotLights.begin(), lightEnv.SpotLights.end(), [&focusPoint](const SpotLight& a, const SpotLight& b)
-            {
-                glm::vec3 centerA = a.Position + (a.Direction * (a.Radius * 0.5f));
-                glm::vec3 centerB = b.Position + (b.Direction * (b.Radius * 0.5f));
-                return glm::distance(centerA, focusPoint) < glm::distance(centerB, focusPoint);
-            });
-
-        auto renderSys = Application::Get().GetSubsystem<Renderer>();
-        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
-        auto physicsWorld = GetSubsystem<PhysicsWorld>();
-
-        lightEnv.EnvironmentIntensity = m_SkyboxIntensity;
-        renderSys->BeginScene(camera, cameraTransform, lightEnv, m_Skybox, renderTarget);
-
-        glm::mat4 viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
-        ViewFrustum frustum;
-        frustum.Extract(viewProj);
-
-        std::vector<RenderCommandData> renderQueue;
-        std::mutex queueMutex;
-
-        auto view = m_Registry.view<StaticMeshComponent, TransformComponent>();
-        std::vector<entt::entity> entities(view.begin(), view.end());
-
-        if (!entities.empty())
-        {
-            uint32_t threadCount = jobSys->GetThreadCount();
-            uint32_t groupSize = (uint32_t)entities.size() / threadCount;
-            if (groupSize == 0) groupSize = 1;
-
-            jobSys->Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
-                {
-                    entt::entity e = entities[args.JobIndex];
-                    auto [mc, tc] = view.get<StaticMeshComponent, TransformComponent>(e);
-
-                    if (!mc.Mesh) return;
-
-                    glm::mat4 transform = tc.WorldTransform;
-
-                    const auto& submesh = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex];
-                    AABB worldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, transform);
-
-                    glm::vec3 center = (worldAABB.Min + worldAABB.Max) * 0.5f;
-                    float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
-
-                    bool isVisible = frustum.IsSphereVisible(center, radius);
-                    bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
-
-                    bool isVisibleToLocalLights = false;
-                    for (const auto& pl : lightEnv.PointLights)
-                    {
-                        if (pl.CastsShadows && glm::distance(center, pl.Position) <= pl.Radius + radius)
-                        {
-                            isVisibleToLocalLights = true;
-                            break;
-                        }
-                    }
-                    if (!isVisibleToLocalLights)
-                    {
-                        for (const auto& sl : lightEnv.SpotLights)
-                        {
-                            if (sl.CastsShadows && glm::distance(center, sl.Position) <= sl.Radius + radius)
-                            {
-                                isVisibleToLocalLights = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!isVisible && !isVisibleToShadows && !isVisibleToLocalLights)
-                        return;
-
-                    RenderCommandData cmd;
-                    cmd.Mesh = mc.Mesh;
-                    cmd.SubmeshIndex = mc.SubmeshIndex;
-                    uint32_t matIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
-                    cmd.Material = mc.MaterialTableOverride ? mc.MaterialTableOverride : mc.Mesh->GetMaterials()[matIndex];
-                    cmd.Transform = transform;
-                    cmd.EntityID = (int)(uint32_t)e;
-
-                    cmd.BoundingCenter = center;
-                    cmd.BoundingRadius = radius;
-
-                    cmd.IsVisibleToCamera = isVisible;
-                    cmd.IsVisibleToShadows = isVisible || isVisibleToShadows || isVisibleToLocalLights;
-
-                    {
-                        std::lock_guard<std::mutex> lock(queueMutex);
-                        renderQueue.push_back(cmd);
-                    }
-                });
-
-            jobSys->Wait();
-        }
-
-        for (const auto& cmd : renderQueue)
-        {
-            if (cmd.IsVisibleToCamera)
-                renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
-
-            if (cmd.IsVisibleToShadows)
-                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID, cmd.BoundingCenter, cmd.BoundingRadius);
-        }
-
-        if (showColliders)
-        {
-            if (physicsWorld->GetScene())
-            {
-                const physx::PxRenderBuffer& rb = physicsWorld->GetScene()->getRenderBuffer();
-                for (physx::PxU32 i = 0; i < rb.getNbLines(); i++)
-                {
-                    const physx::PxDebugLine& line = rb.getLines()[i];
-                    renderSys->DrawLine(
-                        PhysicsUtils::PhysXToGLM(line.pos0),
-                        PhysicsUtils::PhysXToGLM(line.pos1),
-                        PhysicsUtils::UnpackPhysXColor(line.color0)
-                    );
-                }
-            }
-        }
-
-        if (m_Skybox)
-            renderSys->DrawSkybox(m_Skybox, camera, cameraTransform);
-
-        renderSys->EndScene();
-    }
-
-    void Scene::OnRenderEditor(float deltaTime, EditorCamera& camera, Ref<RenderTarget>& renderTarget, bool showColliders, const std::vector<Entity>& selectedEntities)
-    {
-        RXN_PROFILE_SCOPE();
-
-        UpdateWorldTransforms();
-
-        LightEnvironment lightEnv;
-        {
-            auto view = m_Registry.view<DirectionalLightComponent, TransformComponent>();
-            for (auto entity : view)
-            {
-                auto [light, transform] = view.get<DirectionalLightComponent, TransformComponent>(entity);
-
-                glm::vec3 direction = glm::toMat3(glm::quat(transform.Rotation)) * glm::vec3(0, 0, -1);
-
-                lightEnv.DirLight.Direction = direction;
-                lightEnv.DirLight.Color = light.Color;
-                lightEnv.DirLight.Intensity = light.Intensity;
-            }
-        }
-        {
-            auto group = m_Registry.group<PointLightComponent>();
-            for (auto entity : group)
-            {
-                auto light = group.get<PointLightComponent>(entity);
-                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-
-                PointLight pl;
-                pl.Position = glm::vec3(worldTransform[3]);
-                pl.Color = light.Color;
-                pl.Intensity = light.Intensity;
-                pl.Radius = light.Radius;
-                pl.Falloff = light.Falloff;
-                pl.CastsShadows = light.CastsShadows;
-                lightEnv.PointLights.push_back(pl);
-            }
-        }
-
-        auto spotLightView = m_Registry.view<SpotLightComponent>();
-        for (auto e : spotLightView)
-        {
-            auto& sl = spotLightView.get<SpotLightComponent>(e);
-            if (sl.IsVideo && sl.CookieVideo)
-                sl.CookieVideo->Update(deltaTime);
-        }
-
-        {
-            auto group = m_Registry.group<SpotLightComponent>();
-            for (auto entity : group)
-            {
-                auto light = group.get<SpotLightComponent>(entity);
-                glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-
-                SpotLight sl;
-                sl.Position = glm::vec3(worldTransform[3]);
-                sl.Direction = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
-
-                glm::vec3 up = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
-
-                glm::mat4 lightView = glm::lookAt(sl.Position, sl.Position + sl.Direction, up);
-                glm::mat4 lightProj = glm::perspective(glm::radians(light.OuterAngle * 2.0f), 1.0f, 0.1f, light.Radius);
-                sl.LightSpaceMatrix = lightProj * lightView;
-
-                sl.Color = light.Color;
-                sl.Intensity = light.Intensity;
-                sl.Radius = light.Radius;
-                sl.Falloff = light.Falloff;
-                sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
-                sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
-                sl.CastsShadows = light.CastsShadows;
-
-                sl.CookieTexture = light.IsVideo ?
-                    (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;
-
-                sl.CookieSize = light.CookieSize;
-
-                lightEnv.SpotLights.push_back(sl);
-            }
-        }
-
-        glm::vec3 cameraPos = camera.GetPosition();
-        glm::vec3 focusPoint = cameraPos + camera.GetForwardDirection() * 5.0f;
-
-        std::sort(lightEnv.PointLights.begin(), lightEnv.PointLights.end(), [&focusPoint](const PointLight& a, const PointLight& b)
-            {
-                return glm::distance(a.Position, focusPoint) < glm::distance(b.Position, focusPoint);
-            });
-
-        std::sort(lightEnv.SpotLights.begin(), lightEnv.SpotLights.end(), [&focusPoint](const SpotLight& a, const SpotLight& b)
-            {
-                glm::vec3 centerA = a.Position + (a.Direction * (a.Radius * 0.5f));
-                glm::vec3 centerB = b.Position + (b.Direction * (b.Radius * 0.5f));
-                return glm::distance(centerA, focusPoint) < glm::distance(centerB, focusPoint);
-            });
-
-        auto renderSys = Application::Get().GetSubsystem<Renderer>();
-        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
-
-        lightEnv.EnvironmentIntensity = m_SkyboxIntensity;
-        renderSys->BeginScene(camera, lightEnv, m_Skybox, renderTarget);
-
-        glm::mat4 viewProj = camera.GetViewProjection();
-        ViewFrustum frustum;
-        frustum.Extract(viewProj);
-
-        std::vector<RenderCommandData> renderQueue;
-        std::mutex queueMutex;
-
-        auto view = m_Registry.view<StaticMeshComponent, TransformComponent>();
-        std::vector<entt::entity> entities(view.begin(), view.end());
-
-        if (!entities.empty())
-        {
-            uint32_t threadCount = jobSys->GetThreadCount();
-            uint32_t groupSize = (uint32_t)entities.size() / threadCount;
-            if (groupSize == 0) groupSize = 1;
-
-            jobSys->Dispatch(entities.size(), groupSize, [&](JobDispatchArgs args)
-                {
-                    entt::entity e = entities[args.JobIndex];
-                    auto [mc, tc] = view.get<StaticMeshComponent, TransformComponent>(e);
-
-                    if (!mc.Mesh) return;
-
-                    glm::mat4 transform = tc.WorldTransform;
-                    glm::vec3 worldPos = glm::vec3(transform[3]);
-
-                    const auto& submesh = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex];
-                    AABB worldAABB = Math::CalculateWorldAABB(submesh.BoundingBox, transform);
-
-                    glm::vec3 center = (worldAABB.Min + worldAABB.Max) * 0.5f;
-                    float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
-
-                    bool isVisible = frustum.IsSphereVisible(center, radius);
-                    bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
-
-                    bool isVisibleToLocalLights = false;
-                    for (const auto& pl : lightEnv.PointLights)
-                    {
-                        if (pl.CastsShadows && glm::distance(center, pl.Position) <= pl.Radius + radius)
-                        {
-                            isVisibleToLocalLights = true;
-                            break;
-                        }
-                    }
-                    if (!isVisibleToLocalLights)
-                    {
-                        for (const auto& sl : lightEnv.SpotLights)
-                        {
-                            if (sl.CastsShadows && glm::distance(center, sl.Position) <= sl.Radius + radius)
-                            {
-                                isVisibleToLocalLights = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!isVisible && !isVisibleToShadows && !isVisibleToLocalLights)
-                        return;
-
-                    RenderCommandData cmd;
-                    cmd.Mesh = mc.Mesh;
-                    cmd.SubmeshIndex = mc.SubmeshIndex;
-                    uint32_t matIndex = mc.Mesh->GetSubmeshes()[mc.SubmeshIndex].MaterialIndex;
-                    cmd.Material = mc.MaterialTableOverride ? mc.MaterialTableOverride : mc.Mesh->GetMaterials()[matIndex];
-                    cmd.Transform = transform;
-                    cmd.EntityID = (int)(uint32_t)e;
-
-                    cmd.BoundingCenter = center;
-                    cmd.BoundingRadius = radius;
-
-                    cmd.IsVisibleToCamera = isVisible;
-                    cmd.IsVisibleToShadows = isVisible || isVisibleToShadows || isVisibleToLocalLights;
-
-                    {
-                        std::lock_guard<std::mutex> lock(queueMutex);
-                        renderQueue.push_back(cmd);
-                    }
-                });
-
-            jobSys->Wait();
-        }
-
-        for (const auto& cmd : renderQueue)
-        {
-            if (cmd.IsVisibleToCamera)
-                renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
-
-            if (cmd.IsVisibleToShadows)
-                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID, cmd.BoundingCenter, cmd.BoundingRadius);
-        }
-
-        if (m_Skybox)
-            renderSys->DrawSkybox(m_Skybox, camera);
-
-        if (showColliders)
-        {
-            {
-                auto view = m_Registry.view<TransformComponent, BoxColliderComponent>();
-                for (auto entity : view)
-                {
-                    auto [tc, bc] = view.get<TransformComponent, BoxColliderComponent>(entity);
-
-                    glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-                    glm::vec3 worldTranslation, worldRotation, worldScale;
-                    Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
-
-                    glm::vec3 scale = worldScale * bc.HalfExtents * 2.0f;
-
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), worldTranslation)
-                        * glm::toMat4(glm::quat(worldRotation))
-                        * glm::translate(glm::mat4(1.0f), bc.Offset)
-                        * glm::scale(glm::mat4(1.0f), scale);
-
-                    renderSys->DrawWireBox(transform, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-                }
-            }
-
-            {
-                auto view = m_Registry.view<TransformComponent, SphereColliderComponent>();
-                for (auto entity : view)
-                {
-                    auto [tc, sc] = view.get<TransformComponent, SphereColliderComponent>(entity);
-
-                    glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-                    glm::vec3 worldTranslation, worldRotation, worldScale;
-                    Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
-
-                    float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
-                    glm::vec3 scale = glm::vec3(sc.Radius * maxScale);
-
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), worldTranslation)
-                        * glm::toMat4(glm::quat(worldRotation))
-                        * glm::translate(glm::mat4(1.0f), sc.Offset)
-                        * glm::scale(glm::mat4(1.0f), scale);
-
-                    renderSys->DrawWireSphere(transform, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
-                }
-            }
-
-            {
-                auto view = m_Registry.view<TransformComponent, CapsuleColliderComponent>();
-                for (auto entity : view)
-                {
-                    auto [tc, cc] = view.get<TransformComponent, CapsuleColliderComponent>(entity);
-
-                    glm::mat4 worldTransform = GetWorldTransform({ entity, this });
-                    glm::vec3 worldTranslation, worldRotation, worldScale;
-                    Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
-
-                    float radiusScale = glm::max(worldScale.x, worldScale.z);
-                    float radius = cc.Radius * radiusScale;
-                    float height = cc.Height * worldScale.y;
-
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0f), worldTranslation)
-                        * glm::toMat4(glm::quat(worldRotation))
-                        * glm::translate(glm::mat4(1.0f), cc.Offset);
-
-                    renderSys->DrawWireCapsule(transform, radius, height, glm::vec4(0.0f, 0.8f, 1.0f, 1.0f));
-                }
-            }
-            {
-                auto view = m_Registry.view<TransformComponent, MeshColliderComponent>();
-                for (auto entityID : view)
-                {
-                    Entity entity = { entityID, this };
-                    auto [tc, mc] = view.get<TransformComponent, MeshColliderComponent>(entityID);
-
-                    glm::mat4 worldTransform = GetWorldTransform(entity);
-
-                    Ref<StaticMesh> collisionMesh = nullptr;
-
-                    if (!mc.OverrideAssetPath.empty())
-                    {
-                        collisionMesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(mc.OverrideAssetPath);
-                    }
-                    else
-                    {
-                        std::function<Ref<StaticMesh>(Entity)> findMesh = [&](Entity e) -> Ref<StaticMesh>
-                            {
-                                if (e.HasComponent<StaticMeshComponent>())
-                                    return e.GetComponent<StaticMeshComponent>().Mesh;
-
-                                if (e.HasComponent<RelationshipComponent>()) 
-                                {
-                                    for (UUID childID : e.GetComponent<RelationshipComponent>().Children)
-                                    {
-                                        Entity child = GetEntityByUUID(childID);
-                                        if (child)
-                                        {
-                                            Ref<StaticMesh> m = findMesh(child);
-
-                                            if (m)
-                                                return m;
-                                        }
-                                    }
-                                }
-                                return nullptr;
-                            };
-                        collisionMesh = findMesh(entity);
-                    }
-
-                    if (collisionMesh)
-                    {
-                        glm::vec4 color = mc.IsConvex ? glm::vec4(0.8f, 0.2f, 0.8f, 1.0f) : glm::vec4(0.2f, 0.8f, 0.8f, 1.0f);
-
-                        if (mc.IsConvex)
-                        {
-                            bool hasHulls = false;
-                            for (const auto& submesh : collisionMesh->GetSubmeshes())
-                            {
-                                if (!submesh.ConvexHulls.empty())
-                                {
-                                    hasHulls = true;
-                                    for (const auto& hull : submesh.ConvexHulls)
-                                    {
-                                        for (size_t i = 0; i < hull.Indices.size(); i += 3)
-                                        {
-                                            glm::vec3 p0 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(hull.Vertices[hull.Indices[i]], 1.0f));
-                                            glm::vec3 p1 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(hull.Vertices[hull.Indices[i + 1]], 1.0f));
-                                            glm::vec3 p2 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(hull.Vertices[hull.Indices[i + 2]], 1.0f));
-
-                                            renderSys->DrawLine(p0, p1, color);
-                                            renderSys->DrawLine(p1, p2, color);
-                                            renderSys->DrawLine(p2, p0, color);
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (!hasHulls)
-                                renderSys->DrawWireBox(worldTransform, color);
-                        }
-                        else
-                        {
-                            // Warning: This can be heavy if the mesh is 100k+ polys!
-                            for (const auto& submesh : collisionMesh->GetSubmeshes())
-                            {
-                                const auto& vertices = collisionMesh->GetVertices();
-                                const auto& indices = collisionMesh->GetIndices();
-
-                                for (size_t i = 0; i < submesh.IndexCount; i += 3)
-                                {
-                                    uint32_t idx0 = indices[submesh.BaseIndex + i];
-                                    uint32_t idx1 = indices[submesh.BaseIndex + i + 1];
-                                    uint32_t idx2 = indices[submesh.BaseIndex + i + 2];
-
-                                    glm::vec3 p0 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(vertices[idx0].Position, 1.0f));
-                                    glm::vec3 p1 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(vertices[idx1].Position, 1.0f));
-                                    glm::vec3 p2 = glm::vec3(worldTransform * submesh.LocalTransform * glm::vec4(vertices[idx2].Position, 1.0f));
-
-                                    renderSys->DrawLine(p0, p1, color);
-                                    renderSys->DrawLine(p1, p2, color);
-                                    renderSys->DrawLine(p2, p0, color);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for (Entity selected : selectedEntities)
-        {
-            if (!selected)
-                continue;
-
-            glm::mat4 transform = GetWorldTransform(selected);
-
-            glm::vec3 wTranslation, wRotation, wScale;
-            Math::DecomposeTransform(transform, wTranslation, wRotation, wScale);
-            glm::mat4 unscaledTransform = glm::translate(glm::mat4(1.0f), wTranslation) * glm::toMat4(glm::quat(wRotation));
-
-            if (selected.HasComponent<CameraComponent>())
-            {
-                auto& cc = selected.GetComponent<CameraComponent>();
-                renderSys->DrawFrustum(transform, cc.Camera.GetProjection(), glm::vec4(0.8f, 0.8f, 0.8f, 1.0f));
-            }
-
-            if (selected.HasComponent<DirectionalLightComponent>())
-            {
-                auto& dlc = selected.GetComponent<DirectionalLightComponent>();
-                glm::mat4 transform = GetWorldTransform(selected);
-                renderSys->DrawArrow(transform, glm::vec4(1.0f, 0.9f, 0.1f, 1.0f));
-            }
-
-            if (selected.HasComponent<PointLightComponent>())
-            {
-                auto& plc = selected.GetComponent<PointLightComponent>();
-                glm::mat4 scaleTransform = glm::scale(unscaledTransform, glm::vec3(plc.Radius));
-                renderSys->DrawWireSphere(scaleTransform, glm::vec4(1.0f, 0.8f, 0.1f, 1.0f));
-            }
-
-            if (selected.HasComponent<SpotLightComponent>())
-            {
-                auto& slc = selected.GetComponent<SpotLightComponent>();
-                renderSys->DrawWireCone(unscaledTransform, slc.Radius, slc.InnerAngle, glm::vec4(1.0f, 0.8f, 0.1f, 0.3f));
-                renderSys->DrawWireCone(unscaledTransform, slc.Radius, slc.OuterAngle, glm::vec4(1.0f, 0.8f, 0.1f, 1.0f));
-            }
-
-            if (selected.HasComponent<AudioSourceComponent>())
-            {
-                auto& ac = selected.GetComponent<AudioSourceComponent>();
-                glm::mat4 minTransform = glm::scale(unscaledTransform, glm::vec3(ac.MinDistance));
-                glm::mat4 maxTransform = glm::scale(unscaledTransform, glm::vec3(ac.MaxDistance));
-
-                renderSys->DrawWireSphere(minTransform, glm::vec4(0.2f, 0.8f, 0.2f, 1.0f));
-                renderSys->DrawWireSphere(maxTransform, glm::vec4(0.8f, 0.2f, 0.2f, 1.0f));
-            }
-        }
-
-        renderSys->EndScene();
-
-        for (auto entityID : m_EntitiesToDestroy)
-        {
-            if (m_Registry.valid(entityID))
-                RemoveEntity({ entityID, this });
-        }
-
-        m_EntitiesToDestroy.clear();
+        ProcessDeletedEntities();
     }
 
     void Scene::OnUpdateRuntime(float deltaTime)
@@ -1230,8 +460,6 @@ namespace RXNEngine {
         }
 
         auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
-        auto jobSys = Application::Get().GetSubsystem<JobSystem>();
-
         scriptSys->SetEngineTime(deltaTime);
 
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
@@ -1239,16 +467,12 @@ namespace RXNEngine {
                 if (!nsc.Instance)
                 {
                     nsc.Instance = nsc.InstantiateScript();
-
                     nsc.Instance->m_EntityHandle = entity;
                     nsc.Instance->m_Scene = this;
-
                     nsc.Instance->OnCreate();
                 }
-
                 nsc.Instance->OnUpdate(deltaTime);
             });
-
 
         auto scriptView = m_Registry.view<ScriptComponent>();
         std::vector<entt::entity> entities(scriptView.begin(), scriptView.end());
@@ -1263,15 +487,10 @@ namespace RXNEngine {
             }
         }
 
-        for (auto entityID : m_EntitiesToDestroy)
-        {
-            if (m_Registry.valid(entityID))
-                RemoveEntity({ entityID, this });
-        }
-
-        m_EntitiesToDestroy.clear();
+        ProcessDeletedEntities();
 
         UpdateWorldTransforms();
+        GetSubsystem<UISystem>()->Update(deltaTime);
     }
 
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -1333,7 +552,11 @@ namespace RXNEngine {
             }
 
             if (m_IsSimulating)
-                CreatePhysicsBody(newEntity);
+            {
+                auto physicsWorld = GetSubsystem<PhysicsWorld>();
+                if (physicsWorld)
+                    physicsWorld->CreatePhysicsBody(newEntity);
+            }
         }
 
         if (newEntity.HasComponent<CharacterControllerComponent>())
@@ -1348,14 +571,12 @@ namespace RXNEngine {
         if (entity.HasComponent<RelationshipComponent>())
         {
             auto& originalRC = entity.GetComponent<RelationshipComponent>();
-
             for (UUID childID : originalRC.Children)
             {
                 Entity child = GetEntityByUUID(childID);
                 if (child)
                 {
                     Entity clonedChild = DuplicateEntity(child);
-
                     clonedChild.GetComponent<RelationshipComponent>().ParentHandle = newEntity.GetUUID();
                     newEntity.GetComponent<RelationshipComponent>().Children.push_back(clonedChild.GetUUID());
                 }
@@ -1389,9 +610,7 @@ namespace RXNEngine {
     void Scene::SetPrimaryCameraEntity(Entity entity)
     {
         if (entity.HasComponent<CameraComponent>())
-        {
             m_PrimaryCameraID = entity.GetUUID();
-        }
     }
 
     void Scene::OnCameraComponentAdded(entt::registry& registry, entt::entity entity)
@@ -1400,9 +619,7 @@ namespace RXNEngine {
         {
             auto& cameraComponent = registry.get<CameraComponent>(entity);
             if (!cameraComponent.FixedAspectRatio)
-            {
                 cameraComponent.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-            }
         }
     }
 
@@ -1411,7 +628,6 @@ namespace RXNEngine {
         OnSimulationStart();
 
         auto scriptSys = Application::Get().GetSubsystem<ScriptEngine>();
-
         scriptSys->OnRuntimeStart(this);
 
         auto view = m_Registry.view<ScriptComponent>();
@@ -1451,7 +667,6 @@ namespace RXNEngine {
     void Scene::OnRuntimeStop()
     {
         m_IsRunning = false;
-
         OnSimulationStop();
         Application::Get().GetSubsystem<ScriptEngine>()->OnRuntimeStop();
 
@@ -1477,352 +692,21 @@ namespace RXNEngine {
         }
     }
 
-    void Scene::CreatePhysicsBody(Entity entity)
-    {
-        RXN_PROFILE_SCOPE();
-
-        auto physicsSys = Application::Get().GetSubsystem<PhysicsSystem>();
-        auto physicsWorld = GetSubsystem<PhysicsWorld>();
-
-        physx::PxPhysics* physics = physicsSys->GetPhysics();
-        physx::PxScene* physicsScene = physicsWorld->GetScene();
-
-        auto& transform = entity.GetComponent<TransformComponent>();
-        auto& rb = entity.GetComponent<RigidbodyComponent>();
-
-        glm::mat4 worldTransform = GetWorldTransform(entity);
-        glm::vec3 worldTranslation, worldRotation, worldScale;
-        Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
-
-        glm::quat rotation = glm::quat(worldRotation);
-        physx::PxTransform pxTransform(PhysicsUtils::GLMToPhysX(worldTranslation), PhysicsUtils::GLMToPhysX(rotation));
-
-        physx::PxRigidActor* actor = nullptr;
-
-        if (rb.Type == RigidbodyComponent::BodyType::Static)
-        {
-            actor = physics->createRigidStatic(pxTransform);
-        }
-        else
-        {
-            physx::PxRigidDynamic* dynamicActor = physics->createRigidDynamic(pxTransform);
-
-            if (rb.Type == RigidbodyComponent::BodyType::Kinematic)
-                dynamicActor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
-
-            dynamicActor->setLinearDamping(rb.LinearDrag);
-            dynamicActor->setAngularDamping(rb.AngularDrag);
-
-            if (rb.FixedRotation)
-            {
-                dynamicActor->setRigidDynamicLockFlags(
-                    physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_X |
-                    physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y |
-                    physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z
-                );
-            }
-
-            actor = dynamicActor;
-        }
-
-        if (entity.HasComponent<BoxColliderComponent>())
-        {
-            auto& bc = entity.GetComponent<BoxColliderComponent>();
-
-            float staticFric = bc.PhysicsMaterialAsset ? bc.PhysicsMaterialAsset->StaticFriction : 0.5f;
-            float dynFric = bc.PhysicsMaterialAsset ? bc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
-            float rest = bc.PhysicsMaterialAsset ? bc.PhysicsMaterialAsset->Restitution : 0.1f;
-
-            physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
-            bc.RuntimeMaterial = material;
-
-            glm::vec3 colliderSize = bc.HalfExtents * worldScale;
-            physx::PxBoxGeometry boxGeom(PhysicsUtils::GLMToPhysX(colliderSize));
-
-            physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, boxGeom, *material);
-            shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(bc.Offset)));
-
-            if (bc.IsTrigger)
-            {
-                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
-            }
-
-            bc.RuntimeShape = shape;
-        }
-
-        if (entity.HasComponent<SphereColliderComponent>())
-        {
-            auto& sc = entity.GetComponent<SphereColliderComponent>();
-
-            float staticFric = sc.PhysicsMaterialAsset ? sc.PhysicsMaterialAsset->StaticFriction : 0.5f;
-            float dynFric = sc.PhysicsMaterialAsset ? sc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
-            float rest = sc.PhysicsMaterialAsset ? sc.PhysicsMaterialAsset->Restitution : 0.1f;
-
-            physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
-            sc.RuntimeMaterial = material;
-
-            float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
-            physx::PxSphereGeometry sphereGeom(sc.Radius * maxScale);
-
-            physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, sphereGeom, *material);
-            shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(sc.Offset)));
-
-            if (sc.IsTrigger)
-            {
-                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
-            }
-
-            sc.RuntimeShape = shape;
-        }
-
-        if (entity.HasComponent<CapsuleColliderComponent>())
-        {
-            auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-
-            float staticFric = cc.PhysicsMaterialAsset ? cc.PhysicsMaterialAsset->StaticFriction : 0.5f;
-            float dynFric = cc.PhysicsMaterialAsset ? cc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
-            float rest = cc.PhysicsMaterialAsset ? cc.PhysicsMaterialAsset->Restitution : 0.1f;
-
-            physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
-            cc.RuntimeMaterial = material;
-
-            float radiusScale = glm::max(worldScale.x, worldScale.z);
-            physx::PxCapsuleGeometry capsuleGeom(cc.Radius * radiusScale, (cc.Height / 2.0f) * worldScale.y);
-
-            physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor, capsuleGeom, *material);
-
-            physx::PxQuat relativeRot(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f));
-
-            shape->setLocalPose(physx::PxTransform(PhysicsUtils::GLMToPhysX(cc.Offset), relativeRot));
-
-            if (cc.IsTrigger)
-            {
-                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
-            }
-
-            cc.RuntimeShape = shape;
-        }
-
-        if (entity.HasComponent<MeshColliderComponent>())
-        {
-            auto& mc = entity.GetComponent<MeshColliderComponent>();
-            auto& transform = entity.GetComponent<TransformComponent>();
-
-            Ref<StaticMesh> collisionMesh = nullptr;
-
-            if (!mc.OverrideAssetPath.empty())
-            {
-                collisionMesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(mc.OverrideAssetPath);
-            }
-            else
-            {
-                std::function<Ref<StaticMesh>(Entity)> findMesh = [&](Entity e) -> Ref<StaticMesh>
-                    {
-                        if (e.HasComponent<StaticMeshComponent>())
-                            return e.GetComponent<StaticMeshComponent>().Mesh;
-
-                        if (e.HasComponent<RelationshipComponent>())
-                        {
-                            for (UUID childID : e.GetComponent<RelationshipComponent>().Children)
-                            {
-                                Entity child = GetEntityByUUID(childID);
-                                if (child)
-                                {
-                                    Ref<StaticMesh> m = findMesh(child);
-                                    if (m) return m;
-                                }
-                            }
-                        }
-                        return nullptr;
-                    };
-
-                collisionMesh = findMesh(entity);
-            }
-
-            if (collisionMesh && !collisionMesh->GetVertices().empty())
-            {
-                float staticFric = mc.PhysicsMaterialAsset ? mc.PhysicsMaterialAsset->StaticFriction : 0.5f;
-                float dynFric = mc.PhysicsMaterialAsset ? mc.PhysicsMaterialAsset->DynamicFriction : 0.5f;
-                float rest = mc.PhysicsMaterialAsset ? mc.PhysicsMaterialAsset->Restitution : 0.1f;
-
-                physx::PxMaterial* material = physics->createMaterial(staticFric, dynFric, rest);
-                mc.RuntimeMaterial = material;
-
-                physx::PxShape* shape = nullptr;
-
-                if (mc.IsConvex)
-                {
-                    bool builtCompound = false;
-
-                    for (const auto& submesh : collisionMesh->GetSubmeshes())
-                    {
-                        if (!submesh.ConvexHulls.empty())
-                        {
-                            builtCompound = true;
-                            for (const auto& hull : submesh.ConvexHulls)
-                            {
-                                std::vector<glm::vec3> worldHullVertices(hull.Vertices.size());
-                                for (size_t i = 0; i < hull.Vertices.size(); i++)
-                                    worldHullVertices[i] = glm::vec3(submesh.LocalTransform * glm::vec4(hull.Vertices[i], 1.0f));
-
-                                physx::PxConvexMesh* convexMesh = physicsSys->CreateConvexMesh(worldHullVertices);
-                                if (convexMesh)
-                                {
-                                    physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
-                                    physx::PxConvexMeshGeometry geom(convexMesh, scale);
-
-                                    shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
-
-                                    if (mc.IsTrigger)
-                                    {
-                                        shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-                                        shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
-                                    }
-                                    mc.RuntimeShape = shape;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!builtCompound)
-                    {
-                        physx::PxConvexMesh* convexMesh = physicsSys->CreateConvexMesh(collisionMesh);
-                        if (convexMesh)
-                        {
-                            physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
-                            physx::PxConvexMeshGeometry geom(convexMesh, scale);
-
-                            shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
-                            if (mc.IsTrigger)
-                            {
-                                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-                                shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
-                            }
-                            mc.RuntimeShape = shape;
-                        }
-                    }
-                }
-                else
-                {
-                    physx::PxTriangleMesh* triMesh = physicsSys->CreateTriangleMesh(collisionMesh);
-                    if (triMesh)
-                    {
-                        physx::PxMeshScale scale(physx::PxVec3(worldScale.x, worldScale.y, worldScale.z), physx::PxQuat(physx::PxIdentity));
-                        physx::PxTriangleMeshGeometry geom(triMesh, scale);
-
-                        shape = physx::PxRigidActorExt::createExclusiveShape(*actor, geom, *material);
-                    }
-                }
-
-                if (shape)
-                {
-                    if (mc.IsTrigger)
-                    {
-                        shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
-                        shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
-                    }
-                    mc.RuntimeShape = shape;
-                }
-            }
-            else
-            {
-                RXN_CORE_WARN("MeshColliderComponent on Entity '{0}' failed to build: Mesh not loaded yet or no child mesh found.", entity.GetComponent<TagComponent>().Tag);
-            }
-        }
-
-        if (rb.Type != RigidbodyComponent::BodyType::Static)
-        {
-            physx::PxRigidBodyExt::updateMassAndInertia(*(physx::PxRigidDynamic*)actor, rb.Mass);
-        }
-
-        actor->userData = (void*)(uint64_t)entity.GetUUID();
-
-        physicsScene->addActor(*actor);
-        rb.RuntimeActor = actor;
-    }
-
     void Scene::OnSimulationStart()
     {
-        m_Registry.view<entt::entity>().each([&](auto entityID)
-            {
-                Entity entity = { entityID, this };
-
-                bool hasCollider = entity.HasComponent<BoxColliderComponent>() ||
-                    entity.HasComponent<SphereColliderComponent>() ||
-                    entity.HasComponent<CapsuleColliderComponent>() ||
-                    entity.HasComponent<MeshColliderComponent>();
-
-                if (hasCollider && !entity.HasComponent<RigidbodyComponent>())
-                {
-                    auto& rb = entity.AddComponent<RigidbodyComponent>();
-                    rb.Type = RigidbodyComponent::BodyType::Static;
-                }
-
-                if (entity.HasComponent<RigidbodyComponent>())
-                    CreatePhysicsBody(entity);
-
-                if (entity.HasComponent<CharacterControllerComponent>())
-                {
-                    auto& cct = entity.GetComponent<CharacterControllerComponent>();
-                    auto& tc = entity.GetComponent<TransformComponent>();
-
-                    physx::PxCapsuleControllerDesc desc;
-                    desc.setToDefault();
-                    desc.height = cct.Height;
-                    desc.radius = cct.Radius;
-                    desc.stepOffset = cct.StepOffset;
-                    desc.slopeLimit = glm::cos(glm::radians(cct.SlopeLimitDegrees));
-                    desc.position = physx::PxExtendedVec3(tc.Translation.x, tc.Translation.y, tc.Translation.z);
-                    desc.upDirection = physx::PxVec3(0, 1, 0);
-
-                    auto physicsSys = Application::Get().GetSubsystem<PhysicsSystem>();
-                    desc.material = physicsSys->GetPhysics()->createMaterial(0.5f, 0.5f, 0.1f);
-
-                    cct.RuntimeController = GetSubsystem<PhysicsWorld>()->GetControllerManager()->createController(desc);
-
-                    if (cct.RuntimeController) {
-                        physx::PxController* pxCct = (physx::PxController*)cct.RuntimeController;
-
-                        pxCct->setUserData((void*)(uint64_t)entity.GetUUID());
-                        pxCct->getActor()->userData = (void*)(uint64_t)entity.GetUUID();
-                    }
-                }
-            });
+        auto physicsWorld = GetSubsystem<PhysicsWorld>();
+        if (physicsWorld)
+            physicsWorld->OnSimulationStart(this);
 
         m_IsSimulating = true;
     }
 
     void Scene::OnSimulationStop()
     {
+        auto physicsWorld = GetSubsystem<PhysicsWorld>();
+        if (physicsWorld)
+            physicsWorld->OnSimulationStop();
+
         m_IsSimulating = false;
-    }
-
-    void Scene::SyncTransformToPhysics(Entity entity)
-    {
-        if (!entity.HasComponent<RigidbodyComponent>()) return;
-
-        auto& rb = entity.GetComponent<RigidbodyComponent>();
-        auto& tc = entity.GetComponent<TransformComponent>();
-
-        if (rb.RuntimeActor)
-        {
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-
-            glm::mat4 worldTransform = GetWorldTransform(entity);
-            glm::vec3 worldTranslation, worldRotation, worldScale;
-            Math::DecomposeTransform(worldTransform, worldTranslation, worldRotation, worldScale);
-
-            glm::quat rotation = glm::quat(worldRotation);
-
-            physx::PxTransform physxTransform(
-                physx::PxVec3(worldTranslation.x, worldTranslation.y, worldTranslation.z),
-                physx::PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
-            );
-
-            actor->setGlobalPose(physxTransform);
-        }
     }
 }

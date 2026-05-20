@@ -131,6 +131,45 @@ namespace RXNEditor {
                 {
                     Entity newEntity = m_Context->CreateEntity("New Entity");
                     CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, newEntity.GetUUID(), newEntity.GetName()));
+                    SetSelectedEntity(newEntity);
+                }
+
+                if (ImGui::BeginMenu("UI"))
+                {
+                    if (ImGui::MenuItem("Canvas"))
+                    {
+                        Entity newEntity = m_Context->CreateEntity("Canvas");
+                        newEntity.AddComponent<UICanvasComponent>();
+                        newEntity.AddComponent<UITransformComponent>();
+                        CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, newEntity.GetUUID(), newEntity.GetName()));
+                        SetSelectedEntity(newEntity);
+                    }
+                    if (ImGui::MenuItem("Panel"))
+                    {
+                        Entity newEntity = m_Context->CreateEntity("Panel");
+                        newEntity.AddComponent<UITransformComponent>();
+                        newEntity.AddComponent<UIImageComponent>();
+                        CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, newEntity.GetUUID(), newEntity.GetName()));
+                        SetSelectedEntity(newEntity);
+                    }
+                    if (ImGui::MenuItem("Button"))
+                    {
+                        Entity newEntity = m_Context->CreateEntity("Button");
+                        newEntity.AddComponent<UITransformComponent>();
+                        newEntity.AddComponent<UIImageComponent>();
+                        newEntity.AddComponent<UIButtonComponent>();
+                        CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, newEntity.GetUUID(), newEntity.GetName()));
+                        SetSelectedEntity(newEntity);
+                    }
+                    if (ImGui::MenuItem("Text"))
+                    {
+                        Entity newEntity = m_Context->CreateEntity("Text");
+                        newEntity.AddComponent<UITransformComponent>();
+                        newEntity.AddComponent<UITextComponent>();
+                        CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, newEntity.GetUUID(), newEntity.GetName()));
+                        SetSelectedEntity(newEntity);
+                    }
+                    ImGui::EndMenu();
                 }
                 ImGui::EndPopup();
             }
@@ -280,6 +319,79 @@ namespace RXNEditor {
                 Entity child = m_Context->CreateEntity("New Child");
                 m_Context->ParentEntity(child, entity);
                 CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, child.GetUUID(), child.GetName(), entity.GetUUID()));
+                SetSelectedEntity(child);
+            }
+
+            if (ImGui::BeginMenu("UI"))
+            {
+                auto createUIElement = [&](const std::string& name, auto setupFunc)
+                    {
+                        Entity parent = entity;
+                    
+                        if (!parent.HasComponent<UICanvasComponent>())
+                        {
+                            bool hasCanvasAscendant = false;
+                            Entity curr = parent;
+                            while (curr.HasComponent<RelationshipComponent>())
+                            {
+                                UUID pID = curr.GetComponent<RelationshipComponent>().ParentHandle;
+
+                                if (pID == 0)
+                                    break;
+
+                                curr = m_Context->GetEntityByUUID(pID);
+
+                                if (curr && curr.HasComponent<UICanvasComponent>())
+                                {
+                                    hasCanvasAscendant = true;
+                                    break;
+                                }
+                            }
+                        
+                            if (!hasCanvasAscendant)
+                            {
+                                Entity canvas = m_Context->CreateEntity("Canvas");
+                                canvas.AddComponent<UICanvasComponent>();
+                                canvas.AddComponent<UITransformComponent>();
+                                m_Context->ParentEntity(canvas, parent);
+                                parent = canvas;
+                            }
+                    }
+
+                    Entity child = m_Context->CreateEntity(name);
+                    m_Context->ParentEntity(child, parent);
+                    setupFunc(child);
+
+                    CommandHistory::Push(CreateScope<CreateEntityCommand>(m_Context, child.GetUUID(), child.GetName(), parent.GetUUID()));
+                    SetSelectedEntity(child);
+                };
+
+                if (ImGui::MenuItem("Panel"))
+                {
+                    createUIElement("Panel", [](Entity e)
+                        {
+                            e.AddComponent<UITransformComponent>();
+                            e.AddComponent<UIImageComponent>();
+                        });
+                }
+                if (ImGui::MenuItem("Button"))
+                {
+                    createUIElement("Button", [](Entity e)
+                        {
+                            e.AddComponent<UITransformComponent>();
+                            e.AddComponent<UIImageComponent>();
+                            e.AddComponent<UIButtonComponent>();
+                        });
+                }
+                if (ImGui::MenuItem("Text"))
+                {
+                    createUIElement("Text", [](Entity e)
+                        {
+                            e.AddComponent<UITransformComponent>();
+                            e.AddComponent<UITextComponent>();
+                        });
+                }
+                ImGui::EndMenu();
             }
 
             if (ImGui::MenuItem("Save as Prefab..."))
@@ -353,6 +465,11 @@ namespace RXNEditor {
             ShowAddComponentEntry<ScriptComponent>("Script Component", selectedEntity, m_Context, selectedEntity.GetComponent<TagComponent>().Tag);
             ShowAddComponentEntry<CharacterControllerComponent>("Character Controller", selectedEntity, m_Context);
             ShowAddComponentEntry<AudioSourceComponent>("Audio Source", selectedEntity, m_Context);
+            ShowAddComponentEntry<UICanvasComponent>("UI Canvas", selectedEntity, m_Context);
+            ShowAddComponentEntry<UITransformComponent>("UI Transform", selectedEntity, m_Context);
+            ShowAddComponentEntry<UIImageComponent>("UI Image", selectedEntity, m_Context);
+            ShowAddComponentEntry<UITextComponent>("UI Text", selectedEntity, m_Context);
+            ShowAddComponentEntry<UIButtonComponent>("UI Button", selectedEntity, m_Context);
             ImGui::EndPopup();
         }
         ImGui::PopItemWidth();
@@ -983,6 +1100,194 @@ namespace RXNEditor {
 
                 m_AudioTracker.EndEdit(m_Context, entity, component, m);
             });
+
+        DrawComponent<UICanvasComponent>("UI Canvas", entity, [&](auto& component)
+            {
+                m_CanvasTracker.BeginEdit(component);
+                bool m = false;
+                m |= UI::DrawCheckbox("Active", component.Active);
+                
+                const char* renderModeStrings[] = { "Screen Space Overlay", "World Space" };
+                const char* currentRenderModeString = renderModeStrings[(int)component.RenderMode];
+                if (ImGui::BeginCombo("Render Mode", currentRenderModeString))
+                {
+                    for (int i = 0; i < 2; i++)
+                    {
+                        bool isSelected = currentRenderModeString == renderModeStrings[i];
+                        if (ImGui::Selectable(renderModeStrings[i], isSelected))
+                        {
+                            currentRenderModeString = renderModeStrings[i];
+                            component.RenderMode = (CanvasRenderMode)i;
+                            m = true;
+                        }
+
+                        if (isSelected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                if (component.RenderMode == CanvasRenderMode::WorldSpace)
+                    m |= UI::DrawVec2Control("Reference Resolution", component.ReferenceResolution);
+
+                m_CanvasTracker.EndEdit(m_Context, entity, component, m);
+            });
+
+        DrawComponent<UITransformComponent>("UI Transform", entity, [&](auto& component)
+            {
+                m_UITransformTracker.BeginEdit(component);
+                bool m = false;
+
+                ImGui::Text("Anchor Presets");
+                ImGui::BeginGroup();
+                const char* symbols[9] = { "\\", "|", "/", "-", "+", "-", "/", "|", "\\" };
+                glm::vec2 presets[9] = {
+                    {0, 1}, {0.5, 1}, {1, 1},
+                    {0, 0.5}, {0.5, 0.5}, {1, 0.5},
+                    {0, 0}, {0.5, 0}, {1, 0}
+                };
+
+                for (int y = 0; y < 3; y++)
+                {
+                    for (int x = 0; x < 3; x++)
+                    {
+                        if (x > 0)
+                            ImGui::SameLine();
+
+                        std::string label = std::string(symbols[y * 3 + x]) + "##AnchorPreset" + std::to_string(y * 3 + x);
+                        if (ImGui::Button(label.c_str(), ImVec2(24, 24)))
+                        {
+                            component.AnchorMin = presets[y * 3 + x];
+                            component.AnchorMax = presets[y * 3 + x];
+                            component.IsDirty = true;
+                            m = true;
+                        }
+                    }
+                }
+                ImGui::EndGroup();
+
+                ImGui::SameLine();
+                if (ImGui::Button("Stretch Layout", ImVec2(100, 24)))
+                {
+                    component.AnchorMin = {0, 0};
+                    component.AnchorMax = {1, 1};
+                    component.OffsetMin = {0, 0};
+                    component.OffsetMax = {0, 0};
+                    component.IsDirty = true;
+                    m = true;
+                }
+
+                ImGui::Separator();
+
+                m |= UI::DrawVec2Control("Anchor Min", component.AnchorMin, 0.05f);
+                m |= UI::DrawVec2Control("Anchor Max", component.AnchorMax, 0.05f);
+                m |= UI::DrawVec2Control("Offset Min", component.OffsetMin);
+                m |= UI::DrawVec2Control("Offset Max", component.OffsetMax);
+                
+                if (UI::DrawIntControl("Z-Index", component.ZIndex))
+                    m = true;
+
+                if (m)
+                    component.IsDirty = true;
+
+                m_UITransformTracker.EndEdit(m_Context, entity, component, m);
+            });
+
+        DrawComponent<UIImageComponent>("UI Image", entity, [&](auto& component)
+            {
+                m_UIImageTracker.BeginEdit(component);
+                bool m = false;
+                m |= UI::DrawColor4Control("Tint Color", component.TintColor);
+
+                ImGui::Text("Texture");
+                ImGui::SameLine(100.0f);
+                std::string clipName = component.TextureAssetPath.empty() ? "None" : component.TextureAssetPath.substr(component.TextureAssetPath.find_last_of("/\\") + 1);
+                ImGui::Button(clipName.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
+
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string path = (const char*)p->Data;
+                        if (path.ends_with(".png") || path.ends_with(".jpg"))
+                        {
+                            component.TextureAssetPath = path;
+                            component.Texture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(path);
+                            m = true;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                if (!component.TextureAssetPath.empty())
+                {
+                    if (ImGui::Button("Clear Texture", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+                    {
+                        component.TextureAssetPath = "";
+                        component.Texture = nullptr;
+                        m = true;
+                    }
+                }
+
+                m_UIImageTracker.EndEdit(m_Context, entity, component, m);
+            });
+
+        DrawComponent<UITextComponent>("UI Text", entity, [&](auto& component)
+            {
+                m_UITextTracker.BeginEdit(component);
+                bool m = false;
+                
+                char buffer[2048];
+                memset(buffer, 0, sizeof(buffer));
+                strcpy_s(buffer, sizeof(buffer), component.Text.c_str());
+                if (ImGui::InputTextMultiline("Text", buffer, sizeof(buffer)))
+                {
+                    component.Text = buffer;
+                    m = true;
+                }
+
+                m |= UI::DrawColor4Control("Color", component.Color);
+                m |= UI::DrawFloatControl("Font Size", component.FontSize, 1.0f, 1.0f, 500.0f);
+                m |= UI::DrawFloatControl("Line Spacing", component.LineSpacing, 0.1f);
+                m |= UI::DrawFloatControl("Kerning", component.Kerning, 0.1f);
+                
+                ImGui::Text("Font");
+                ImGui::SameLine(100.0f);
+
+                const char* defaultFontPath = "res/fonts/opensans/OpenSans-Regular.ttf";
+
+                if (!component.FontAsset)
+                    component.FontAsset = CreateRef<Font>(defaultFontPath);
+
+                const char* fontName = component.FontAsset->GetPath() == defaultFontPath ? "Default Font" : component.FontAsset->GetPath().string().c_str();
+                ImGui::Button(fontName, ImVec2(ImGui::GetContentRegionAvail().x, 0.0f));
+                
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+                    {
+                        std::string path = (const char*)p->Data;
+                        if (path.ends_with(".ttf") || path.ends_with(".otf"))
+                        {
+                            component.FontAsset = CreateRef<Font>(path);
+                            m = true;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+
+                m_UITextTracker.EndEdit(m_Context, entity, component, m);
+            });
+
+        DrawComponent<UIButtonComponent>("UI Button", entity, [&](auto& component)
+            {
+                m_UIButtonTracker.BeginEdit(component);
+                bool m = false;
+                m |= UI::DrawColor4Control("Normal Color", component.NormalColor);
+                m |= UI::DrawColor4Control("Hover Color", component.HoverColor);
+                m |= UI::DrawColor4Control("Pressed Color", component.PressedColor);
+
+                m_UIButtonTracker.EndEdit(m_Context, entity, component, m);
+            });
     }
 
     template<typename T, typename UIFunction>
@@ -1025,9 +1330,7 @@ namespace RXNEditor {
             }
 
             if (removeComponent)
-            {
                 CommandHistory::AddAndExecute(CreateScope<RemoveComponentCommand<T>>(m_Context, entity.GetUUID(), component));
-            }
         }
     }
 }

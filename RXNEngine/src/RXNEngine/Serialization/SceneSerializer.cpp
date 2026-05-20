@@ -293,6 +293,75 @@ namespace RXNEngine {
 			out << YAML::EndMap;
 		}
 
+		if (entity.HasComponent<UICanvasComponent>())
+		{
+			out << YAML::Key << "UICanvasComponent";
+			out << YAML::BeginMap;
+
+			auto& uc = entity.GetComponent<UICanvasComponent>();
+			out << YAML::Key << "Active" << YAML::Value << uc.Active;
+			out << YAML::Key << "RenderMode" << YAML::Value << (int)uc.RenderMode;
+			out << YAML::Key << "ReferenceResolution" << YAML::Value << uc.ReferenceResolution;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<UITransformComponent>())
+		{
+			out << YAML::Key << "UITransformComponent";
+			out << YAML::BeginMap;
+
+			auto& ut = entity.GetComponent<UITransformComponent>();
+			out << YAML::Key << "AnchorMin" << YAML::Value << ut.AnchorMin;
+			out << YAML::Key << "AnchorMax" << YAML::Value << ut.AnchorMax;
+			out << YAML::Key << "OffsetMin" << YAML::Value << ut.OffsetMin;
+			out << YAML::Key << "OffsetMax" << YAML::Value << ut.OffsetMax;
+			out << YAML::Key << "ZIndex" << YAML::Value << ut.ZIndex;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<UIImageComponent>())
+		{
+			out << YAML::Key << "UIImageComponent";
+			out << YAML::BeginMap;
+
+			auto& ui = entity.GetComponent<UIImageComponent>();
+			out << YAML::Key << "TintColor" << YAML::Value << ui.TintColor;
+			out << YAML::Key << "TextureAssetPath" << YAML::Value << FileSystem::GetRelativePath(ui.TextureAssetPath);
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<UITextComponent>())
+		{
+			out << YAML::Key << "UITextComponent";
+			out << YAML::BeginMap;
+
+			auto& ut = entity.GetComponent<UITextComponent>();
+			out << YAML::Key << "Text" << YAML::Value << ut.Text;
+			out << YAML::Key << "FontAsset" << YAML::Value << FileSystem::GetRelativePath(ut.FontAsset->GetPath().string());
+			out << YAML::Key << "Color" << YAML::Value << ut.Color;
+			out << YAML::Key << "FontSize" << YAML::Value << ut.FontSize;
+			out << YAML::Key << "LineSpacing" << YAML::Value << ut.LineSpacing;
+			out << YAML::Key << "Kerning" << YAML::Value << ut.Kerning;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<UIButtonComponent>())
+		{
+			out << YAML::Key << "UIButtonComponent";
+			out << YAML::BeginMap;
+
+			auto& ub = entity.GetComponent<UIButtonComponent>();
+			out << YAML::Key << "NormalColor" << YAML::Value << ub.NormalColor;
+			out << YAML::Key << "HoverColor" << YAML::Value << ub.HoverColor;
+			out << YAML::Key << "PressedColor" << YAML::Value << ub.PressedColor;
+
+			out << YAML::EndMap;
+		}
+
 		out << YAML::EndMap; // Entity
 	}
 
@@ -661,6 +730,82 @@ namespace RXNEngine {
 				ac.MinDistance = audioSourceComponent["MinDistance"].as<float>();
 			if (audioSourceComponent["MaxDistance"])
 				ac.MaxDistance = audioSourceComponent["MaxDistance"].as<float>();
+		}
+
+		auto uiCanvasComponent = entity["UICanvasComponent"];
+		if (uiCanvasComponent)
+		{
+			auto& uc = deserializedEntity.AddComponent<UICanvasComponent>();
+			if (uiCanvasComponent["Active"])
+				uc.Active = uiCanvasComponent["Active"].as<bool>();
+			if (uiCanvasComponent["RenderMode"])
+				uc.RenderMode = (CanvasRenderMode)uiCanvasComponent["RenderMode"].as<int>();
+			if (uiCanvasComponent["ReferenceResolution"])
+				uc.ReferenceResolution = uiCanvasComponent["ReferenceResolution"].as<glm::vec2>();
+		}
+
+		auto uiTransformComponent = entity["UITransformComponent"];
+		if (uiTransformComponent)
+		{
+			auto& ut = deserializedEntity.AddComponent<UITransformComponent>();
+			if (uiTransformComponent["AnchorMin"])
+				ut.AnchorMin = uiTransformComponent["AnchorMin"].as<glm::vec2>();
+			if (uiTransformComponent["AnchorMax"])
+				ut.AnchorMax = uiTransformComponent["AnchorMax"].as<glm::vec2>();
+			if (uiTransformComponent["OffsetMin"])
+				ut.OffsetMin = uiTransformComponent["OffsetMin"].as<glm::vec2>();
+			if (uiTransformComponent["OffsetMax"])
+				ut.OffsetMax = uiTransformComponent["OffsetMax"].as<glm::vec2>();
+			if (uiTransformComponent["ZIndex"])
+				ut.ZIndex = uiTransformComponent["ZIndex"].as<int>();
+		}
+
+		auto uiImageComponent = entity["UIImageComponent"];
+		if (uiImageComponent)
+		{
+			auto& ui = deserializedEntity.AddComponent<UIImageComponent>();
+			if (uiImageComponent["TintColor"])
+				ui.TintColor = uiImageComponent["TintColor"].as<glm::vec4>();
+			if (uiImageComponent["TextureAssetPath"])
+			{
+				ui.TextureAssetPath = uiImageComponent["TextureAssetPath"].as<std::string>();
+				if (!ui.TextureAssetPath.empty())
+					ui.Texture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(ui.TextureAssetPath);
+			}
+		}
+
+		auto uiTextComponent = entity["UITextComponent"];
+		if (uiTextComponent)
+		{
+			auto& ut = deserializedEntity.AddComponent<UITextComponent>();
+			if (uiTextComponent["Text"])
+				ut.Text = uiTextComponent["Text"].as<std::string>();
+			if (uiTextComponent["FontAsset"])
+			{
+				std::string fontPath = uiTextComponent["FontAsset"].as<std::string>();
+				if (!fontPath.empty())
+					ut.FontAsset = CreateRef<Font>(fontPath);
+			}
+			if (uiTextComponent["Color"])
+				ut.Color = uiTextComponent["Color"].as<glm::vec4>();
+			if (uiTextComponent["FontSize"])
+				ut.FontSize = uiTextComponent["FontSize"].as<float>();
+			if (uiTextComponent["LineSpacing"])
+				ut.LineSpacing = uiTextComponent["LineSpacing"].as<float>();
+			if (uiTextComponent["Kerning"])
+				ut.Kerning = uiTextComponent["Kerning"].as<float>();
+		}
+
+		auto uiButtonComponent = entity["UIButtonComponent"];
+		if (uiButtonComponent)
+		{
+			auto& ub = deserializedEntity.AddComponent<UIButtonComponent>();
+			if (uiButtonComponent["NormalColor"])
+				ub.NormalColor = uiButtonComponent["NormalColor"].as<glm::vec4>();
+			if (uiButtonComponent["HoverColor"])
+				ub.HoverColor = uiButtonComponent["HoverColor"].as<glm::vec4>();
+			if (uiButtonComponent["PressedColor"])
+				ub.PressedColor = uiButtonComponent["PressedColor"].as<glm::vec4>();
 		}
 
 	}

@@ -12,10 +12,12 @@ namespace RXNEngine {
     static void AttachMeshHierarchy(Ref<StaticMesh> mesh, const std::string& filepath, uint64_t entityID)
     {
         Scene* scene = Application::Get().GetSubsystem<ScriptEngine>()->GetSceneContext();
-        if (!scene) return;
+        if (!scene)
+            return;
 
         Entity rootEntity = scene->GetEntityByUUID(entityID);
-        if (!rootEntity) return;
+        if (!rootEntity)
+            return;
 
         const auto& submeshes = mesh->GetSubmeshes();
         for (uint32_t i = 0; i < submeshes.size(); i++)
@@ -157,7 +159,8 @@ namespace RXNEngine {
     void AssetManager::Update(float deltaTime)
     {
         std::lock_guard<std::mutex> lock(m_AsyncMutex);
-        if (m_FinishedTasks.empty()) return;
+        if (m_FinishedTasks.empty())
+            return;
 
         RXN_PROFILE_SCOPE_NAMED("AssetManager::UploadToGPU");
 

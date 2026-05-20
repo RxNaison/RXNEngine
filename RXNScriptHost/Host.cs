@@ -1,4 +1,4 @@
-﻿using RXNEngine;
+using RXNEngine;
 using System;
 using System.IO;
 using System.Reflection;
@@ -191,6 +191,22 @@ namespace RXNScriptHost
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
                 info.FixedUpdateDelegate?.Invoke(fixedTimeStep);
+        }
+
+        [UnmanagedCallersOnly]
+        public static void InvokeMethod(ulong entityID, IntPtr methodNamePtr)
+        {
+            if (s_EntityInstances.TryGetValue(entityID, out var info))
+            {
+                string? methodName = Marshal.PtrToStringUTF8(methodNamePtr);
+                if (methodName != null)
+                {
+                    var scriptInstance = info.Instance;
+                    var method = scriptInstance.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (method != null)
+                        method.Invoke(scriptInstance, null);
+                }
+            }
         }
 
         [UnmanagedCallersOnly]

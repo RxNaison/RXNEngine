@@ -48,5 +48,13 @@ cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON -DTBB_BUILD_S
 cmake --build . --config Debug
 cd ../..
 
+cd freetype
+mkdir build
+cd build
+cmake .. -DBUILD_SHARED_LIBS=OFF -DCMAKE_DISABLE_FIND_PACKAGE_HarfBuzz=ON -DCMAKE_DISABLE_FIND_PACKAGE_BZip2=ON -DCMAKE_DISABLE_FIND_PACKAGE_PNG=ON -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=ON -DCMAKE_DISABLE_FIND_PACKAGE_BrotliDec=ON
+cmake --build . --config Release
+cmake --build . --config Debug
+cd ../..
+
 echo All libraries built successfully!
 pause

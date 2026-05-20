@@ -1,4 +1,4 @@
-﻿using RXNScriptHost;
+using RXNScriptHost;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
@@ -6,14 +6,17 @@ namespace RXNEngine
 {
     public abstract class Component
     {
-        public Entity EntityHandle { get; internal set; }
+        public Entity EntityHandle { get; internal set; } = null!;
     }
 
     public class IDComponent : Component
     {
         public ulong ID
         {
-            get { return EntityHandle.ID; }
+            get
+            {
+                return EntityHandle.ID;
+            }
         }
     }
 
@@ -193,17 +196,26 @@ namespace RXNEngine
         // --- Video Controls ---
         public void PlayVideo()
         {
-            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoPlay)(EntityHandle.ID); }
+            unsafe
+            {
+                ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoPlay)(EntityHandle.ID);
+            }
         }
 
         public void PauseVideo()
         {
-            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoPause)(EntityHandle.ID); }
+            unsafe 
+            {
+                ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoPause)(EntityHandle.ID);
+            }
         }
 
         public void RewindVideo()
         {
-            unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoRewind)(EntityHandle.ID); }
+            unsafe
+            {
+                ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.NativeSpotLight_VideoRewind)(EntityHandle.ID);
+            }
         }
     }
 
@@ -384,6 +396,141 @@ namespace RXNEngine
                 IntPtr namePtr = Marshal.StringToHGlobalAnsi(paramName);
                 ((delegate* unmanaged<ulong, IntPtr, float, void>)Interop.NativeFunctions.NativeAudioSource_SetParameter)(EntityHandle.ID, namePtr, value);
                 Marshal.FreeHGlobal(namePtr);
+            }
+        }
+    }
+
+    public class UICanvasComponent : Component
+    {
+        public bool Active
+        {
+            get
+            {
+                unsafe
+                {
+                    return ((delegate* unmanaged<ulong, bool>)Interop.NativeFunctions.Entity_UICanvas_GetActive)(EntityHandle.ID); 
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    ((delegate* unmanaged<ulong, bool, void>)Interop.NativeFunctions.Entity_UICanvas_SetActive)(EntityHandle.ID, value);
+                }
+            }
+        }
+    }
+
+    public class UITransformComponent : Component
+    {
+        public UITransformData Data
+        {
+            get
+            {
+                unsafe
+                {
+                    UITransformData res; ((delegate* unmanaged<ulong, UITransformData*, void>)Interop.NativeFunctions.Entity_UITransform_Get)(EntityHandle.ID, &res);
+                    return res;
+                }
+            }
+            set
+            {
+                unsafe 
+                {
+                    ((delegate* unmanaged<ulong, UITransformData*, void>)Interop.NativeFunctions.Entity_UITransform_Set)(EntityHandle.ID, &value);
+                }
+            }
+        }
+    }
+
+    public class UIImageComponent : Component
+    {
+        public Vector4 TintColor
+        {
+            get
+            {
+                unsafe
+                {
+                    Vector4 res; ((delegate* unmanaged<ulong, Vector4*, void>)Interop.NativeFunctions.Entity_UIImage_GetTintColor)(EntityHandle.ID, &res);
+                    return res;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    ((delegate* unmanaged<ulong, Vector4*, void>)Interop.NativeFunctions.Entity_UIImage_SetTintColor)(EntityHandle.ID, &value);
+                }
+            }
+        }
+
+        public string TextureAssetPath
+        {
+            get
+            {
+                unsafe
+                {
+                    IntPtr buffer = Marshal.AllocHGlobal(256);
+                    ((delegate* unmanaged<ulong, IntPtr, uint, void>)Interop.NativeFunctions.Entity_UIImage_GetTexture)(EntityHandle.ID, buffer, 256);
+                    string result = Marshal.PtrToStringAnsi(buffer) ?? "";
+                    Marshal.FreeHGlobal(buffer);
+                    return result;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    IntPtr ptr = Marshal.StringToHGlobalAnsi(value);
+                    ((delegate* unmanaged<ulong, IntPtr, void>)Interop.NativeFunctions.Entity_UIImage_SetTexture)(EntityHandle.ID, ptr);
+                    Marshal.FreeHGlobal(ptr);
+                }
+            }
+        }
+    }
+
+    public class UITextComponent : Component
+    {
+        public string Text
+        {
+            get
+            {
+                unsafe
+                {
+                    IntPtr buffer = Marshal.AllocHGlobal(2048);
+                    ((delegate* unmanaged<ulong, IntPtr, uint, void>)Interop.NativeFunctions.Entity_UIText_GetText)(EntityHandle.ID, buffer, 2048);
+                    string result = Marshal.PtrToStringAnsi(buffer) ?? "";
+                    Marshal.FreeHGlobal(buffer);
+                    return result;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    IntPtr ptr = Marshal.StringToHGlobalAnsi(value);
+                    ((delegate* unmanaged<ulong, IntPtr, void>)Interop.NativeFunctions.Entity_UIText_SetText)(EntityHandle.ID, ptr);
+                    Marshal.FreeHGlobal(ptr);
+                }
+            }
+        }
+
+        public UITextData Data
+        {
+            get
+            {
+                unsafe
+                {
+                    UITextData res; ((delegate* unmanaged<ulong, UITextData*, void>)Interop.NativeFunctions.Entity_UIText_GetData)(EntityHandle.ID, &res);
+                    return res;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    ((delegate* unmanaged<ulong, UITextData*, void>)Interop.NativeFunctions.Entity_UIText_SetData)(EntityHandle.ID, &value);
+                }
             }
         }
     }

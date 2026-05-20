@@ -10,6 +10,7 @@
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Audio/AudioSystem.h"
+#include "RXNEngine/Scene/SceneManager.h"
 
 namespace RXNEngine {
 
@@ -35,6 +36,7 @@ namespace RXNEngine {
 		AddSubsystem<ScriptEngine>();
 		AddSubsystem<AssetManager>();
 		AddSubsystem<AudioSystem>();
+		AddSubsystem<SceneManager>();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);

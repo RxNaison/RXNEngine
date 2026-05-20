@@ -7,6 +7,9 @@
 
 namespace RXNEngine {
 
+    class Scene;
+    class Entity;
+
     class PhysicsContactListener : public physx::PxSimulationEventCallback
     {
     public:
@@ -63,13 +66,11 @@ namespace RXNEngine {
                 {
                     Application::Get().GetSubsystem<ScriptEngine>()->OnTriggerEnter(triggerEntity, otherEntity);
                     Application::Get().GetSubsystem<ScriptEngine>()->OnTriggerEnter(otherEntity, triggerEntity);
-
                 }
                 else if (tp.status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
                 {
                     Application::Get().GetSubsystem<ScriptEngine>()->OnTriggerExit(triggerEntity, otherEntity);
                     Application::Get().GetSubsystem<ScriptEngine>()->OnTriggerExit(otherEntity, triggerEntity);
-
                 }
             }
         }
@@ -89,6 +90,16 @@ namespace RXNEngine {
         void UnlockWrite() { if (m_Scene) m_Scene->unlockWrite(); }
         void LockRead() { if (m_Scene) m_Scene->lockRead(); }
         void UnlockRead() { if (m_Scene) m_Scene->unlockRead(); }
+
+        void CreatePhysicsBody(Entity entity);
+        void DestroyPhysicsBody(Entity entity);
+        void SyncTransformToPhysics(Entity entity);
+
+        void OnSimulationStart(Scene* scene);
+        void OnSimulationStop();
+
+        void UpdateCCDFlags(Scene* scene);
+        void SyncPhysicsToTransforms(Scene* scene);
 
     private:
         physx::PxScene* m_Scene = nullptr;

@@ -91,5 +91,10 @@ namespace RXNEditor {
         ComponentEditTracker<RXNEngine::CharacterControllerComponent> m_CCTTracker;
         ComponentEditTracker<RXNEngine::ScriptComponent> m_ScriptTracker;
         ComponentEditTracker<RXNEngine::AudioSourceComponent> m_AudioTracker;
+        ComponentEditTracker<RXNEngine::UICanvasComponent> m_CanvasTracker;
+        ComponentEditTracker<RXNEngine::UITransformComponent> m_UITransformTracker;
+        ComponentEditTracker<RXNEngine::UIImageComponent> m_UIImageTracker;
+        ComponentEditTracker<RXNEngine::UITextComponent> m_UITextTracker;
+        ComponentEditTracker<RXNEngine::UIButtonComponent> m_UIButtonTracker;
     };
 }

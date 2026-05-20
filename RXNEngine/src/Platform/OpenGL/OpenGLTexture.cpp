@@ -174,7 +174,14 @@ namespace RXNEngine {
 	{
 		uint32_t bytesPerPixel = m_DataFormat == GL_RGBA ? 4 : 3;
 		RXN_CORE_ASSERT(size == m_Width * m_Height * bytesPerPixel, "Data must be entire texture!");
+
+		if (bytesPerPixel == 3)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
+
+		if (bytesPerPixel == 3)
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 		if (m_Specification.GenerateMips)
 			glGenerateTextureMipmap(m_RendererID);

@@ -25,3 +25,6 @@
 [submodule "RXNEngine/vendor/CoACD"]
 	path = RXNEngine/vendor/CoACD
 	url = https://github.com/SarahWeiii/CoACD.git
+[submodule "RXNEngine/vendor/msdf-atlas-gen"]
+	path = RXNEngine/vendor/msdf-atlas-gen
+	url = https://github.com/Chlumsky/msdf-atlas-gen.git

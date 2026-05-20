@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -11,6 +11,7 @@ namespace RXNScriptHost
         public IntPtr LogMessage;
         public IntPtr ScriptField_Register;
         public IntPtr AssetManager_LoadMeshAsync;
+        public IntPtr SceneManager_LoadScene;
 
         //Input
         public IntPtr Input_IsKeyDown;
@@ -95,6 +96,23 @@ namespace RXNScriptHost
         public IntPtr NativeAudio_PlayOneShot;
         public IntPtr NativeAudio_LoadBank;
         public IntPtr NativeAudio_UnloadBank;
+
+        // UI
+        public IntPtr Entity_UICanvas_GetActive;
+        public IntPtr Entity_UICanvas_SetActive;
+
+        public IntPtr Entity_UITransform_Get;
+        public IntPtr Entity_UITransform_Set;
+
+        public IntPtr Entity_UIImage_GetTintColor;
+        public IntPtr Entity_UIImage_SetTintColor;
+        public IntPtr Entity_UIImage_GetTexture;
+        public IntPtr Entity_UIImage_SetTexture;
+
+        public IntPtr Entity_UIText_GetText;
+        public IntPtr Entity_UIText_SetText;
+        public IntPtr Entity_UIText_GetData;
+        public IntPtr Entity_UIText_SetData;
     }
 
     public static class Interop

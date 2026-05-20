@@ -96,11 +96,15 @@ namespace RXNEngine {
     Ref<StaticMesh> ModelSerializer::Deserialize(const std::string& filepath)
     {
         std::ifstream in(filepath, std::ios::binary);
-        if (!in.is_open()) return nullptr;
+
+        if (!in.is_open())
+            return nullptr;
 
         char magic[4];
         in.read(magic, 4);
-        if (std::string(magic) != "RXN\0") return nullptr;
+
+        if (std::string(magic) != "RXN\0")
+            return nullptr;
 
         uint32_t version;
         in.read((char*)&version, sizeof(uint32_t));

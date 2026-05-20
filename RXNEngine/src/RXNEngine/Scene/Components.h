@@ -7,6 +7,7 @@
 #include "SceneCamera.h"
 #include "RXNEngine/Renderer/GraphicsAPI/VideoTexture.h"
 #include "RXNEngine/Asset/PhysicsMaterial.h"
+#include "RXNEngine/Renderer/Font.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -15,7 +16,6 @@
 #include <glm/gtx/quaternion.hpp>
 
 namespace RXNEngine {
-
 	struct IDComponent
 	{
 		UUID ID;
@@ -276,6 +276,84 @@ namespace RXNEngine {
 		AudioSourceComponent(const AudioSourceComponent&) = default;
 	};
 
+	enum class CanvasRenderMode { ScreenSpaceOverlay = 0, WorldSpace = 1 };
+
+	struct UICanvasComponent
+	{
+		bool Active = true;
+		CanvasRenderMode RenderMode = CanvasRenderMode::ScreenSpaceOverlay;
+		glm::vec2 ReferenceResolution = { 1920.0f, 1080.0f };
+		
+		UICanvasComponent() = default;
+		UICanvasComponent(const UICanvasComponent&) = default;
+	};
+
+	struct UITransformComponent
+	{
+		glm::vec2 AnchorMin = { 0.5f, 0.5f };
+		glm::vec2 AnchorMax = { 0.5f, 0.5f };
+		glm::vec2 OffsetMin = { -50.0f, -50.0f };
+		glm::vec2 OffsetMax = { 50.0f, 50.0f };
+
+		int ZIndex = 0;
+		bool IsDirty = true;
+
+		glm::vec2 ComputedSize = { 0.0f, 0.0f };
+		glm::vec2 ComputedBoundsMin = { 0.0f, 0.0f };
+		glm::vec2 ComputedBoundsMax = { 0.0f, 0.0f };
+		glm::mat4 ComputedTransform = glm::mat4(1.0f);
+
+		UITransformComponent() = default;
+		UITransformComponent(const UITransformComponent&) = default;
+	};
+
+	struct UIImageComponent
+	{
+		glm::vec4 TintColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		Ref<Texture2D> Texture;
+		std::string TextureAssetPath = "";
+
+		UIImageComponent() = default;
+		UIImageComponent(const UIImageComponent&) = default;
+	};
+
+	struct TextVertexLocal
+	{ 
+		glm::vec2 Position;
+		glm::vec2 TexCoord; 
+	};
+
+	struct UITextComponent
+	{
+		std::string Text = "Text";
+		Ref<Font> FontAsset;
+		glm::vec4 Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+		
+		float FontSize = 48.0f;
+		float LineSpacing = 0.0f;
+		float Kerning = 0.0f;
+
+		size_t TextHash = 0;
+		std::vector<TextVertexLocal> CachedGeometry;
+
+		UITextComponent() = default;
+		UITextComponent(const UITextComponent&) = default;
+	};
+
+	enum class ButtonState { Normal = 0, Hovered, Pressed };
+
+	struct UIButtonComponent
+	{
+		glm::vec4 NormalColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+		glm::vec4 HoverColor = { 0.8f, 0.8f, 0.8f, 1.0f };
+		glm::vec4 PressedColor = { 0.6f, 0.6f, 0.6f, 1.0f };
+
+		ButtonState State = ButtonState::Normal;
+
+		UIButtonComponent() = default;
+		UIButtonComponent(const UIButtonComponent&) = default;
+	};
+
 	template<typename... Component>
 	struct ComponentGroup {};
 
@@ -295,6 +373,11 @@ namespace RXNEngine {
 		CapsuleColliderComponent,
 		MeshColliderComponent,
 		CharacterControllerComponent,
-		AudioSourceComponent
+		AudioSourceComponent,
+		UICanvasComponent,
+		UITransformComponent,
+		UIImageComponent,
+		UITextComponent,
+		UIButtonComponent
 	>;
 }

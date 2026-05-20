@@ -237,7 +237,7 @@ namespace RXNEditor {
             {
                 entity.GetComponent<RXNEngine::TransformComponent>() = data.NewTransform;
                 if (m_Scene->IsSimulating())
-                    m_Scene->SyncTransformToPhysics(entity);
+                    RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
             }
         }
     }
@@ -251,7 +251,36 @@ namespace RXNEditor {
             {
                 entity.GetComponent<RXNEngine::TransformComponent>() = data.OldTransform;
                 if (m_Scene->IsSimulating())
-                    m_Scene->SyncTransformToPhysics(entity);
+                    RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
+            }
+        }
+    }
+
+    ChangeMultiUITransformCommand::ChangeMultiUITransformCommand(RXNEngine::Ref<RXNEngine::Scene> scene, const std::vector<UITransformData>& transforms)
+        : m_Scene(scene), m_Transforms(transforms) {}
+
+    void ChangeMultiUITransformCommand::Execute()
+    {
+        for (const auto& data : m_Transforms)
+        {
+            RXNEngine::Entity entity = m_Scene->GetEntityByUUID(data.EntityID);
+            if (entity && entity.HasComponent<RXNEngine::UITransformComponent>())
+            {
+                entity.GetComponent<RXNEngine::UITransformComponent>() = data.NewTransform;
+                entity.GetComponent<RXNEngine::UITransformComponent>().IsDirty = true;
+            }
+        }
+    }
+
+    void ChangeMultiUITransformCommand::Undo()
+    {
+        for (const auto& data : m_Transforms)
+        {
+            RXNEngine::Entity entity = m_Scene->GetEntityByUUID(data.EntityID);
+            if (entity && entity.HasComponent<RXNEngine::UITransformComponent>())
+            {
+                entity.GetComponent<RXNEngine::UITransformComponent>() = data.OldTransform;
+                entity.GetComponent<RXNEngine::UITransformComponent>().IsDirty = true;
             }
         }
     }

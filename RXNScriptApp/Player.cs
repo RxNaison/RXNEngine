@@ -20,6 +20,7 @@ public class Player : Entity
     public Entity? BulletPrefab;
     public Entity? HeadCamera;
     public Entity? SunEntity;
+    public Entity? AmmoTextEntity;
 
     private float m_FireCooldown = 0.0f;
     private int m_CurrentContacts = 0;
@@ -44,6 +45,8 @@ public class Player : Entity
         m_Yaw = currentRot.Y;
 
         HeadCamera = FindEntityByName("Camera");
+
+        UpdateAmmoUI();
 
         Console.WriteLine("\n=== RXN ENGINE: COMPONENT BRIDGE TEST ===");
 
@@ -74,6 +77,7 @@ public class Player : Entity
         }
 
         Console.WriteLine("=========================================\n");
+
     }
 
     public override void OnUpdate(float deltaTime)
@@ -269,6 +273,28 @@ public class Player : Entity
     {
     }
 
+    private void UpdateAmmoUI()
+    {
+        if (AmmoTextEntity != null && AmmoTextEntity.HasComponent<UITextComponent>())
+        {
+            var textComp = AmmoTextEntity.GetComponent<UITextComponent>();
+            textComp.Text = $"Ammo: {Ammo}";
+
+            var data = textComp.Data;
+            data.Color = Ammo <= 20 ? new Vector4(1.0f, 0.2f, 0.2f, 1.0f) : new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            textComp.Data = data;
+
+            Console.WriteLine("Text changed");
+        }
+        Console.WriteLine("Text not changed");
+
+        if (AmmoTextEntity == null)
+            Console.WriteLine("AmmoTextEntity was null");
+
+        if (!(AmmoTextEntity.HasComponent<UITextComponent>()))
+            Console.WriteLine("AmmoTextEntity did not have UITextComponent");
+    }
+
     private IEnumerator FireWeaponRoutine(Vector3 startPos)
     {
         Entity firedBullet = Entity.Instantiate(BulletPrefab!);
@@ -278,9 +304,9 @@ public class Player : Entity
 
         Ammo--;
         BulletsShot++;
-        Console.WriteLine($"[Player] Fired! Ammo left: {Ammo}. Bullet ID: {firedBullet.ID}");
+        UpdateAmmoUI();
 
-        Audio.PlayOneShot("assets/audio/shoot.wav");
+        Audio.PlayOneShot("audio/shoot.wav");
 
         Input.SetGamepadVibration(0, 1.0f, 1.0f);
 
@@ -305,6 +331,8 @@ public class Player : Entity
 
         if (trigger != null && other.ID == trigger.ID)
             Ammo = 1000;
+
+        UpdateAmmoUI();
 
         Console.WriteLine($"[SENSOR] Player walked into a trigger zone! Entity ID: {other.ID}");
     }

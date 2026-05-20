@@ -5,6 +5,7 @@
 #include "RXNEngine/Renderer/GraphicsAPI/UniformBuffer.h"
 #include "RenderCommand.h"
 #include "ShadowMap.h"
+#include "Renderer2D.h"
 
 #include <algorithm>
 #include <array>
@@ -203,6 +204,7 @@ namespace RXNEngine {
         m_Data->BatchBuffer.resize(MaxInstances);
 
         RenderCommand::Init();
+        Renderer2D::Init();
 
         m_Data->OpaqueQueue.reserve(1000);
         m_Data->InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
@@ -293,6 +295,7 @@ namespace RXNEngine {
 
     void Renderer::Shutdown()
     {
+        Renderer2D::Shutdown();
         m_Data->OpaqueQueue.clear();
         delete m_Data;
         m_Data = nullptr;
