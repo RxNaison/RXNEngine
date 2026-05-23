@@ -193,6 +193,7 @@ namespace RXNEngine {
 
             m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i] = lightProjection * lightView;
             m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].x = pFar;
+            m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].y = unitsPerTexelX;
         }
 
         m_Data->ShadowData.ShadowUniformBuffer->SetData(&m_Data->ShadowData.BufferLocal, sizeof(ShadowData::ShadowDataGPU));

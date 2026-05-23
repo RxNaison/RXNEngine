@@ -437,7 +437,7 @@ namespace RXNEngine {
             2.0f * knee,
             0.25f / (knee + 0.00001f)
         };
-        m_BloomDownsampleShader->SetFloat3("u_Threshold", filter);
+        m_BloomDownsampleShader->SetFloat4("u_Threshold", filter);
 
         uint32_t currentTexture = m_GeoPass->GetColorAttachmentRendererID();
 

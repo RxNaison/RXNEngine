@@ -16,7 +16,6 @@ void main()
 #version 450 core
 
 out vec4 FragColor;
-
 in vec2 v_TexCoord;
 
 uniform sampler2D u_ScreenTexture;
@@ -39,17 +38,27 @@ vec3 ACESFilm(vec3 x)
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
+float GetDitherNoise(vec2 screenPos)
+{
+    return fract(52.9829189 * fract(dot(screenPos, vec2(0.06711056, 0.00583715))));
+}
+
 void main()
 {
     vec3 hdrColor = texture(u_ScreenTexture, v_TexCoord).rgb;
     vec3 bloomColor = texture(u_BloomTexture, v_TexCoord).rgb;
 
     hdrColor += bloomColor * u_BloomIntensity;
-
     vec3 mapped = min(hdrColor * u_Exposure, vec3(1000.0));
 
     mapped = ACESFilm(mapped);
+    
     mapped = pow(mapped, vec3(1.0 / u_Gamma));
+
+    float noise = GetDitherNoise(gl_FragCoord.xy);
+    
+    float ditherValue = (noise - 0.5) / 255.0; 
+    mapped += vec3(ditherValue);
 
     float centerMask = texture(u_OutlineTexture, v_TexCoord).r;
     float outline = 0.0;

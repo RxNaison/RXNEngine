@@ -111,7 +111,6 @@ layout(std140, binding = 1) uniform LightData {
 const float PI = 3.14159265359;
 
 // PBR MATH 
-
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
     float a = roughness * roughness;
@@ -192,9 +191,19 @@ float ShadowCalculation(vec3 fragPosWorld)
     vec3 normal = normalize(v_Normal);
     vec3 lightDir = normalize(-u_DirLightDirection.xyz);
 
-    float normalOffsetScale = 0.01 * float(layer + 1);
-    
-    vec3 shadowPos = fragPosWorld + normal * normalOffsetScale * max(1.0 - dot(normal, lightDir), 0.00);
+    float cosTheta = clamp(dot(normal, lightDir), 0.0, 1.0);
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float slopeScale = sinTheta / max(cosTheta, 0.001);
+
+    float texelSizeCSM = u_CascadePlaneDistances[layer].y;
+
+    float normalOffset = texelSizeCSM * 1.5 * sinTheta;
+
+    float baseBiasFactor = 0.7;
+    float slopeBiasFactor = 2.0;
+    float depthOffset = max(texelSizeCSM * baseBiasFactor, 0.003) + texelSizeCSM * slopeBiasFactor * min(slopeScale, 6.0);
+
+    vec3 shadowPos = fragPosWorld + normal * normalOffset + lightDir * depthOffset;
 
     vec4 fragPosLightSpace = u_LightSpaceMatrices[layer] * vec4(shadowPos, 1.0);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -202,18 +211,12 @@ float ShadowCalculation(vec3 fragPosWorld)
 
     if (projCoords.z > 1.0) return 0.0;
 
-    float minBias = 0.00005;
-    float maxBias = 0.0005;
-    float cascadeMultiplier = float(layer + 1);
-    float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias) * cascadeMultiplier;
-
     float visibility = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
     
-    // 9-Tap PCF Filter (gives 36-pixel blur with hardware bilinear filtering)
     for(int x = -1; x <= 1; ++x) {
         for(int y = -1; y <= 1; ++y) {
-            visibility += texture(u_ShadowMap, vec4(projCoords.xy + vec2(x, y) * texelSize, float(layer), projCoords.z - bias));
+            visibility += texture(u_ShadowMap, vec4(projCoords.xy + vec2(x, y) * texelSize, float(layer), projCoords.z));
         }
     }
     
@@ -221,79 +224,112 @@ float ShadowCalculation(vec3 fragPosWorld)
     return 1.0 - visibility;
 }
 
-float SpotShadowCalculation(vec3 fragPosWorld, mat4 lightSpaceMatrix, int shadowIndex) {
-    if (shadowIndex < 0)
-        return 1.0;
-    
-    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPosWorld, 1.0);
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-    
-    if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
-        return 1.0;
-    
+float SpotShadowCalculation(vec3 fragPosWorld, SpotLight light, vec3 lightDir) {
+    int shadowIndex = int(light.ExtraData.x);
+    if (shadowIndex < 0) return 1.0;
+
+    vec3 lightPos = light.PositionIntensity.xyz;
+    float outerCutOffCos = light.Falloff.y;
+
+    vec3 normal = normalize(v_Normal);
+    float cosTheta = clamp(dot(normal, lightDir), 0.0, 1.0);
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float slopeScale = sinTheta / max(cosTheta, 0.001);
+
+    float distanceToLight = length(lightPos - fragPosWorld);
+    float sinOuter = sqrt(1.0 - outerCutOffCos * outerCutOffCos);
+    float tanOuter = sinOuter / max(outerCutOffCos, 0.001);
+    float texelSize = distanceToLight * tanOuter / 1024.0; // 2048 / 2
+    float normalOffset = max(texelSize, 0.0025) * 1.5 * sinTheta;
+
+    float constantDepthBias = 0.01; 
+    float depthOffset = constantDepthBias * (1.0 + min(slopeScale, 4.0));
+
+    vec3 shadowPos = fragPosWorld + normal * normalOffset + lightDir * depthOffset;
+
+    vec4 fragPosLightSpace = light.LightSpaceMatrix * vec4(shadowPos, 1.0);
+    vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+    if(projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0) return 1.0;
+
     float shadow = 0.0;
-    vec2 texelSize = 1.0 / vec2(textureSize(u_SpotShadowMap, 0));
-    
+    vec2 texelSizeUV = 1.0 / vec2(textureSize(u_SpotShadowMap, 0));
     for(int x = -1; x <= 1; ++x) {
         for(int y = -1; y <= 1; ++y) {
-            shadow += texture(u_SpotShadowMap, vec4(projCoords.xy + vec2(x, y) * texelSize, float(shadowIndex), projCoords.z - 0.0005));
+            shadow += texture(u_SpotShadowMap, vec4(projCoords.xy + vec2(x, y) * texelSizeUV, float(shadowIndex), projCoords.z));
         }
     }
-
     return shadow / 9.0;
 }
 
-const vec3 sampleOffsetDirections[20] = vec3[]
-(
-   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
-   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
-   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
-   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+// ============================================================================
+// ROTATED 2D POISSON DISK DISTRIBUTION
+// ============================================================================
+const vec2 poissonDisk[16] = vec2[16](
+    vec2(-0.94201624, -0.39906216), vec2(0.94558609, -0.76890725),
+    vec2(-0.094184101, -0.92938870), vec2(0.34495938, 0.29387760),
+    vec2(-0.91588583, 0.45771432), vec2(-0.81544232, -0.87912464),
+    vec2(-0.38208752, 0.27676845), vec2(0.97484398, 0.75648379),
+    vec2(0.44323325, -0.97511554), vec2(0.53742981, -0.47373420),
+    vec2(-0.51209949, -0.89733621), vec2(0.28989186, -0.66877443),
+    vec2(0.59620762, 0.22675971), vec2(-0.25883713, 0.52834376),
+    vec2(0.18730415, 0.81231885), vec2(-0.43265215, -0.31238692)
 );
 
-float PointShadowCalculation(vec3 fragPosWorld, vec3 lightPos, float farPlane, int shadowIndex) {
-    if (shadowIndex < 0)
-        return 1.0;
+float PointShadowCalculation(vec3 fragPosWorld, PointLight light, vec3 normal) {
+    int shadowIndex = int(light.ExtraData.x);
+    if (shadowIndex < 0) return 1.0;
     
-    vec3 fragToLight = fragPosWorld - lightPos;
-    vec3 absVec = abs(fragToLight);
-    float z_eye = max(absVec.x, max(absVec.y, absVec.z));
+    vec3 lightPos = light.PositionIntensity.xyz;
+    float farPlane = light.ColorRadius.w;
     
-    if (z_eye < 0.001) return 1.0;
+    vec3 fragToLightUnbiased = fragPosWorld - lightPos;
+    vec3 L = normalize(-fragToLightUnbiased); // Direction from fragment to light
+    float cosTheta = clamp(dot(normal, L), 0.0, 1.0);
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float slopeScale = sinTheta / max(cosTheta, 0.001);
     
-    float n = 0.1;
-    float f = farPlane;
+    // 1. Dynamic perspective cubemap face texel size
+    float distanceToLight = length(fragToLightUnbiased);
+    float texelSize = distanceToLight / 1024.0; // 90 deg FOV, tan(45) = 1
+    // Ensure healthy minimum offset near the light source to prevent acne
+    float normalOffset = max(texelSize, 0.003) * 1.5 * sinTheta;
     
-    float z_ndc = (f + n) / (f - n) - (2.0 * f * n) / ((f - n) * z_eye);
-    float currentDepth = z_ndc * 0.5 + 0.5;
+    // 2. World-Space Depth Bias: constant in world space (1.5 centimeters)
+    float constantDepthBias = 0.015;
+    float depthOffset = constantDepthBias * (1.0 + min(slopeScale, 4.0));
     
-    float dz_dzeye = (2.0 * f * n) / ((f - n) * z_eye * z_eye);
-    float bias = clamp(0.15 * dz_dzeye, 0.00005, 0.005);
+    // Combine offsets in world space: shift along normal and towards light source
+    vec3 shadowPos = fragPosWorld + normal * normalOffset + L * depthOffset;
     
-    float centerDepth = texture(u_PointShadowMap, vec4(fragToLight, float(shadowIndex))).r;
-    float depthDiff = currentDepth - centerDepth;
+    vec3 fragToLight = shadowPos - lightPos;
+    float trueDistance = length(fragToLight);
+    if (trueDistance < 0.001) return 1.0;
     
-    if (abs(depthDiff) > 0.01) 
-    {
-        return (currentDepth - bias > centerDepth) ? 0.0 : 1.0;
-    }
+    vec3 lightDir = normalize(fragToLight);
+    vec3 absSampleDir = abs(fragToLight);
+    float sampleZEye = max(absSampleDir.x, max(absSampleDir.y, absSampleDir.z));
+    
+    vec3 up = abs(lightDir.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, lightDir));
+    vec3 bitangent = cross(lightDir, tangent);
+    float randomAngle = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 2.0 * PI;
+    float c = cos(randomAngle), s = sin(randomAngle);
 
     float shadow = 0.0;
-    int samples = 20;
-    float diskRadius = 0.01; 
-    
-    for(int i = 0; i < samples; ++i)
-    {
-        vec3 sampleDir = fragToLight + sampleOffsetDirections[i] * diskRadius * z_eye;
-        float closestDepth = texture(u_PointShadowMap, vec4(sampleDir, float(shadowIndex))).r;
+    float diskRadius = 0.005 + (0.002 * (trueDistance / farPlane));
+    for(int i = 0; i < 16; ++i) {
+        vec2 srcOffset = poissonDisk[i];
+        vec3 sphereOffset = (tangent * (srcOffset.x * c - srcOffset.y * s) + bitangent * (srcOffset.x * s + srcOffset.y * c)) * diskRadius * trueDistance;
+        vec3 sampleDir = fragToLight + sphereOffset;
+        vec3 absDir = abs(sampleDir);
+        float sZEye = max(absDir.x, max(absDir.y, absDir.z));
+        float currentSampleDepth = ((farPlane + 0.1) / (farPlane - 0.1) - (2.0 * farPlane * 0.1) / ((farPlane - 0.1) * sZEye)) * 0.5 + 0.5;
         
-        if(currentDepth - bias > closestDepth)
+        // No clip-space depth bias subtraction is needed since the position was already offset in world-space!
+        if(currentSampleDepth > texture(u_PointShadowMap, vec4(sampleDir, float(shadowIndex))).r)
             shadow += 1.0;
     }
-    
-    return 1.0 - (shadow / float(samples));
+    return 1.0 - (shadow / 16.0);
 }
 
 // ----------------------------------------------------------------------------
@@ -369,7 +405,7 @@ void main()
             float attenuation = window / (distance * distance + 0.001);
 
             int shadowIdx = int(u_PointLights[i].ExtraData.x);
-            float pShadow = PointShadowCalculation(v_WorldPos, lightPos, radius, shadowIdx);
+            float pShadow = PointShadowCalculation(v_WorldPos, u_PointLights[i], N);
             vec3 radiance = u_PointLights[i].ColorRadius.rgb * intensity * attenuation * pShadow;
 
             float NDF = DistributionGGX(N, H, roughness);   
@@ -443,7 +479,7 @@ void main()
                 float attenuation = window / (distance * distance + 0.001);
 
                 int shadowIdx = int(u_SpotLights[i].ExtraData.x);
-                float sShadow = SpotShadowCalculation(v_WorldPos, u_SpotLights[i].LightSpaceMatrix, shadowIdx);
+                float sShadow = SpotShadowCalculation(v_WorldPos, u_SpotLights[i], L);
                 vec3 radiance = u_SpotLights[i].ColorCutoff.rgb * intensity * attenuation * intensityMultiplier * cookieColor * sShadow;
 
                 float NDF = DistributionGGX(N, H, roughness);   
