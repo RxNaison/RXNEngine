@@ -1,4 +1,7 @@
-﻿
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("RXNScriptHost")]
+
 namespace RXNEngine
 {
     public static class Time

@@ -2,6 +2,7 @@
 #include "ScriptEngine.h"
 
 #include "ScriptInterop.h"
+#include "RXNEngine/Core/Application.h"
 #include "RXNEngine/Scene/Entity.h"
 #include "RXNEngine/Scene/Components.h"
 
@@ -26,15 +27,24 @@
 
 #define LOAD_MANAGED_METHOD(ClassString, MethodName, FuncPtrVar) \
     { \
-        int rc = m_Data->LoadAssemblyAndGetFunctionPointer( \
-            hostDllPath.c_str(), \
-            STR(ClassString), \
-            STR(#MethodName), \
-            UNMANAGEDCALLERSONLY_METHOD, \
-            nullptr, \
-            (void**)&(FuncPtrVar)); \
-        if (rc != 0 || (FuncPtrVar) == nullptr) \
-            RXN_CORE_ERROR("Failed to extract " #MethodName "! Error code: {0}", rc); \
+        if (m_Data->AotModule) \
+        { \
+            FuncPtrVar = (decltype(FuncPtrVar))GetExportOS(m_Data->AotModule, #MethodName); \
+            if ((FuncPtrVar) == nullptr) \
+                RXN_CORE_CRITICAL("Failed to extract " #MethodName " from NativeAOT library!"); \
+        } \
+        else \
+        { \
+            int rc = m_Data->LoadAssemblyAndGetFunctionPointer( \
+                hostDllPath.c_str(), \
+                STR(ClassString), \
+                STR(#MethodName), \
+                UNMANAGEDCALLERSONLY_METHOD, \
+                nullptr, \
+                (void**)&(FuncPtrVar)); \
+            if (rc != 0 || (FuncPtrVar) == nullptr) \
+                RXN_CORE_ERROR("Failed to extract " #MethodName "! Error code: {0}", rc); \
+        } \
     }
 
 namespace RXNEngine {
@@ -185,9 +195,12 @@ namespace RXNEngine {
         std::unordered_map<std::string, std::vector<ScriptField>> ScriptClassFields;
 
         std::filesystem::path CoreAssemblyPath;
+        std::filesystem::path ScriptsDir;
         std::filesystem::file_time_type CoreAssemblyLastWriteTime;
         bool ReloadPending = false;
         float ReloadTimer = 0.0f;
+        void* AotModule = nullptr;
+        InternalCalls NativeCallbacks;
     };
 #pragma endregion
 
@@ -196,37 +209,82 @@ namespace RXNEngine {
     {
         m_Data = new ScriptEngineData();
 
-        if (!LoadHostFxr())
-        {
-            RXN_CORE_ASSERT(false, "Failed to initialize CoreCLR HostFxr!");
-            return;
-        }
-
         std::filesystem::path currentDir = std::filesystem::current_path();
-        STRING_TYPE runtimeConfigPath = (currentDir/"res"/"scripts"/"RXNScriptHost.runtimeconfig.json").wstring();
-        STRING_TYPE hostDllPath = (currentDir/"res"/"scripts"/"RXNScriptHost.dll").wstring();
+        std::filesystem::path scriptsDir = currentDir / "res" / "scripts";
 
-        hostfxr_handle cxt = nullptr;
-        int rc = init_fptr(runtimeConfigPath.c_str(), nullptr, &cxt);
-        if (rc != 0 || cxt == nullptr)
+        if (!std::filesystem::exists(scriptsDir))
+            scriptsDir = currentDir / "scripts";
+
+        m_Data->ScriptsDir = scriptsDir;
+
+        STRING_TYPE hostDllPath = (scriptsDir / "RXNScriptHost.dll").wstring();
+
+        bool useAot = false;
+#if defined(RXN_DIST)
+        if (!Application::Get().IsImGuiEnabled())
         {
-            RXN_CORE_CRITICAL("Init failed: {0}", rc);
-            close_fptr(cxt);
-            return;
+            useAot = true;
+        }
+#endif
+
+        if (useAot)
+        {
+            void* module = LoadLibraryOS(hostDllPath.c_str());
+            if (module)
+            {
+                void* testExport = GetExportOS(module, "SetEngineTime");
+                if (testExport != nullptr)
+                {
+                    m_Data->AotModule = module;
+                }
+                else
+                {
+#ifdef RXN_PLATFORM_WINDOWS
+                    FreeLibrary((HMODULE)module);
+#else
+                    dlclose(module);
+#endif
+                    useAot = false;
+                }
+            }
+            else
+            {
+                useAot = false;
+            }
         }
 
-        void* load_assembly_and_get_function_pointer = nullptr;
-        rc = get_delegate_fptr(cxt, hdt_load_assembly_and_get_function_pointer, &load_assembly_and_get_function_pointer);
-        if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
-            RXN_CORE_CRITICAL("Get delegate failed: {0}", rc);
+        if (!useAot)
+        {
+            if (!LoadHostFxr())
+            {
+                RXN_CORE_ASSERT(false, "Failed to initialize CoreCLR HostFxr!");
+                return;
+            }
 
-        m_Data->LoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
-        close_fptr(cxt);
+            STRING_TYPE runtimeConfigPath = (scriptsDir / "RXNScriptHost.runtimeconfig.json").wstring();
+
+            hostfxr_handle cxt = nullptr;
+            int rc = init_fptr(runtimeConfigPath.c_str(), nullptr, &cxt);
+            if (rc != 0 || cxt == nullptr)
+            {
+                RXN_CORE_CRITICAL("Init failed: {0}", rc);
+                close_fptr(cxt);
+                return;
+            }
+
+            void* load_assembly_and_get_function_pointer = nullptr;
+            rc = get_delegate_fptr(cxt, hdt_load_assembly_and_get_function_pointer, &load_assembly_and_get_function_pointer);
+            if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
+                RXN_CORE_CRITICAL("Get delegate failed: {0}", rc);
+
+            m_Data->LoadAssemblyAndGetFunctionPointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
+            close_fptr(cxt);
+        }
 
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", SetEngineTime, m_Data->SetEngineTime);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", LoadGameScripts, m_Data->LoadGameScripts);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", UnloadGameScripts, m_Data->UnloadGameScripts);
-        LOAD_MANAGED_METHOD("RXNScriptHost.Interop, RXNScriptHost", RegisterInternalCalls, m_Data->RegisterInternalCalls);
+        LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", RegisterInternalCalls, m_Data->RegisterInternalCalls);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InstantiateScript, m_Data->InstantiateScript);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnCreate, m_Data->InvokeOnCreate);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", InvokeOnDestroy, m_Data->InvokeOnDestroy);
@@ -243,27 +301,44 @@ namespace RXNEngine {
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", OnTriggerExit, m_Data->OnTriggerExit);
         LOAD_MANAGED_METHOD("RXNScriptHost.Host, RXNScriptHost", ClearInstances, m_Data->ClearInstances);
 
-        InternalCalls nativeFunctions;
-        ScriptInterop::RegisterFunctions(&nativeFunctions);
+        ScriptInterop::RegisterFunctions(&m_Data->NativeCallbacks);
 
         if (m_Data->RegisterInternalCalls)
-        {
-            m_Data->RegisterInternalCalls(&nativeFunctions);
-        }
+            m_Data->RegisterInternalCalls(&m_Data->NativeCallbacks);
 
-        LoadAssembly("res/scripts/RXNScriptApp.dll");
+        if (m_Data->AotModule)
+        {
+            if (m_Data->LoadGameScripts)
+                m_Data->LoadGameScripts(nullptr, nullptr);
+        }
+        else
+        {
+            LoadAssembly((m_Data->ScriptsDir / "RXNScriptApp.dll").string());
+        }
         RXN_CORE_INFO("CoreCLR Runtime initialized successfully!");
     }
 
     void ScriptEngine::Update(float deltaTime)
     {
-        ReloadIfModified(deltaTime);
+        if (m_Data && m_Data->AotModule == nullptr)
+            ReloadIfModified(deltaTime);
     }
 
     void ScriptEngine::Shutdown()
     {
         if (m_Data && m_Data->UnloadGameScripts)
             m_Data->UnloadGameScripts();
+
+#if defined(RXN_DIST)
+        if (m_Data && m_Data->AotModule)
+        {
+#if defined(RXN_PLATFORM_WINDOWS)
+            FreeLibrary((HMODULE)m_Data->AotModule);
+#else
+            dlclose(m_Data->AotModule);
+#endif
+        }
+#endif
 
         delete m_Data;
     }
@@ -272,18 +347,22 @@ namespace RXNEngine {
 #pragma region Assembly Loading & Hot Reloading
     void ScriptEngine::LoadAssembly(const std::string& appFilepath)
     {
-        if (m_Data && m_Data->LoadGameScripts)
+        if (m_Data && m_Data->AotModule == nullptr && m_Data->LoadGameScripts)
         {
             m_Data->UnloadGameScripts();
 
             std::filesystem::path appAbsolutePath = std::filesystem::absolute(appFilepath);
-            std::filesystem::path coreAbsolutePath = std::filesystem::absolute("res/scripts/RXNScriptCore.dll");
+            std::filesystem::path coreAbsolutePath = std::filesystem::absolute(m_Data->ScriptsDir / "RXNScriptCore.dll");
 
             m_Data->CoreAssemblyPath = appAbsolutePath;
             m_Data->CoreAssemblyLastWriteTime = std::filesystem::last_write_time(appAbsolutePath);
             m_Data->ReloadPending = false;
 
             m_Data->LoadGameScripts(coreAbsolutePath.string().c_str(), appAbsolutePath.string().c_str());
+        }
+        else if (m_Data && m_Data->AotModule != nullptr)
+        {
+            // game scripts are baked into the NativeAOT library and don't need distinct loading
         }
         else
         {
@@ -295,7 +374,7 @@ namespace RXNEngine {
     {
         m_Data->ScriptClassFields.clear();
 
-        LoadAssembly("res/scripts/RXNScriptApp.dll");
+        LoadAssembly((m_Data->ScriptsDir / "RXNScriptApp.dll").string());
         RXN_CORE_INFO("ScriptEngine: Assembly Hot-Reloaded successfully!");
     }
 

@@ -96,7 +96,7 @@ namespace RXNEngine {
         void SyncTransformToPhysics(Entity entity);
 
         void OnSimulationStart(Scene* scene);
-        void OnSimulationStop();
+        void OnSimulationStop(Scene* scene);
 
         void UpdateCCDFlags(Scene* scene);
         void SyncPhysicsToTransforms(Scene* scene);

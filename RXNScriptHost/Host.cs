@@ -39,6 +39,7 @@ namespace RXNScriptHost
         private static Assembly? s_AppAssembly = null;
 
         private static Dictionary<ulong, ScriptInstanceInfo> s_EntityInstances = new();
+        private static IntPtr s_InternalCallsPtr = IntPtr.Zero;
 
         private static uint GetScriptFieldType(Type type)
         {
@@ -65,16 +66,44 @@ namespace RXNScriptHost
             return 0;
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "SetEngineTime")]
         public static void SetEngineTime(float deltaTime)
         {
             Time.DeltaTime = deltaTime * Time.TimeScale;
             Time.TimeSinceStartup += Time.DeltaTime;
+
+            if (s_CoreAssembly != null)
+            {
+                Type? timeType = s_CoreAssembly.GetType("RXNEngine.Time");
+                if (timeType != null)
+                {
+                    PropertyInfo? deltaTimeProp = timeType.GetProperty("DeltaTime", BindingFlags.Public | BindingFlags.Static);
+                    deltaTimeProp?.SetValue(null, Time.DeltaTime);
+
+                    PropertyInfo? timeScaleProp = timeType.GetProperty("TimeScale", BindingFlags.Public | BindingFlags.Static);
+                    timeScaleProp?.SetValue(null, Time.TimeScale);
+
+                    PropertyInfo? timeSinceStartupProp = timeType.GetProperty("TimeSinceStartup", BindingFlags.Public | BindingFlags.Static);
+                    timeSinceStartupProp?.SetValue(null, Time.TimeSinceStartup);
+                }
+            }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "LoadGameScripts")]
         public static void LoadGameScripts(IntPtr corePathPtr, IntPtr appPathPtr)
         {
+#if NATIVE_AOT
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                string? name = assembly.GetName().Name;
+                if (name == "RXNScriptApp")
+                    s_AppAssembly = assembly;
+                else if (name == "RXNScriptCore")
+                    s_CoreAssembly = assembly;
+            }
+            if (s_CoreAssembly == null) s_CoreAssembly = typeof(Host).Assembly;
+            if (s_AppAssembly == null) s_AppAssembly = typeof(Host).Assembly;
+#else
             string? corePath = Marshal.PtrToStringUTF8(corePathPtr);
             string? appPath = Marshal.PtrToStringUTF8(appPathPtr);
             if (corePath == null || appPath == null) return;
@@ -104,6 +133,32 @@ namespace RXNScriptHost
                     }
                     else s_AppAssembly = s_ALC.LoadFromStream(appStream);
                 }
+
+                if (s_CoreAssembly != null && s_InternalCallsPtr != IntPtr.Zero)
+                {
+                    Type? interopType = s_CoreAssembly.GetType("RXNScriptHost.Interop");
+                    if (interopType != null)
+                    {
+                        MethodInfo? setInternalCalls = interopType.GetMethod("SetInternalCalls", BindingFlags.Public | BindingFlags.Static);
+                        if (setInternalCalls != null)
+                        {
+                            setInternalCalls.Invoke(null, new object[] { s_InternalCallsPtr });
+                            Console.WriteLine("[.NET Host] Successfully propagated unmanaged internal calls pointer to core assembly.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("[.NET Host] ERROR: Method SetInternalCalls not found on RXNScriptHost.Interop!");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("[.NET Host] ERROR: Type RXNScriptHost.Interop not found in loaded core assembly!");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[.NET Host] WARNING: coreAssembly={s_CoreAssembly != null}, internalCallsPtr={s_InternalCallsPtr}");
+                }
             }
             catch (Exception e)
             {
@@ -113,10 +168,11 @@ namespace RXNScriptHost
                     Console.WriteLine($"[.NET Host] CRASH REASON: {e.InnerException.Message}");
                 }
             }
+#endif
         }
 
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "InstantiateScript")]
         public static void InstantiateScript(ulong entityID, IntPtr classNamePtr)
         {
             if (s_AppAssembly == null) return;
@@ -151,7 +207,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "InvokeOnCreate")]
         public static void InvokeOnCreate(ulong entityID)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -163,7 +219,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "InvokeOnDestroy")]
         public static void InvokeOnDestroy(ulong entityID)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -179,21 +235,21 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "InvokeOnUpdate")]
         public static void InvokeOnUpdate(ulong entityID, float deltaTime)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
                 info.UpdateDelegate?.Invoke();
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "InvokeOnFixedUpdate")]
         public static void InvokeOnFixedUpdate(ulong entityID, float fixedTimeStep)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
                 info.FixedUpdateDelegate?.Invoke(fixedTimeStep);
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "InvokeMethod")]
         public static void InvokeMethod(ulong entityID, IntPtr methodNamePtr)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -209,7 +265,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "UnloadGameScripts")]
         public static void UnloadGameScripts()
         {
             if (s_ALC == null) return;
@@ -222,7 +278,7 @@ namespace RXNScriptHost
             GC.WaitForPendingFinalizers();
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "EntityClassExists")]
         public static int EntityClassExists(IntPtr classNamePtr)
         {
             if (s_AppAssembly == null) return 0;
@@ -235,7 +291,7 @@ namespace RXNScriptHost
             return scriptType != null ? 1 : 0;
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ReflectClass")]
         public static void ReflectClass(IntPtr classNamePtr)
         {
             string? className = Marshal.PtrToStringUTF8(classNamePtr);
@@ -266,7 +322,7 @@ namespace RXNScriptHost
             Marshal.FreeHGlobal(classStr);
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "GetFieldValue")]
         public static void GetFieldValue(ulong entityID, IntPtr fieldNamePtr, IntPtr outBuffer)
         {
             string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
@@ -302,7 +358,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "SetFieldValue")]
         public static void SetFieldValue(ulong entityID, IntPtr fieldNamePtr, IntPtr inBuffer)
         {
             string? fieldName = Marshal.PtrToStringUTF8(fieldNamePtr);
@@ -334,7 +390,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "OnCollisionEnter")]
         public static void OnCollisionEnter(ulong entityID, ulong otherEntityID)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -354,7 +410,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "OnCollisionExit")]
         public static void OnCollisionExit(ulong entityID, ulong otherEntityID)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -374,7 +430,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "OnTriggerEnter")]
         public static void OnTriggerEnter(ulong entityID, ulong otherEntityID)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -394,7 +450,7 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "OnTriggerExit")]
         public static void OnTriggerExit(ulong entityID, ulong otherEntityID)
         {
             if (s_EntityInstances.TryGetValue(entityID, out var info))
@@ -414,10 +470,17 @@ namespace RXNScriptHost
             }
         }
 
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ClearInstances")]
         public static void ClearInstances()
         {
             s_EntityInstances.Clear();
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "RegisterInternalCalls")]
+        public static void RegisterInternalCalls(IntPtr internalCallsPtr)
+        {
+            s_InternalCallsPtr = internalCallsPtr;
+            Interop.SetInternalCalls(internalCallsPtr);
         }
     }
 }

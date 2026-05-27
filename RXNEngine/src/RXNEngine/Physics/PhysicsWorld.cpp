@@ -54,7 +54,9 @@ namespace RXNEngine {
     void PhysicsWorld::Update(float deltaTime)
     {
         RXN_PROFILE_SCOPE();
-        if (!m_Scene) return;
+
+        if (!m_Scene) 
+            return;
 
         m_Scene->simulate(deltaTime);
         m_Scene->fetchResults(true);
@@ -349,11 +351,7 @@ namespace RXNEngine {
         if (entity.HasComponent<BoxColliderComponent>())
         {
             auto& bc = entity.GetComponent<BoxColliderComponent>();
-            if (bc.RuntimeShape)
-            {
-                ((physx::PxShape*)bc.RuntimeShape)->release();
-                bc.RuntimeShape = nullptr;
-            }
+            bc.RuntimeShape = nullptr;
             if (bc.RuntimeMaterial)
             {
                 ((physx::PxMaterial*)bc.RuntimeMaterial)->release();
@@ -364,11 +362,7 @@ namespace RXNEngine {
         if (entity.HasComponent<SphereColliderComponent>())
         {
             auto& sc = entity.GetComponent<SphereColliderComponent>();
-            if (sc.RuntimeShape)
-            {
-                ((physx::PxShape*)sc.RuntimeShape)->release();
-                sc.RuntimeShape = nullptr;
-            }
+            sc.RuntimeShape = nullptr;
             if (sc.RuntimeMaterial)
             {
                 ((physx::PxMaterial*)sc.RuntimeMaterial)->release();
@@ -379,11 +373,7 @@ namespace RXNEngine {
         if (entity.HasComponent<CapsuleColliderComponent>())
         {
             auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-            if (cc.RuntimeShape)
-            {
-                ((physx::PxShape*)cc.RuntimeShape)->release();
-                cc.RuntimeShape = nullptr;
-            }
+            cc.RuntimeShape = nullptr;
             if (cc.RuntimeMaterial)
             { 
                 ((physx::PxMaterial*)cc.RuntimeMaterial)->release();
@@ -394,11 +384,7 @@ namespace RXNEngine {
         if (entity.HasComponent<MeshColliderComponent>())
         {
             auto& mc = entity.GetComponent<MeshColliderComponent>();
-            if (mc.RuntimeShape)
-            {
-                ((physx::PxShape*)mc.RuntimeShape)->release();
-                mc.RuntimeShape = nullptr;
-            }
+            mc.RuntimeShape = nullptr;
             if (mc.RuntimeMaterial)
             { 
                 ((physx::PxMaterial*)mc.RuntimeMaterial)->release();
@@ -443,6 +429,8 @@ namespace RXNEngine {
 
     void PhysicsWorld::OnSimulationStart(Scene* scene)
     {
+        std::vector<entt::entity> entitiesNeedingStaticRB;
+
         scene->GetRaw().view<entt::entity>().each([&](auto entityID)
             {
                 Entity entity = { entityID, scene };
@@ -453,10 +441,19 @@ namespace RXNEngine {
                     entity.HasComponent<MeshColliderComponent>();
 
                 if (hasCollider && !entity.HasComponent<RigidbodyComponent>())
-                {
-                    auto& rb = entity.AddComponent<RigidbodyComponent>();
-                    rb.Type = RigidbodyComponent::BodyType::Static;
-                }
+                    entitiesNeedingStaticRB.push_back(entityID);
+            });
+
+        for (auto entityID : entitiesNeedingStaticRB)
+        {
+            Entity entity = { entityID, scene };
+            auto& rb = entity.AddComponent<RigidbodyComponent>();
+            rb.Type = RigidbodyComponent::BodyType::Static;
+        }
+
+        scene->GetRaw().view<entt::entity>().each([&](auto entityID)
+            {
+                Entity entity = { entityID, scene };
 
                 if (entity.HasComponent<RigidbodyComponent>())
                     CreatePhysicsBody(entity);
@@ -490,8 +487,17 @@ namespace RXNEngine {
             });
     }
 
-    void PhysicsWorld::OnSimulationStop()
-    {}
+    void PhysicsWorld::OnSimulationStop(Scene* scene)
+    {
+        if (!scene)
+            return;
+
+        scene->GetRaw().view<entt::entity>().each([&](auto entityID)
+            {
+                Entity entity = { entityID, scene };
+                DestroyPhysicsBody(entity);
+            });
+    }
 
     void PhysicsWorld::UpdateCCDFlags(Scene* scene)
     {

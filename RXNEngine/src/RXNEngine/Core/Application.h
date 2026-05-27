@@ -3,13 +3,14 @@
 #include "Base.h"
 #include "RXNEngine/Core/Log.h"
 #include "RXNEngine/Core/Assert.h"
-#include <cassert>
 #include "Window.h"
 #include "RXNEngine/Core/LayerStack.h"
 #include "RXNEngine/Events/Event.h"
 #include "RXNEngine/Events/ApplicationEvent.h"
 #include "RXNEngine/ImGui/ImGuiLayer.h"
 #include "RXNEngine/Core/Subsystem.h"
+
+#include <cassert>
 #include <unordered_map>
 #include <typeindex>
 #include <stdexcept>
@@ -31,7 +32,7 @@ namespace RXNEngine {
 	class Application : public SubsystemRegistry
 	{
 	public:
-		Application(const WindowProps& props = WindowProps(), ApplicationCommandLineArgs args = ApplicationCommandLineArgs());
+		Application(const WindowProps& props = WindowProps(), ApplicationCommandLineArgs args = ApplicationCommandLineArgs(), bool enableImGui = true);
 		virtual ~Application();
 
 		void Run();
@@ -43,6 +44,7 @@ namespace RXNEngine {
 
 		inline Window& GetWindow() { return *m_Window; }
 		inline ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
+		inline bool IsImGuiEnabled() const { return m_ImGuiEnabled; }
 
 		inline static Application& Get() { return *s_Instance; }
 
@@ -57,7 +59,8 @@ namespace RXNEngine {
 	private:
 		ApplicationCommandLineArgs m_CommandLineArgs;
 		std::unique_ptr<Window> m_Window;
-		ImGuiLayer* m_ImGuiLayer;
+		ImGuiLayer* m_ImGuiLayer = nullptr;
+		bool m_ImGuiEnabled = false;
 		bool m_Running = true;
 		bool m_Minimized = false;
 

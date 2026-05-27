@@ -7,6 +7,7 @@ namespace RXNEngine {
 
     void AudioSystem::Init()
     {
+        ApplyProjectSettings(m_UsingFMOD);
     }
 
     void AudioSystem::ApplyProjectSettings(bool useFMOD)

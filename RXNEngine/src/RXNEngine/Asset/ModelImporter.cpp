@@ -8,6 +8,8 @@
 #include "RXNEngine/Serialization/ModelSerializer.h"
 #include "RXNEngine/Serialization/MaterialSerializer.h"
 #include "RXNEngine/Utils/PlatformUtils.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -110,7 +112,10 @@ namespace RXNEngine {
 	{
 		std::string cachePath = filepath + ".rxn";
 
-		if (!settings.ForceRebuildCache && std::filesystem::exists(cachePath))
+		auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+		bool cacheExists = (vfs && vfs->FileExists(cachePath)) || std::filesystem::exists(cachePath);
+
+		if (!settings.ForceRebuildCache && cacheExists)
 		{
 			RXN_CORE_INFO("Loading Cached Model: {0}", cachePath);
 			Ref<StaticMesh> cachedMesh = ModelSerializer::Deserialize(cachePath);

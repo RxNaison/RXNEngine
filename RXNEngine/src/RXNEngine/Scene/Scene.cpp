@@ -694,6 +694,8 @@ namespace RXNEngine {
 
     void Scene::OnSimulationStart()
     {
+        UpdateWorldTransforms();
+
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
         if (physicsWorld)
             physicsWorld->OnSimulationStart(this);
@@ -705,7 +707,7 @@ namespace RXNEngine {
     {
         auto physicsWorld = GetSubsystem<PhysicsWorld>();
         if (physicsWorld)
-            physicsWorld->OnSimulationStop();
+            physicsWorld->OnSimulationStop(this);
 
         m_IsSimulating = false;
     }

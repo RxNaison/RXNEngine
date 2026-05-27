@@ -97,5 +97,18 @@ namespace RXNEditor {
 		bool m_WasGizmoUsing = false;
 		std::vector<std::pair<RXNEngine::UUID, RXNEngine::TransformComponent>> m_GizmoStartTransforms;
 		std::vector<std::pair<RXNEngine::UUID, RXNEngine::UITransformComponent>> m_GizmoStartUITransforms;
+
+	private:
+		void OpenBuildDialog();
+		bool PerformBuild(const std::string& buildPath, const std::string& startScenePath);
+
+	private:
+		bool m_ShowBuildModal = false;
+		bool m_IsBuilding = false;
+		bool m_BuildSuccess = false;
+		std::string m_BuildPath = "";
+		std::string m_BuildExeName = "";
+		std::string m_BuildStartScene = "";
+		std::string m_BuildError = "";
 	};
 }

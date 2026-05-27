@@ -12,6 +12,11 @@ namespace RXNEngine {
         std::filesystem::path StartScene;
         std::filesystem::path AssetDirectory;
         bool UseFMOD = true;
+
+        std::string WindowTitle = "RXN Engine Standalone Player";
+        uint32_t WindowWidth = 1280;
+        uint32_t WindowHeight = 720;
+        uint32_t WindowMode = 0; // 0 = Windowed, 1 = Maximized, 2 = Borderless, 3 = Fullscreen
     };
 
     class Project
@@ -37,7 +42,8 @@ namespace RXNEngine {
 
         static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path)
         {
-            RXN_CORE_ASSERT(s_ActiveProject);
+            if (!s_ActiveProject)
+                return path;
             return GetAssetDirectory() / path;
         }
 

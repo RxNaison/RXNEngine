@@ -10,6 +10,7 @@ namespace RXNEngine {
 	public:
 		virtual void Init() override;
 		virtual void Update(float deltaTime) override;
+		virtual void Shutdown() override;
 
 		void LoadScene(const std::string& path);
 		

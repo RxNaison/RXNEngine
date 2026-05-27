@@ -31,5 +31,6 @@ namespace RXNEngine {
 
         std::unordered_map<std::string, FMOD::Sound*> m_SoundCache;
         std::unordered_map<std::string, FMOD::Studio::Bank*> m_BankCache;
+        std::unordered_map<std::string, std::vector<uint8_t>> m_MemorySoundCache;
     };
 }

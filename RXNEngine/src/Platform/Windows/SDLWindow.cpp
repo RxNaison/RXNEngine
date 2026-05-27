@@ -79,7 +79,10 @@ namespace RXNEngine {
         SDL_Event e;
         while (SDL_PollEvent(&e))
         {
-            ImGui_ImplSDL3_ProcessEvent(&e);
+            if (Application::Get().GetImGuiLayer())
+            {
+                ImGui_ImplSDL3_ProcessEvent(&e);
+            }
 
             switch (e.type)
             {
@@ -173,7 +176,7 @@ namespace RXNEngine {
 
     void SDLWindow::SetCursorMode(CursorMode mode)
     {
-        ImGuiIO& io = ImGui::GetIO();
+        bool hasImGui = Application::Get().GetImGuiLayer() != nullptr;
 
         switch (mode)
         {
@@ -181,23 +184,35 @@ namespace RXNEngine {
                 SDL_SetWindowRelativeMouseMode(m_Window, false);
                 SDL_ShowCursor();
 
-                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
-                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+                if (hasImGui)
+                {
+                    ImGuiIO& io = ImGui::GetIO();
+                    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+                    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+                }
                 break;
 
             case CursorMode::Hidden:
                 SDL_SetWindowRelativeMouseMode(m_Window, false);
                 SDL_HideCursor();
 
-                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
-                io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+                if (hasImGui)
+                {
+                    ImGuiIO& io = ImGui::GetIO();
+                    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+                    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+                }
                 break;
 
             case CursorMode::Locked:
                 SDL_SetWindowRelativeMouseMode(m_Window, true);
 
-                io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
-                io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+                if (hasImGui)
+                {
+                    ImGuiIO& io = ImGui::GetIO();
+                    io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+                    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+                }
                 break;
         }
     }

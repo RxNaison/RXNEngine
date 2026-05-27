@@ -1,4 +1,4 @@
-﻿using RXNEngine;
+using RXNEngine;
 using System;
 using System.Threading;
 using System.Collections;
@@ -298,6 +298,7 @@ public class Player : Entity
     private IEnumerator FireWeaponRoutine(Vector3 startPos)
     {
         Entity firedBullet = Entity.Instantiate(BulletPrefab!);
+
         firedBullet.Translation = startPos + (HeadCamera!.Forward * 1.5f) + SpawnOffset;
 
         firedBullet.ApplyLinearImpulse(HeadCamera.Forward * BulletForce);

@@ -1,5 +1,7 @@
 #include "rxnpch.h"
 #include "Font.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #undef INFINITE
 #include "msdf-atlas-gen.h"
@@ -46,12 +48,29 @@ namespace RXNEngine {
 		msdfgen::FreetypeHandle* ft = msdfgen::initializeFreetype();
 		RXN_CORE_ASSERT(ft, "Failed to initialize freetype!");
 
-		std::string fileString = filepath.string();
+		std::string fileString = filepath.generic_string();
 
-		msdfgen::FontHandle* font = msdfgen::loadFont(ft, fileString.c_str());
+		msdfgen::FontHandle* font = nullptr;
+		std::vector<uint8_t> fontBuffer;
+		
+		auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+		if (vfs && vfs->FileExists(filepath))
+		{
+			fontBuffer = vfs->ReadFile(filepath);
+			if (!fontBuffer.empty())
+			{
+				font = msdfgen::loadFontData(ft, (const msdfgen::byte*)fontBuffer.data(), (int)fontBuffer.size());
+			}
+		}
+		else
+		{
+			font = msdfgen::loadFont(ft, fileString.c_str());
+		}
+
 		if (!font)
 		{
 			RXN_CORE_ERROR("Failed to load font: {}", fileString);
+			msdfgen::deinitializeFreetype(ft);
 			return;
 		}
 

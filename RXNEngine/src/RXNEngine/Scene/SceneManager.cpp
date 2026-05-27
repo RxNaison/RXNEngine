@@ -9,6 +9,15 @@ namespace RXNEngine {
 	{
 	}
 
+	void SceneManager::Shutdown()
+	{
+		if (m_ActiveScene)
+		{
+			m_ActiveScene->OnRuntimeStop();
+			m_ActiveScene = nullptr;
+		}
+	}
+
 	void SceneManager::Update(float deltaTime)
 	{
 		if (m_LoadRequested)
@@ -19,7 +28,13 @@ namespace RXNEngine {
 			Ref<Scene> newScene = CreateRef<Scene>();
 			SceneSerializer serializer(newScene);
 			
-			if (serializer.Deserialize(m_NextScenePath))
+			bool success = false;
+			if (m_NextScenePath.find(".rxnbin") != std::string::npos)
+				success = serializer.DeserializeRuntime(m_NextScenePath);
+			else
+				success = serializer.Deserialize(m_NextScenePath);
+
+			if (success)
 			{
 				m_ActiveScene = newScene;
 				

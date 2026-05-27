@@ -11,13 +11,14 @@
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Audio/AudioSystem.h"
 #include "RXNEngine/Scene/SceneManager.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 namespace RXNEngine {
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application(const WindowProps& props, ApplicationCommandLineArgs args)
-		: m_CommandLineArgs(args) 
+	Application::Application(const WindowProps& props, ApplicationCommandLineArgs args, bool enableImGui)
+		: m_CommandLineArgs(args), m_ImGuiEnabled(enableImGui)
 	{
 		RXN_PROFILE_SCOPE();
 
@@ -25,8 +26,116 @@ namespace RXNEngine {
 		s_Instance = this;
 
 		AddSubsystem<Log>();
+		AddSubsystem<VFSSystem>();
 
-		m_Window = std::unique_ptr<Window>(Window::Create(props));
+		WindowProps finalProps = props;
+		auto vfs = GetSubsystem<VFSSystem>();
+		if (vfs)
+		{
+			if (vfs->GetBakedWindowWidth() > 0 && vfs->GetBakedWindowHeight() > 0)
+			{
+				finalProps.Title = vfs->GetBakedWindowTitle();
+				finalProps.Width = vfs->GetBakedWindowWidth();
+				finalProps.Height = vfs->GetBakedWindowHeight();
+				finalProps.Mode = (WindowMode)vfs->GetBakedWindowMode();
+			}
+		}
+
+#if !defined(RXN_DIST)
+		if (std::filesystem::exists("app.ini"))
+		{
+			std::ifstream ini("app.ini");
+			std::string line;
+			while (std::getline(ini, line))
+			{
+				line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+				size_t delim = line.find('=');
+				if (delim == std::string::npos)
+					continue;
+
+				std::string key = line.substr(0, delim);
+				std::string value = line.substr(delim + 1);
+
+				auto trim = [](std::string& s)
+					{
+						s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) { return !std::isspace(ch); }));
+						s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+					};
+				trim(key);
+				trim(value);
+
+				if (key == "window-title" || key == "title")
+				{
+					finalProps.Title = value;
+				}
+				else if (key == "window-width" || key == "width")
+				{
+					try
+					{ 
+						finalProps.Width = std::stoi(value);
+					}
+					catch (...) {}
+				}
+				else if (key == "window-height" || key == "height")
+				{
+					try 
+					{ 
+						finalProps.Height = std::stoi(value);
+					} 
+					catch (...) {}
+				}
+				else if (key == "window-mode" || key == "mode")
+				{
+					if (value == "Fullscreen" || value == "fullscreen" || value == "3")
+						finalProps.Mode = WindowMode::Fullscreen;
+					else if (value == "Borderless" || value == "borderless" || value == "2")
+						finalProps.Mode = WindowMode::Borderless;
+					else if (value == "Maximized" || value == "maximized" || value == "1")
+						finalProps.Mode = WindowMode::Maximized;
+					else
+						finalProps.Mode = WindowMode::Windowed;
+				}
+			}
+		}
+
+		for (int i = 1; i < args.Count; i++)
+		{
+			if (strcmp(args[i], "--width") == 0 && i + 1 < args.Count)
+			{
+				try
+				{
+					finalProps.Width = std::stoi(args[i + 1]);
+				}
+				catch (...) {}
+			}
+			else if (strcmp(args[i], "--height") == 0 && i + 1 < args.Count)
+			{
+				try
+				{
+					finalProps.Height = std::stoi(args[i + 1]);
+				}
+				catch (...) {}
+			}
+			else if (strcmp(args[i], "--title") == 0 && i + 1 < args.Count)
+			{
+				finalProps.Title = args[i + 1];
+			}
+			else if (strcmp(args[i], "--mode") == 0 && i + 1 < args.Count)
+			{
+				std::string m = args[i + 1];
+				if (m == "Fullscreen" || m == "fullscreen" || m == "3")
+					finalProps.Mode = WindowMode::Fullscreen;
+				else if (m == "Borderless" || m == "borderless" || m == "2")
+					finalProps.Mode = WindowMode::Borderless;
+				else if (m == "Maximized" || m == "maximized" || m == "1")
+					finalProps.Mode = WindowMode::Maximized;
+				else
+					finalProps.Mode = WindowMode::Windowed;
+			}
+		}
+#endif
+
+		m_Window = std::unique_ptr<Window>(Window::Create(finalProps));
 		m_Window->SetEventCallback([this](Event& e) { OnEvent(e); });
 
 		AddSubsystem<JobSystem>();
@@ -38,8 +147,11 @@ namespace RXNEngine {
 		AddSubsystem<AudioSystem>();
 		AddSubsystem<SceneManager>();
 
-		m_ImGuiLayer = new ImGuiLayer();
-		PushOverlay(m_ImGuiLayer);
+		if (enableImGui)
+		{
+			m_ImGuiLayer = new ImGuiLayer();
+			PushOverlay(m_ImGuiLayer);
+		}
 	}
 
 	Application::~Application()
@@ -119,6 +231,7 @@ namespace RXNEngine {
 				}
 			}
 
+			if (m_ImGuiLayer)
 			{
 				RXN_PROFILE_SCOPE_NAMED("App::ImGuiRenderer");
 				m_ImGuiLayer->Begin();

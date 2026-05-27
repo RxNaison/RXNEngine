@@ -10,9 +10,12 @@
 #include "RXNEngine/Serialization/PrefabSerializer.h"
 #include "RXNEngine/Physics/PhysicsWorld.h"
 
+#include <array>
+#include <cstdio>
+#include <thread>
+#include <filesystem>
 #include <imgui.h>
 #include <ImGuizmo.h>
-
 #include <glm/gtc/type_ptr.hpp>
 
 namespace {
@@ -287,7 +290,7 @@ namespace RXNEditor {
                             {
                                 relY = viewportSize.y - relY;
 
-                                int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)relX, (int)relY, *m_EditorCamera);
+                                int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)relX, (int)relY, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
 
                                 if (pickedID > -1)
                                 {
@@ -405,6 +408,13 @@ namespace RXNEditor {
                     std::string path = FileDialogs::OpenFile("Scene (*.rxns)\0*.rxns\0");
 
                     OpenScene(path);
+                }
+                
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Build Game...", "Ctrl+B", false, p_open != NULL))
+                {
+                    OpenBuildDialog();
                 }
 
                 ImGui::EndMenu();
@@ -855,6 +865,162 @@ namespace RXNEditor {
             {
                 ImGui::CloseCurrentPopup();
                 m_PendingImportPath.clear();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        if (m_ShowBuildModal)
+        {
+            ImGui::OpenPopup("Build Game Settings");
+            m_ShowBuildModal = false;
+        }
+
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        if (ImGui::BeginPopupModal("Build Game Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("Build standalone executable for: %s", Project::GetConfig().Name.c_str());
+            ImGui::Separator();
+
+            static char pathBuf[512] = "";
+            if (m_BuildPath.empty())
+            {
+                std::string defaultPath = (Project::GetProjectDirectory() / "Build").string();
+                strncpy_s(pathBuf, defaultPath.c_str(), sizeof(pathBuf) - 1);
+                m_BuildPath = defaultPath;
+            }
+            else if (strcmp(pathBuf, m_BuildPath.c_str()) != 0)
+            {
+                strncpy_s(pathBuf, m_BuildPath.c_str(), sizeof(pathBuf) - 1);
+            }
+
+            ImGui::Text("Export Directory:");
+            ImGui::InputText("##BuildPath", pathBuf, sizeof(pathBuf));
+            ImGui::SameLine();
+            if (ImGui::Button("Browse..."))
+            {
+                std::string exeSavePath = FileDialogs::SaveFile("Executable (*.exe)\0*.exe\0");
+                if (!exeSavePath.empty())
+                {
+                    std::filesystem::path p(exeSavePath);
+                    m_BuildPath = p.parent_path().string();
+                    m_BuildExeName = p.filename().string();
+                    strncpy_s(pathBuf, m_BuildPath.c_str(), sizeof(pathBuf) - 1);
+                }
+            }
+
+            static char sceneBuf[512] = "";
+            if (m_BuildStartScene.empty())
+            {
+                std::string defaultScene = Project::GetConfig().StartScene.string();
+
+                if (!defaultScene.empty())
+                    m_BuildStartScene = (Project::GetProjectDirectory() / defaultScene).string();
+                else
+                    m_BuildStartScene = m_ActiveScenePath;
+
+                strncpy_s(sceneBuf, m_BuildStartScene.c_str(), sizeof(sceneBuf) - 1);
+            }
+            else if (strcmp(sceneBuf, m_BuildStartScene.c_str()) != 0)
+            {
+                strncpy_s(sceneBuf, m_BuildStartScene.c_str(), sizeof(sceneBuf) - 1);
+            }
+
+            ImGui::Text("Startup Scene:");
+            ImGui::InputText("##StartScene", sceneBuf, sizeof(sceneBuf));
+            ImGui::SameLine();
+            if (ImGui::Button("Select..."))
+            {
+                std::string sceneOpenPath = FileDialogs::OpenFile("Scene (*.rxns)\0*.rxns\0");
+                if (!sceneOpenPath.empty())
+                {
+                    m_BuildStartScene = sceneOpenPath;
+                    strncpy_s(sceneBuf, m_BuildStartScene.c_str(), sizeof(sceneBuf) - 1);
+                }
+            }
+
+            ImGui::Separator();
+            ImGui::Text("Window Customization (Shipped Standalone):");
+            
+            static char titleBuf[256] = "";
+            if (titleBuf[0] == '\0')
+            {
+                strncpy_s(titleBuf, Project::GetConfig().WindowTitle.c_str(), sizeof(titleBuf) - 1);
+            }
+            if (ImGui::InputText("Window Title", titleBuf, sizeof(titleBuf)))
+            {
+                Project::GetConfig().WindowTitle = titleBuf;
+            }
+
+            int size[2] = { (int)Project::GetConfig().WindowWidth, (int)Project::GetConfig().WindowHeight };
+            if (ImGui::DragInt2("Window Size", size, 1.0f, 100, 7680))
+            {
+                Project::GetConfig().WindowWidth = (uint32_t)size[0];
+                Project::GetConfig().WindowHeight = (uint32_t)size[1];
+            }
+
+            const char* windowModes[] = { "Windowed", "Maximized", "Borderless", "Fullscreen" };
+            int currentMode = (int)Project::GetConfig().WindowMode;
+
+            if (ImGui::Combo("Window Mode", &currentMode, windowModes, IM_ARRAYSIZE(windowModes)))
+                Project::GetConfig().WindowMode = (uint32_t)currentMode;
+
+            ImGui::Separator();
+
+            if (m_IsBuilding)
+            {
+                ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "Building package in background... Please wait.");
+                
+                static float progress = 0.0f;
+                progress += io.DeltaTime * 2.0f;
+                if (progress > 1.0f) progress = 0.0f;
+                ImGui::ProgressBar(progress, ImVec2(-1, 0), "Processing...");
+            }
+            else
+            {
+                if (!m_BuildError.empty())
+                {
+                    ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Build Failed!");
+                    ImGui::TextWrapped("%s", m_BuildError.c_str());
+                }
+                else if (m_BuildSuccess)
+                {
+                    ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "Build Succeeded successfully!");
+                }
+                else
+                {
+                    ImGui::Text("Click 'Build' to compile and package game.");
+                }
+
+                if (ImGui::Button("Build", ImVec2(120, 0)))
+                {
+                    Project::GetConfig().WindowTitle = titleBuf;
+                    Project::GetConfig().WindowWidth = (uint32_t)size[0];
+                    Project::GetConfig().WindowHeight = (uint32_t)size[1];
+                    Project::GetConfig().WindowMode = (uint32_t)currentMode;
+
+                    ProjectSerializer serializer(Project::GetActive());
+                    serializer.Serialize(Project::GetProjectFilePath());
+
+                    m_BuildPath = pathBuf;
+                    m_BuildStartScene = sceneBuf;
+                    m_IsBuilding = true;
+                    m_BuildError.clear();
+                    m_BuildSuccess = false;
+
+                    std::thread([this]() {
+                        m_BuildSuccess = PerformBuild(m_BuildPath, m_BuildStartScene);
+                        m_IsBuilding = false;
+                    }).detach();
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Close", ImVec2(120, 0)))
+                {
+                    m_BuildError.clear();
+                    m_BuildSuccess = false;
+                    ImGui::CloseCurrentPopup();
+                }
             }
 
             ImGui::EndPopup();
@@ -1386,5 +1552,286 @@ namespace RXNEditor {
 
         if (!transforms.empty())
             CommandHistory::AddAndExecute(CreateScope<ChangeMultiTransformCommand>(m_ActiveScene, transforms));
+    }
+
+    void EditorLayer::OpenBuildDialog()
+    {
+        m_ShowBuildModal = true;
+        m_BuildError.clear();
+        m_BuildSuccess = false;
+    }
+
+    static std::string ExecuteCommandAndCaptureOutput(const std::string& cmd, int& outExitCode)
+    {
+#if defined(_WIN32)
+        #define popen _popen
+        #define pclose _pclose
+#endif
+        std::array<char, 128> buffer;
+        std::string result;
+        
+#if defined(_WIN32)
+        std::string redirectedCmd = "\"" + cmd + "\" 2>&1";
+#else
+        std::string redirectedCmd = cmd + " 2>&1";
+#endif
+
+        FILE* pipe = popen(redirectedCmd.c_str(), "r");
+        if (!pipe)
+        {
+            outExitCode = -1;
+            return "Failed to open command pipe.";
+        }
+        while (fgets(buffer.data(), (int)buffer.size(), pipe) != nullptr)
+        {
+            result += buffer.data();
+        }
+        outExitCode = pclose(pipe);
+        return result;
+    }
+
+    bool EditorLayer::PerformBuild(const std::string& buildPath, const std::string& startScenePath)
+    {
+        try
+        {
+            namespace fs = std::filesystem;
+            
+            fs::path buildDir(fs::weakly_canonical(buildPath));
+            if (!fs::exists(buildDir))
+                fs::create_directories(buildDir);
+
+            #if defined(_WIN32)
+                std::string exeExtension = ".exe";
+                std::string shlibExtension = ".dll";
+            #elif defined(__APPLE__)
+                std::string exeExtension = "";
+                std::string shlibExtension = ".dylib";
+            #else
+                std::string exeExtension = "";
+                std::string shlibExtension = ".so";
+            #endif
+
+            auto args = Application::Get().GetCommandLineArgs();
+            fs::path editorDir;
+
+            if (args.Count > 0 && args.Args != nullptr && args.Args[0] != nullptr)
+                editorDir = fs::absolute(args.Args[0]).parent_path();
+            else
+                editorDir = fs::current_path();
+
+            editorDir = fs::weakly_canonical(editorDir);
+
+            fs::path runtimeExe;
+            fs::path runtimeDir;
+            std::string runtimeExeName = "RXNRuntime" + exeExtension;
+            
+            if (fs::exists(editorDir / runtimeExeName))
+            {
+                runtimeExe = fs::weakly_canonical(editorDir / runtimeExeName);
+                runtimeDir = fs::weakly_canonical(editorDir);
+            }
+            else if (fs::exists(editorDir / "runtime" / runtimeExeName))
+            {
+                runtimeExe = fs::weakly_canonical(editorDir / "runtime" / runtimeExeName);
+                runtimeDir = fs::weakly_canonical(editorDir / "runtime");
+            }
+            else if (fs::exists(editorDir / ".." / "RXNRuntime" / runtimeExeName))
+            {
+                runtimeExe = fs::weakly_canonical(editorDir / ".." / "RXNRuntime" / runtimeExeName);
+                runtimeDir = fs::weakly_canonical(editorDir / ".." / "RXNRuntime");
+            }
+            else
+            {
+                m_BuildError = "Runtime player (" + runtimeExeName + ") not found in engine distribution paths.";
+                return false;
+            }
+
+            fs::path cookerExe;
+            std::string cookerExeName = "AssetCooker" + exeExtension;
+            
+            if (fs::exists(editorDir / cookerExeName))
+            {
+                cookerExe = fs::weakly_canonical(editorDir / cookerExeName);
+            }
+            else if (fs::exists(editorDir / "tools" / cookerExeName))
+            {
+                cookerExe = fs::weakly_canonical(editorDir / "tools" / cookerExeName);
+            }
+            else if (fs::exists(editorDir / ".." / "AssetCooker" / cookerExeName))
+            {
+                cookerExe = fs::weakly_canonical(editorDir / ".." / "AssetCooker" / cookerExeName);
+            }
+            else
+            {
+                m_BuildError = "AssetCooker tool (" + cookerExeName + ") not found in engine distribution paths.";
+                return false;
+            }
+
+            fs::path assetsDir = Project::GetAssetDirectory();
+            if (fs::exists(assetsDir))
+            {
+                for (const auto& entry : fs::recursive_directory_iterator(assetsDir))
+                {
+                    if (entry.is_regular_file() && entry.path().extension() == ".rxns")
+                    {
+                        Ref<Scene> tempScene = CreateRef<Scene>();
+                        SceneSerializer serializer(tempScene);
+                        if (serializer.Deserialize(entry.path().string()))
+                        {
+                            fs::path binPath = entry.path();
+                            binPath.replace_extension(".rxnbin");
+                            serializer.SerializeRuntime(binPath.string());
+                        }
+                    }
+                }
+            }
+
+            fs::path outputPak = buildDir / "assets.rxnpak";
+            
+            fs::path startSceneRel = fs::relative(startScenePath, assetsDir);
+            startSceneRel.replace_extension(".rxnbin");
+            std::string entrySceneStr = startSceneRel.generic_string();
+
+            std::string command = "\"" + cookerExe.string() + "\""
+                + " --assets \"" + assetsDir.string() + "\""
+                + " --output \"" + outputPak.string() + "\""
+                + " --entry-scene \"" + entrySceneStr + "\""
+                + " --window-title \"" + Project::GetConfig().WindowTitle + "\""
+                + " --window-width " + std::to_string(Project::GetConfig().WindowWidth)
+                + " --window-height " + std::to_string(Project::GetConfig().WindowHeight)
+                + " --window-mode " + std::to_string(Project::GetConfig().WindowMode);
+
+            int exitCode = 0;
+            std::string cookerOutput = ExecuteCommandAndCaptureOutput(command, exitCode);
+            if (exitCode != 0)
+            {
+                m_BuildError = "AssetCooker failed:\n" + cookerOutput;
+                return false;
+            }
+
+            std::string gameExeName = m_BuildExeName.empty() ? (Project::GetConfig().Name + exeExtension) : m_BuildExeName;
+            if (fs::path(gameExeName).extension().empty())
+                gameExeName += exeExtension;
+                
+            fs::copy_file(runtimeExe, buildDir / gameExeName, fs::copy_options::overwrite_existing);
+
+            for (const auto& entry : fs::directory_iterator(runtimeDir))
+            {
+                if (entry.is_regular_file() && entry.path().extension() == shlibExtension)
+                    fs::copy_file(entry.path(), buildDir / entry.path().filename(), fs::copy_options::overwrite_existing);
+            }
+
+            fs::path resSourceDir;
+            if (fs::exists(editorDir / "res"))
+            {
+                resSourceDir = fs::canonical(editorDir / "res");
+            }
+            else if (fs::exists(editorDir / ".." / ".." / ".." / "RXNEditor" / "res"))
+            {
+                resSourceDir = fs::canonical(editorDir / ".." / ".." / ".." / "RXNEditor" / "res");
+            }
+            else if (fs::exists(fs::current_path() / "res"))
+            {
+                resSourceDir = fs::canonical(fs::current_path() / "res");
+            }
+
+            if (!resSourceDir.empty())
+            {
+                fs::path tempRoot = buildDir / "temp_core";
+                fs::path tempRes = tempRoot / "res";
+                
+                if (fs::exists(tempRoot))
+                    fs::remove_all(tempRoot);
+                    
+                fs::create_directories(tempRes);
+                
+                if (fs::exists(resSourceDir / "shaders"))
+                {
+                    fs::path targetShaders = tempRes / "shaders";
+                    fs::create_directories(targetShaders);
+                    fs::copy(resSourceDir / "shaders", targetShaders, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+                }
+                if (fs::exists(resSourceDir / "scripts"))
+                {
+                    fs::path targetScripts = buildDir / "scripts";
+                    if (!fs::exists(targetScripts))
+                        fs::create_directories(targetScripts);
+
+                    fs::path hostCsproj = resSourceDir.parent_path().parent_path() / "RXNScriptHost" / "RXNScriptHost.csproj";
+                    if (!fs::exists(hostCsproj))
+                        hostCsproj = resSourceDir.parent_path() / "RXNScriptHost" / "RXNScriptHost.csproj";
+
+                    if (fs::exists(hostCsproj))
+                    {
+                        std::string publishCommand = "dotnet publish \"" + hostCsproj.string() + "\""
+                            + " -c Release -r win-x64 --self-contained -p:PublishAot=true -p:DefineConstants=NATIVE_AOT"
+                            + " -o \"" + targetScripts.string() + "\"";
+
+                        int publishExitCode = 0;
+                        std::string publishOutput = ExecuteCommandAndCaptureOutput(publishCommand, publishExitCode);
+                        
+                        if (publishExitCode != 0)
+                        {
+                            m_BuildError = "Failed to compile C# scripts via NativeAOT:\n" + publishOutput;
+                            return false;
+                        }
+
+                        fs::path win64Dir = targetScripts / "win-x64";
+                        if (fs::exists(win64Dir))
+                            fs::remove_all(win64Dir);
+
+                        std::vector<std::string> trashFiles = {
+                            "RXNScriptApp.dll", "RXNScriptApp.pdb", "RXNScriptApp.deps.json",
+                            "RXNScriptCore.dll", "RXNScriptCore.pdb", "RXNScriptCore.deps.json",
+                            "RXNScriptHost.pdb", "RXNScriptHost.deps.json", "RXNScriptHost.runtimeconfig.json"
+                        };
+                        for (const auto& trash : trashFiles)
+                        {
+                            fs::path trashPath = targetScripts / trash;
+                            if (fs::exists(trashPath))
+                                fs::remove(trashPath);
+                        }
+                    }
+                    else
+                    {
+                        fs::copy(resSourceDir / "scripts", targetScripts, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+                    }
+                }
+                if (fs::exists(resSourceDir / "fonts"))
+                {
+                    fs::path targetFonts = tempRes / "fonts";
+                    fs::create_directories(targetFonts);
+                    fs::copy(resSourceDir / "fonts", targetFonts, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+                }
+
+                fs::path outputCorePak = buildDir / "core.rxnpak";
+                std::string coreCommand = "\"" + cookerExe.string() + "\""
+                    + " --assets \"" + tempRoot.string() + "\""
+                    + " --output \"" + outputCorePak.string() + "\"";
+
+                int coreExitCode = 0;
+                std::string coreCookerOutput = ExecuteCommandAndCaptureOutput(coreCommand, coreExitCode);
+                
+                fs::remove_all(tempRoot);
+
+                if (coreExitCode != 0)
+                {
+                    m_BuildError = "AssetCooker failed to pack built-in engine resources into core.rxnpak:\n" + coreCookerOutput;
+                    return false;
+                }
+            }
+            else
+            {
+                m_BuildError = "Engine resources directory (res) not found. Build incomplete.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            m_BuildError = std::string("Build exception: ") + e.what();
+            return false;
+        }
     }
 }

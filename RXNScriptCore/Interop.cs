@@ -119,8 +119,7 @@ namespace RXNScriptHost
     {
         public static InternalCalls NativeFunctions;
 
-        [UnmanagedCallersOnly]
-        public static void RegisterInternalCalls(IntPtr internalCallsPtr)
+        public static void SetInternalCalls(IntPtr internalCallsPtr)
         {
             NativeFunctions = Marshal.PtrToStructure<InternalCalls>(internalCallsPtr);
         }

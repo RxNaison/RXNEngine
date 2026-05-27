@@ -34,6 +34,7 @@ namespace RXNEngine {
             Texture2D::BlueTexture()->Bind(1);
 
         m_Shader->SetInt("u_NormalMap", 1);
+        m_Shader->SetInt("u_UseNormalMap", m_NormalMap ? 1 : 0);
 
         // Slot 2: Metalness
         if (m_MetalnessMap)

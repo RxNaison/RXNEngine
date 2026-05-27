@@ -1,5 +1,7 @@
 #include "rxnpch.h"
 #include "OpenGLTexture.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #include <stb_image.h>
 
@@ -55,66 +57,132 @@ namespace RXNEngine {
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(1);
 
-		if (stbi_is_hdr(path.c_str()))
+		auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+		if (vfs && vfs->FileExists(path))
 		{
-			float* data = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
-			if (data)
+			auto fileData = vfs->ReadFile(path);
+			if (!fileData.empty())
 			{
-				m_IsLoaded = true;
-				m_Width = width;
-				m_Height = height;
+				if (stbi_is_hdr_from_memory((const stbi_uc*)fileData.data(), (int)fileData.size()))
+				{
+					float* data = stbi_loadf_from_memory((const stbi_uc*)fileData.data(), (int)fileData.size(), &width, &height, &channels, 0);
+					if (data)
+					{
+						m_IsLoaded = true;
+						m_Width = width;
+						m_Height = height;
 
-				m_InternalFormat = GL_RGB16F;
-				m_DataFormat = GL_RGB;
+						m_InternalFormat = GL_RGB16F;
+						m_DataFormat = GL_RGB;
 
-				glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-				glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
+						glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+						glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
 
-				glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-				glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-				glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_FLOAT, data);
+						glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_FLOAT, data);
+						glGenerateTextureMipmap(m_RendererID);
+						stbi_image_free(data);
+					}
+				}
+				else
+				{
+					stbi_uc* data = stbi_load_from_memory((const stbi_uc*)fileData.data(), (int)fileData.size(), &width, &height, &channels, 4);
+					if (data)
+					{
+						m_IsLoaded = true;
+						m_Width = width;
+						m_Height = height;
 
-				glGenerateTextureMipmap(m_RendererID);
+						GLenum internalFormat = GL_RGBA8, dataFormat = GL_RGBA;
+						m_InternalFormat = internalFormat;
+						m_DataFormat = dataFormat;
 
-				stbi_image_free(data);
+						glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+						glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+
+						glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+						glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+						GLfloat maxAnisotropy;
+						glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
+						glTextureParameterf(m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, maxAnisotropy);
+
+						glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
+						glGenerateTextureMipmap(m_RendererID);
+						stbi_image_free(data);
+					}
+				}
 			}
 		}
 		else
 		{
-			stbi_uc* data = nullptr;
-			data = stbi_load(path.c_str(), &width, &height, &channels, 4);
-
-			if (data)
+			if (stbi_is_hdr(path.c_str()))
 			{
-				m_IsLoaded = true;
+				float* data = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
+				if (data)
+				{
+					m_IsLoaded = true;
+					m_Width = width;
+					m_Height = height;
 
-				m_Width = width;
-				m_Height = height;
+					m_InternalFormat = GL_RGB16F;
+					m_DataFormat = GL_RGB;
 
-				GLenum internalFormat = GL_RGBA8, dataFormat = GL_RGBA;
+					glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+					glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
 
-				m_InternalFormat = internalFormat;
-				m_DataFormat = dataFormat;
+					glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+					glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+					glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-				glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-				glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+					glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_FLOAT, data);
 
-				glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-				glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-				glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+					glGenerateTextureMipmap(m_RendererID);
 
-				GLfloat maxAnisotropy;
-				glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
-				glTextureParameterf(m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, maxAnisotropy);
+					stbi_image_free(data);
+				}
+			}
+			else
+			{
+				stbi_uc* data = nullptr;
+				data = stbi_load(path.c_str(), &width, &height, &channels, 4);
 
-				glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
-				glGenerateTextureMipmap(m_RendererID);
+				if (data)
+				{
+					m_IsLoaded = true;
 
-				stbi_image_free(data);
+					m_Width = width;
+					m_Height = height;
+
+					GLenum internalFormat = GL_RGBA8, dataFormat = GL_RGBA;
+
+					m_InternalFormat = internalFormat;
+					m_DataFormat = dataFormat;
+
+					glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+					glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+
+					glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+					glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+					glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+					GLfloat maxAnisotropy;
+					glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAnisotropy);
+					glTextureParameterf(m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, maxAnisotropy);
+
+					glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
+					glGenerateTextureMipmap(m_RendererID);
+
+					stbi_image_free(data);
+				}
 			}
 		}
 	}

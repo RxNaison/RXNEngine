@@ -50,7 +50,7 @@ namespace RXNEditor {
 		}
 
 		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("Toggle between FMOD Studio (Premium) and Miniaudio (Open-Source) backends.");
+			ImGui::SetTooltip("Toggle between FMOD Studio and Miniaudio backends.");
 
 		ImGui::End();
 	}

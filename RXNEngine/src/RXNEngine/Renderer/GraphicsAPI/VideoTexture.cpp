@@ -1,5 +1,7 @@
 #include "rxnpch.h"
 #include "VideoTexture.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #pragma warning(push, 0) 
 #define PL_MPEG_IMPLEMENTATION
@@ -15,7 +17,22 @@ namespace RXNEngine {
 
     VideoTexture::VideoTexture(const std::string& filepath) : m_Path(filepath)
     {
-        plm_t* plm = plm_create_with_filename(filepath.c_str());
+        plm_t* plm = nullptr;
+        
+        auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+        if (vfs && vfs->FileExists(filepath))
+        {
+            m_VideoBuffer = vfs->ReadFile(filepath);
+            if (!m_VideoBuffer.empty())
+            {
+                plm = plm_create_with_memory(m_VideoBuffer.data(), m_VideoBuffer.size(), 0);
+            }
+        }
+        else
+        {
+            plm = plm_create_with_filename(filepath.c_str());
+        }
+
         m_Plm = (void*)plm;
 
         if (!m_Plm)

@@ -26,15 +26,21 @@ namespace RXNEngine {
 
     void PhysicsSystem::Shutdown()
     {
-        if (m_Dispatcher) m_Dispatcher->release();
-        if (m_Physics) m_Physics->release();
+        if (m_Dispatcher)
+            m_Dispatcher->release();
+
+        if (m_Physics) 
+            m_Physics->release();
+
         if (m_Pvd)
         {
             physx::PxPvdTransport* transport = m_Pvd->getTransport();
             m_Pvd->release();
             transport->release();
         }
-        if (m_Foundation) m_Foundation->release();
+
+        if (m_Foundation)
+            m_Foundation->release();
     }
 
     physx::PxConvexMesh* PhysicsSystem::CreateConvexMesh(Ref<StaticMesh> mesh)

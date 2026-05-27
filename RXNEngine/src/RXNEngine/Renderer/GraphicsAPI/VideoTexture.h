@@ -30,5 +30,6 @@ namespace RXNEngine {
         Ref<Texture2D> m_Texture;
         std::vector<uint8_t> m_RGBBuffer;
         bool m_IsPlaying = true;
+        std::vector<uint8_t> m_VideoBuffer;
     };
 }

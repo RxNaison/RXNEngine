@@ -1,5 +1,7 @@
 #include "rxnpch.h"
 #include "OpenGLShader.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -47,18 +49,27 @@ namespace RXNEngine {
 	std::string OpenGLShader::ReadFile(const std::string& filepath)
 	{
 		std::string result;
-		std::ifstream in(filepath, std::ios::in | std::ios::binary);
-		if (in)
+		auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+		if (vfs && vfs->FileExists(filepath))
 		{
-			in.seekg(0, std::ios::end);
-			result.resize(in.tellg());
-			in.seekg(0, std::ios::beg);
-			in.read(&result[0], result.size());
-			in.close();
+			auto fileData = vfs->ReadFile(filepath);
+			result.assign((const char*)fileData.data(), fileData.size());
 		}
 		else
 		{
-			RXN_CORE_ERROR("Could not open file '{0}'", filepath);
+			std::ifstream in(filepath, std::ios::in | std::ios::binary);
+			if (in)
+			{
+				in.seekg(0, std::ios::end);
+				result.resize(in.tellg());
+				in.seekg(0, std::ios::beg);
+				in.read(&result[0], result.size());
+				in.close();
+			}
+			else
+			{
+				RXN_CORE_ERROR("Could not open file '{0}'", filepath);
+			}
 		}
 
 		return result;

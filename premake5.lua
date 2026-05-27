@@ -351,8 +351,7 @@ project "RXNEditor"
 
        prebuildcommands
        {
-           "dotnet build \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\"",
-           "dotnet build \"%{wks.location}/RXNScriptCore/RXNScriptCore.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\""
+           "dotnet publish \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Release -r win-x64 --self-contained -p:PublishAot=true -p:DefineConstants=NATIVE_AOT -o \"%{wks.location}/RXNEditor/res/scripts\""
        }
 
        postbuildcommands
@@ -383,3 +382,157 @@ group "Scripting"
         language "C#"
         targetdir ("%{wks.location}/RXNEditor/res/scripts")
 group ""
+
+project "AssetCooker"
+    location "AssetCooker"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++17"
+    staticruntime "off"
+    
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    
+    files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
+    
+    includedirs
+    {
+        "RXNEngine/src"
+    }
+    
+    filter "system:windows"
+       systemversion "latest"
+    
+    filter "configurations:Debug"
+       runtime "Debug"
+       symbols "on"
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Debug/lib_coacd.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmodL.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\""
+       }
+       
+    filter "configurations:Release"
+       defines { "RXN_RELEASE", "TRACY_ENABLE", "NDEBUG" }
+       runtime "Release"
+       optimize "on"
+
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+       }
+
+    filter "configurations:Dist"
+       defines { "RXN_DIST", "NDEBUG" }
+       runtime "Release"
+       optimize "on"
+
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+       }
+
+project "RXNRuntime"
+    location "RXNRuntime"
+    kind "ConsoleApp"
+    entrypoint "mainCRTStartup"
+    language "C++"
+    cppdialect "C++latest"
+    staticruntime "off"
+    defines { "RXN_RUNTIME" }
+    
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    
+    files
+    {
+        "%{prj.name}/src/**.h",
+        "%{prj.name}/src/**.cpp"
+    }
+    
+    includedirs
+    {
+        "RXNEngine/src",
+        "RXNEngine/vendor/spdlog/include",
+        "%{IncludeDir.SDL}",
+        "%{IncludeDir.Glad}",
+        "%{IncludeDir.Imgui}",
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.stb_image}",
+        "%{IncludeDir.entt}",
+        "%{IncludeDir.assimp}",
+        "RXNEngine/vendor/assimp/build/include",
+        "%{IncludeDir.yaml_cpp}",
+        "%{IncludeDir.ImGuizmo}",
+        "%{IncludeDir.PhysX}",
+        "%{IncludeDir.PxShared}",
+        "%{IncludeDir.Tracy}",
+        "%{IncludeDir.CoreCLR}",
+        "%{IncludeDir.pl_mpeg}",
+        "%{IncludeDir.CoACD}",
+        "%{IncludeDir.miniaudio}",
+        "%{IncludeDir.FMODCore}",
+        "%{IncludeDir.FMODStudio}",
+        "%{IncludeDir.freetype}",
+        "RXNEngine/vendor/freetype/build/include",
+        "%{IncludeDir.msdfgen}",
+        "%{IncludeDir.msdf_atlas_gen}",
+        "RXNEngine/vendor/msdf-atlas-gen/msdfgen/include",
+        "%{IncludeDir.msdfgen_config}"
+    }
+    
+    links { "RXNEngine" }
+    
+    filter "system:windows"
+       systemversion "latest"
+       
+    filter "configurations:Debug"
+       defines { "RXN_DEBUG", "TRACY_ENABLE" }
+       runtime "Debug"
+       symbols "on"
+       
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/debug/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Debug/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Debug/lib_coacd.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmodL.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\""
+       }
+       
+    filter "configurations:Release"
+       defines { "RXN_RELEASE", "TRACY_ENABLE", "NDEBUG" }
+       runtime "Release"
+       optimize "on"
+       
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+       }
+       
+    filter "configurations:Dist"
+       defines { "RXN_DIST", "NDEBUG", "RXN_RUNTIME" }
+       runtime "Release"
+       optimize "on"
+       
+       postbuildcommands
+       {
+           "{COPY} \"%{wks.location}/" .. PhysXBinDir .. "/release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+       }

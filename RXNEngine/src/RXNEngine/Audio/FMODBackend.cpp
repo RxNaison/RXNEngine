@@ -1,5 +1,7 @@
 #include "rxnpch.h"
 #include "FMODBackend.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 namespace RXNEngine {
 
@@ -14,6 +16,7 @@ namespace RXNEngine {
         FMOD::Channel* Channel = nullptr;
         bool IsStudioEvent = false;
         FMOD::Studio::EventInstance* EventInstance = nullptr;
+        std::vector<uint8_t> SoundData;
     };
 
     void FMODBackend::Init()
@@ -73,8 +76,28 @@ namespace RXNEngine {
             FMOD::Sound* sound = nullptr;
             if (m_SoundCache.find(path) == m_SoundCache.end())
             {
-                m_CoreSystem->createSound(path.c_str(), FMOD_DEFAULT, nullptr, &sound);
-                m_SoundCache[path] = sound;
+                auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+                if (vfs && vfs->FileExists(path))
+                {
+                    std::vector<uint8_t> soundData = vfs->ReadFile(path);
+                    if (!soundData.empty())
+                    {
+                        m_MemorySoundCache[path] = std::move(soundData);
+                        FMOD_CREATESOUNDEXINFO exinfo;
+                        memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
+                        exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
+                        exinfo.length = m_MemorySoundCache[path].size();
+
+                        m_CoreSystem->createSound((const char*)m_MemorySoundCache[path].data(), FMOD_DEFAULT | FMOD_OPENMEMORY, &exinfo, &sound);
+                    }
+                }
+                else
+                {
+                    m_CoreSystem->createSound(path.c_str(), FMOD_DEFAULT, nullptr, &sound);
+                }
+                
+                if (sound)
+                    m_SoundCache[path] = sound;
             }
             else
             {
@@ -108,7 +131,25 @@ namespace RXNEngine {
         else
         {
             FMOD_MODE mode = FMOD_3D | FMOD_3D_LINEARROLLOFF | (looping ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF);
-            m_CoreSystem->createSound(filepath.c_str(), mode, nullptr, &source->Sound);
+            
+            auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+            if (vfs && vfs->FileExists(filepath))
+            {
+                source->SoundData = vfs->ReadFile(filepath);
+                if (!source->SoundData.empty())
+                {
+                    FMOD_CREATESOUNDEXINFO exinfo;
+                    memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
+                    exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
+                    exinfo.length = source->SoundData.size();
+
+                    m_CoreSystem->createSound((const char*)source->SoundData.data(), mode | FMOD_OPENMEMORY, &exinfo, &source->Sound);
+                }
+            }
+            else
+            {
+                m_CoreSystem->createSound(filepath.c_str(), mode, nullptr, &source->Sound);
+            }
 
             if (source->Sound)
                 source->Sound->set3DMinMaxDistance(minDistance, maxDistance);

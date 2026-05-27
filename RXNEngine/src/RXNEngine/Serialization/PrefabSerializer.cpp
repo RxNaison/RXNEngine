@@ -2,6 +2,8 @@
 #include "PrefabSerializer.h"
 #include "SceneSerializer.h"
 #include "RXNEngine/Asset/AssetManager.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 
@@ -42,11 +44,22 @@ namespace RXNEngine {
         YAML::Node data;
         try 
         {
-            data = YAML::LoadFile(filepath);
+            auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+            if (vfs && vfs->FileExists(filepath))
+            {
+                auto fileData = vfs->ReadFile(filepath);
+                std::string content((const char*)fileData.data(), fileData.size());
+                data = YAML::Load(content);
+            }
+            else
+            {
+                data = YAML::LoadFile(filepath);
+            }
         }
-        catch (YAML::ParserException e)
+        catch (const std::exception& e)
         {
-            RXN_CORE_ERROR("Failed to load .rxnprefab file '{0}'", filepath); return {};
+            RXN_CORE_ERROR("Failed to load .rxnprefab file '{0}'\n     {1}", filepath, e.what());
+            return {};
         }
 
         auto entities = data["Entities"];

@@ -54,13 +54,13 @@ namespace RXNEngine {
         uint32_t GetFinalColorAttachmentRendererID() { return m_FinalPass->GetColorAttachmentRendererID(); }
 
         Settings& GetSettings() { return m_Settings; }
-        int GetEntityIDAtMouse(int x, int y, const EditorCamera& camera);
+        int GetEntityIDAtMouse(int x, int y, const EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
 
         void RenderPostProcess();
         void RenderBloom();
-        void RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace);
-        void RenderUIPicking(const EditorCamera& camera);
-		void RenderScene(const Camera& camera, const glm::mat4& cameraTransform, bool showColliders, float deltaTime = 0.0f, const std::vector<Entity>& selectedEntities = {});
+        void RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace, const std::vector<Entity>& selectedEntities = {});
+        void RenderUIPicking(const EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
+        void RenderScene(const Camera& camera, const glm::mat4& cameraTransform, bool showColliders, float deltaTime = 0.0f, const std::vector<Entity>& selectedEntities = {});
     private:
         Ref<Scene> m_Scene;
         SceneRendererSpecification m_Specification;

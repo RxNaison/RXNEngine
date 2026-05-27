@@ -8,6 +8,7 @@
 #include "RXNEngine/Serialization/YamlHelpers.h"
 #include "RXNEngine/Scripting/ScriptEngine.h"
 #include "RXNEngine/Utils/PlatformUtils.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #include <fstream>
 
@@ -848,9 +849,394 @@ namespace RXNEngine {
 		fout << out.c_str();
 	}
 
+	enum class BinaryComponentType : uint32_t
+	{
+		None = 0,
+		Transform,
+		Relationship,
+		StaticMesh,
+		Camera,
+		DirectionalLight,
+		PointLight,
+		SpotLight,
+		NativeScript,
+		Script,
+		Rigidbody,
+		BoxCollider,
+		SphereCollider,
+		CapsuleCollider,
+		MeshCollider,
+		CharacterController,
+		AudioSource,
+		UICanvas,
+		UITransform,
+		UIImage,
+		UIText,
+		UIButton
+	};
+
+	struct BinaryWriter
+	{
+		std::vector<uint8_t> Buffer;
+
+		template<typename T>
+		void Write(const T& value)
+		{
+			size_t offset = Buffer.size();
+			Buffer.resize(offset + sizeof(T));
+			memcpy(Buffer.data() + offset, &value, sizeof(T));
+		}
+
+		void WriteString(const std::string& str)
+		{
+			uint32_t len = (uint32_t)str.size();
+			Write(len);
+			if (len > 0)
+			{
+				size_t offset = Buffer.size();
+				Buffer.resize(offset + len);
+				memcpy(Buffer.data() + offset, str.data(), len);
+			}
+		}
+
+		void WriteBytes(const void* src, size_t size)
+		{
+			size_t offset = Buffer.size();
+			Buffer.resize(offset + size);
+			memcpy(Buffer.data() + offset, src, size);
+		}
+	};
+
+	struct BinaryReader
+	{
+		const uint8_t* Buffer = nullptr;
+		size_t Size = 0;
+		size_t Offset = 0;
+
+		BinaryReader(const uint8_t* buffer, size_t size)
+			: Buffer(buffer), Size(size), Offset(0) {}
+
+		template<typename T>
+		void Read(T& value)
+		{
+			RXN_CORE_ASSERT(Offset + sizeof(T) <= Size);
+			memcpy(&value, Buffer + Offset, sizeof(T));
+			Offset += sizeof(T);
+		}
+
+		std::string ReadString()
+		{
+			uint32_t len = 0;
+			Read(len);
+			if (len == 0) return "";
+			RXN_CORE_ASSERT(Offset + len <= Size);
+			std::string str((const char*)(Buffer + Offset), len);
+			Offset += len;
+			return str;
+		}
+
+		void ReadBytes(void* dest, size_t size)
+		{
+			RXN_CORE_ASSERT(Offset + size <= Size);
+			memcpy(dest, Buffer + Offset, size);
+			Offset += size;
+		}
+	};
+
 	void SceneSerializer::SerializeRuntime(const std::string& filepath)
 	{
-		RXN_CORE_ASSERT(false);
+		BinaryWriter writer;
+
+		// Magic and header
+		writer.WriteBytes("RXNBIN\0\0", 8);
+		uint32_t version = 1;
+		writer.Write(version);
+		// Scene properties
+		Entity primaryCam = m_Scene->GetPrimaryCameraEntity();
+		uint64_t primaryCameraID = primaryCam ? (uint64_t)primaryCam.GetUUID() : 0;
+		writer.Write(primaryCameraID);
+
+		std::string skyboxPath = "";
+		float skyboxIntensity = 1.0f;
+		if (m_Scene->m_Skybox)
+		{
+			skyboxPath = m_Scene->m_Skybox->GetPath();
+			skyboxIntensity = m_Scene->m_SkyboxIntensity;
+		}
+		writer.WriteString(skyboxPath);
+		writer.Write(skyboxIntensity);
+
+		// Gather entities
+		std::vector<entt::entity> entities;
+		m_Scene->GetRaw().view<entt::entity>().each([&](auto entityID)
+		{
+			entities.push_back(entityID);
+		});
+
+		uint32_t entityCount = (uint32_t)entities.size();
+		writer.Write(entityCount);
+
+		for (auto entityID : entities)
+		{
+			Entity entity = { entityID, m_Scene.get() };
+			if (!entity)
+				continue;
+
+			// Write UUID and Tag
+			writer.Write((uint64_t)entity.GetUUID());
+			writer.WriteString(entity.GetName());
+
+			// Count components
+			uint32_t componentCount = 0;
+			if (entity.HasComponent<TransformComponent>()) componentCount++;
+			if (entity.HasComponent<RelationshipComponent>()) componentCount++;
+			if (entity.HasComponent<StaticMeshComponent>()) componentCount++;
+			if (entity.HasComponent<CameraComponent>()) componentCount++;
+			if (entity.HasComponent<DirectionalLightComponent>()) componentCount++;
+			if (entity.HasComponent<PointLightComponent>()) componentCount++;
+			if (entity.HasComponent<SpotLightComponent>()) componentCount++;
+			if (entity.HasComponent<RigidbodyComponent>()) componentCount++;
+			if (entity.HasComponent<BoxColliderComponent>()) componentCount++;
+			if (entity.HasComponent<SphereColliderComponent>()) componentCount++;
+			if (entity.HasComponent<CapsuleColliderComponent>()) componentCount++;
+			if (entity.HasComponent<MeshColliderComponent>()) componentCount++;
+			if (entity.HasComponent<CharacterControllerComponent>()) componentCount++;
+			if (entity.HasComponent<ScriptComponent>()) componentCount++;
+			if (entity.HasComponent<AudioSourceComponent>()) componentCount++;
+			if (entity.HasComponent<UICanvasComponent>()) componentCount++;
+			if (entity.HasComponent<UITransformComponent>()) componentCount++;
+			if (entity.HasComponent<UIImageComponent>()) componentCount++;
+			if (entity.HasComponent<UITextComponent>()) componentCount++;
+			if (entity.HasComponent<UIButtonComponent>()) componentCount++;
+
+			writer.Write(componentCount);
+
+			if (entity.HasComponent<TransformComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::Transform);
+				auto& tc = entity.GetComponent<TransformComponent>();
+				writer.Write(tc.Translation);
+				writer.Write(tc.Rotation);
+				writer.Write(tc.Scale);
+			}
+
+			if (entity.HasComponent<RelationshipComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::Relationship);
+				auto& rc = entity.GetComponent<RelationshipComponent>();
+				writer.Write(rc.ParentHandle);
+				uint32_t childrenCount = (uint32_t)rc.Children.size();
+				writer.Write(childrenCount);
+				for (auto child : rc.Children)
+					writer.Write((uint64_t)child);
+			}
+
+			if (entity.HasComponent<StaticMeshComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::StaticMesh);
+				auto& mc = entity.GetComponent<StaticMeshComponent>();
+				writer.WriteString(mc.AssetPath);
+				writer.Write(mc.SubmeshIndex);
+				writer.WriteString(mc.MaterialAssetPath);
+			}
+
+			if (entity.HasComponent<CameraComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::Camera);
+				auto& cc = entity.GetComponent<CameraComponent>();
+				auto& camera = cc.Camera;
+				writer.Write((uint32_t)camera.GetProjectionType());
+				writer.Write(camera.GetPerspectiveFOV());
+				writer.Write(camera.GetPerspectiveNearClip());
+				writer.Write(camera.GetPerspectiveFarClip());
+				writer.Write(camera.GetOrthographicSize());
+				writer.Write(camera.GetOrthographicNearClip());
+				writer.Write(camera.GetOrthographicFarClip());
+				writer.Write(cc.FixedAspectRatio);
+			}
+
+			if (entity.HasComponent<DirectionalLightComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::DirectionalLight);
+				auto& dl = entity.GetComponent<DirectionalLightComponent>();
+				writer.Write(dl.Color);
+				writer.Write(dl.Intensity);
+			}
+
+			if (entity.HasComponent<PointLightComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::PointLight);
+				auto& pl = entity.GetComponent<PointLightComponent>();
+				writer.Write(pl.Color);
+				writer.Write(pl.Intensity);
+				writer.Write(pl.Radius);
+				writer.Write(pl.Falloff);
+				writer.Write(pl.CastsShadows);
+			}
+
+			if (entity.HasComponent<SpotLightComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::SpotLight);
+				auto& sl = entity.GetComponent<SpotLightComponent>();
+				writer.Write(sl.Color);
+				writer.Write(sl.Intensity);
+				writer.Write(sl.Radius);
+				writer.Write(sl.Falloff);
+				writer.Write(sl.InnerAngle);
+				writer.Write(sl.OuterAngle);
+				writer.Write(sl.CastsShadows);
+				writer.Write(sl.IsVideo);
+				writer.WriteString(sl.CookieAssetPath);
+				writer.Write(sl.CookieSize);
+			}
+
+			if (entity.HasComponent<RigidbodyComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::Rigidbody);
+				auto& rb = entity.GetComponent<RigidbodyComponent>();
+				writer.Write((uint32_t)rb.Type);
+				writer.Write(rb.Mass);
+				writer.Write(rb.LinearDrag);
+				writer.Write(rb.AngularDrag);
+				writer.Write(rb.FixedRotation);
+				writer.Write(rb.UseCCD);
+				writer.Write(rb.CCDVelocityThreshold);
+			}
+
+			if (entity.HasComponent<BoxColliderComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::BoxCollider);
+				auto& bc = entity.GetComponent<BoxColliderComponent>();
+				writer.Write(bc.HalfExtents);
+				writer.Write(bc.Offset);
+				writer.Write(bc.IsTrigger);
+				writer.WriteString(bc.PhysicsMaterialPath);
+			}
+
+			if (entity.HasComponent<SphereColliderComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::SphereCollider);
+				auto& sc = entity.GetComponent<SphereColliderComponent>();
+				writer.Write(sc.Radius);
+				writer.Write(sc.Offset);
+				writer.Write(sc.IsTrigger);
+				writer.WriteString(sc.PhysicsMaterialPath);
+			}
+
+			if (entity.HasComponent<CapsuleColliderComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::CapsuleCollider);
+				auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+				writer.Write(cc.Radius);
+				writer.Write(cc.Height);
+				writer.Write(cc.Offset);
+				writer.Write(cc.IsTrigger);
+				writer.WriteString(cc.PhysicsMaterialPath);
+			}
+
+			if (entity.HasComponent<MeshColliderComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::MeshCollider);
+				auto& mc = entity.GetComponent<MeshColliderComponent>();
+				writer.Write(mc.IsConvex);
+				writer.WriteString(mc.OverrideAssetPath);
+				writer.Write(mc.IsTrigger);
+				writer.WriteString(mc.PhysicsMaterialPath);
+			}
+
+			if (entity.HasComponent<CharacterControllerComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::CharacterController);
+				auto& cct = entity.GetComponent<CharacterControllerComponent>();
+				writer.Write(cct.SlopeLimitDegrees);
+				writer.Write(cct.StepOffset);
+				writer.Write(cct.Radius);
+				writer.Write(cct.Height);
+			}
+
+			if (entity.HasComponent<ScriptComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::Script);
+				auto& sc = entity.GetComponent<ScriptComponent>();
+				writer.WriteString(sc.ClassName);
+				uint32_t fieldsCount = (uint32_t)sc.FieldInstances.size();
+				writer.Write(fieldsCount);
+				for (const auto& [name, field] : sc.FieldInstances)
+				{
+					writer.WriteString(name);
+					writer.Write(field.Type);
+					writer.WriteBytes(field.Data.data(), field.Data.size());
+				}
+			}
+
+			if (entity.HasComponent<AudioSourceComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::AudioSource);
+				auto& ac = entity.GetComponent<AudioSourceComponent>();
+				writer.WriteString(ac.AudioClipPath);
+				writer.Write(ac.PlayOnAwake);
+				writer.Write(ac.Looping);
+				writer.Write(ac.Volume);
+				writer.Write(ac.MinDistance);
+				writer.Write(ac.MaxDistance);
+			}
+
+			if (entity.HasComponent<UICanvasComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::UICanvas);
+				auto& uc = entity.GetComponent<UICanvasComponent>();
+				writer.Write(uc.Active);
+				writer.Write((uint32_t)uc.RenderMode);
+				writer.Write(uc.ReferenceResolution);
+			}
+
+			if (entity.HasComponent<UITransformComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::UITransform);
+				auto& ut = entity.GetComponent<UITransformComponent>();
+				writer.Write(ut.AnchorMin);
+				writer.Write(ut.AnchorMax);
+				writer.Write(ut.OffsetMin);
+				writer.Write(ut.OffsetMax);
+				writer.Write(ut.ZIndex);
+			}
+
+			if (entity.HasComponent<UIImageComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::UIImage);
+				auto& ui = entity.GetComponent<UIImageComponent>();
+				writer.Write(ui.TintColor);
+				writer.WriteString(ui.TextureAssetPath);
+			}
+
+			if (entity.HasComponent<UITextComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::UIText);
+				auto& ut = entity.GetComponent<UITextComponent>();
+				writer.WriteString(ut.Text);
+				std::string fontPath = ut.FontAsset ? ut.FontAsset->GetPath().string() : "";
+				writer.WriteString(fontPath);
+				writer.Write(ut.Color);
+				writer.Write(ut.FontSize);
+				writer.Write(ut.LineSpacing);
+				writer.Write(ut.Kerning);
+			}
+
+			if (entity.HasComponent<UIButtonComponent>())
+			{
+				writer.Write((uint32_t)BinaryComponentType::UIButton);
+				auto& ub = entity.GetComponent<UIButtonComponent>();
+				writer.Write(ub.NormalColor);
+				writer.Write(ub.HoverColor);
+				writer.Write(ub.PressedColor);
+			}
+		}
+
+		std::ofstream fout(filepath, std::ios::binary);
+		if (fout.is_open())
+		{
+			fout.write((const char*)writer.Buffer.data(), writer.Buffer.size());
+		}
 	}
 
 	bool SceneSerializer::Deserialize(const std::string& filepath)
@@ -860,7 +1246,7 @@ namespace RXNEngine {
 		{
 			data = YAML::LoadFile(filepath);
 		}
-		catch (YAML::ParserException e)
+		catch (const std::exception& e)
 		{
 			RXN_CORE_ERROR("Failed to load .rxn file '{0}'\n     {1}", filepath, e.what());
 			return false;
@@ -918,8 +1304,355 @@ namespace RXNEngine {
 
 	bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
 	{
-		RXN_CORE_ASSERT(false);
-		return false;
+		std::vector<uint8_t> buffer;
+		auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+
+		if (vfs && vfs->FileExists(filepath))
+		{
+			buffer = vfs->ReadFile(filepath);
+			if (buffer.empty())
+			{
+				RXN_CORE_ERROR("Failed to read binary scene file '{0}' from VFS", filepath);
+				return false;
+			}
+		}
+		else
+		{
+			std::ifstream file(filepath, std::ios::binary | std::ios::ate);
+			if (!file.is_open())
+			{
+				RXN_CORE_ERROR("Failed to open binary scene file '{0}' on disk", filepath);
+				return false;
+			}
+
+			size_t size = (size_t)file.tellg();
+			file.seekg(0, std::ios::beg);
+
+			buffer.resize(size);
+			file.read((char*)buffer.data(), size);
+			file.close();
+		}
+
+		size_t size = buffer.size();
+		BinaryReader reader(buffer.data(), size);
+
+		RXN_CORE_INFO("DeserializeRuntime: Starting deserialization of file {0} (size: {1} bytes)", filepath, size);
+
+		char magic[8];
+		reader.ReadBytes(magic, 8);
+		if (memcmp(magic, "RXNBIN\0\0", 8) != 0)
+		{
+			RXN_CORE_ERROR("Invalid binary scene file '{0}'", filepath);
+			return false;
+		}
+
+		uint32_t version = 0;
+		reader.Read(version);
+		if (version != 1)
+		{
+			RXN_CORE_ERROR("Unsupported binary scene version {0} in file '{1}'", version, filepath);
+			return false;
+		}
+
+		uint64_t primaryCameraID = 0;
+		reader.Read(primaryCameraID);
+
+		std::string skyboxPath = reader.ReadString();
+		float skyboxIntensity = 1.0f;
+		reader.Read(skyboxIntensity);
+
+		if (!skyboxPath.empty())
+		{
+			m_Scene->m_Skybox = Cubemap::Create(skyboxPath);
+			m_Scene->m_SkyboxIntensity = skyboxIntensity;
+		}
+
+		uint32_t entityCount = 0;
+		reader.Read(entityCount);
+
+		for (uint32_t i = 0; i < entityCount; i++)
+		{
+			uint64_t uuid = 0;
+			reader.Read(uuid);
+			std::string name = reader.ReadString();
+
+			Entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name);
+
+			uint32_t componentCount = 0;
+			reader.Read(componentCount);
+
+			for (uint32_t c = 0; c < componentCount; c++)
+			{
+				uint32_t typeVal = 0;
+				reader.Read(typeVal);
+				BinaryComponentType type = (BinaryComponentType)typeVal;
+
+				switch (type)
+				{
+					case BinaryComponentType::Transform:
+					{
+						auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+						reader.Read(tc.Translation);
+						reader.Read(tc.Rotation);
+						reader.Read(tc.Scale);
+						break;
+					}
+					case BinaryComponentType::Relationship:
+					{
+						auto& rc = deserializedEntity.GetComponent<RelationshipComponent>();
+						reader.Read(rc.ParentHandle);
+						uint32_t childrenCount = 0;
+						reader.Read(childrenCount);
+						rc.Children.resize(childrenCount);
+						for (uint32_t ch = 0; ch < childrenCount; ch++)
+						{
+							uint64_t childUUID = 0;
+							reader.Read(childUUID);
+							rc.Children[ch] = childUUID;
+						}
+						break;
+					}
+					case BinaryComponentType::StaticMesh:
+					{
+						auto& mc = deserializedEntity.AddComponent<StaticMeshComponent>();
+						mc.AssetPath = reader.ReadString();
+						reader.Read(mc.SubmeshIndex);
+						mc.MaterialAssetPath = reader.ReadString();
+
+						if (!mc.AssetPath.empty())
+							mc.Mesh = Application::Get().GetSubsystem<AssetManager>()->GetMesh(mc.AssetPath);
+
+						if (!mc.MaterialAssetPath.empty())
+							mc.MaterialTableOverride = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(mc.MaterialAssetPath);
+						break;
+					}
+					case BinaryComponentType::Camera:
+					{
+						auto& cc = deserializedEntity.AddComponent<CameraComponent>();
+						uint32_t projType = 0;
+						reader.Read(projType);
+						cc.Camera.SetProjectionType((SceneCamera::ProjectionMode)projType);
+						float perspectiveFOV = 0.0f, perspectiveNear = 0.0f, perspectiveFar = 0.0f;
+						reader.Read(perspectiveFOV);
+						reader.Read(perspectiveNear);
+						reader.Read(perspectiveFar);
+						cc.Camera.SetPerspectiveFOV(perspectiveFOV);
+						cc.Camera.SetPerspectiveNearClip(perspectiveNear);
+						cc.Camera.SetPerspectiveFarClip(perspectiveFar);
+
+						float orthographicSize = 0.0f, orthographicNear = 0.0f, orthographicFar = 0.0f;
+						reader.Read(orthographicSize);
+						reader.Read(orthographicNear);
+						reader.Read(orthographicFar);
+						cc.Camera.SetOrthographicSize(orthographicSize);
+						cc.Camera.SetOrthographicNearClip(orthographicNear);
+						cc.Camera.SetOrthographicFarClip(orthographicFar);
+
+						reader.Read(cc.FixedAspectRatio);
+						break;
+					}
+					case BinaryComponentType::DirectionalLight:
+					{
+						auto& dl = deserializedEntity.AddComponent<DirectionalLightComponent>();
+						reader.Read(dl.Color);
+						reader.Read(dl.Intensity);
+						break;
+					}
+					case BinaryComponentType::PointLight:
+					{
+						auto& pl = deserializedEntity.AddComponent<PointLightComponent>();
+						reader.Read(pl.Color);
+						reader.Read(pl.Intensity);
+						reader.Read(pl.Radius);
+						reader.Read(pl.Falloff);
+						reader.Read(pl.CastsShadows);
+						break;
+					}
+					case BinaryComponentType::SpotLight:
+					{
+						auto& sl = deserializedEntity.AddComponent<SpotLightComponent>();
+						reader.Read(sl.Color);
+						reader.Read(sl.Intensity);
+						reader.Read(sl.Radius);
+						reader.Read(sl.Falloff);
+						reader.Read(sl.InnerAngle);
+						reader.Read(sl.OuterAngle);
+						reader.Read(sl.CastsShadows);
+						reader.Read(sl.IsVideo);
+						sl.CookieAssetPath = reader.ReadString();
+						reader.Read(sl.CookieSize);
+
+						if (!sl.CookieAssetPath.empty())
+						{
+							if (sl.IsVideo)
+								sl.CookieVideo = CreateRef<VideoTexture>(sl.CookieAssetPath);
+							else
+								sl.CookieTexture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(sl.CookieAssetPath);
+						}
+						break;
+					}
+					case BinaryComponentType::Rigidbody:
+					{
+						auto& rb = deserializedEntity.AddComponent<RigidbodyComponent>();
+						uint32_t bodyType = 0;
+						reader.Read(bodyType);
+						rb.Type = (RigidbodyComponent::BodyType)bodyType;
+						reader.Read(rb.Mass);
+						reader.Read(rb.LinearDrag);
+						reader.Read(rb.AngularDrag);
+						reader.Read(rb.FixedRotation);
+						reader.Read(rb.UseCCD);
+						reader.Read(rb.CCDVelocityThreshold);
+						break;
+					}
+					case BinaryComponentType::BoxCollider:
+					{
+						auto& bc = deserializedEntity.AddComponent<BoxColliderComponent>();
+						reader.Read(bc.HalfExtents);
+						reader.Read(bc.Offset);
+						reader.Read(bc.IsTrigger);
+						bc.PhysicsMaterialPath = reader.ReadString();
+
+						if (!bc.PhysicsMaterialPath.empty())
+							bc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(bc.PhysicsMaterialPath);
+						break;
+					}
+					case BinaryComponentType::SphereCollider:
+					{
+						auto& sc = deserializedEntity.AddComponent<SphereColliderComponent>();
+						reader.Read(sc.Radius);
+						reader.Read(sc.Offset);
+						reader.Read(sc.IsTrigger);
+						sc.PhysicsMaterialPath = reader.ReadString();
+
+						if (!sc.PhysicsMaterialPath.empty())
+							sc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(sc.PhysicsMaterialPath);
+						break;
+					}
+					case BinaryComponentType::CapsuleCollider:
+					{
+						auto& cc = deserializedEntity.AddComponent<CapsuleColliderComponent>();
+						reader.Read(cc.Radius);
+						reader.Read(cc.Height);
+						reader.Read(cc.Offset);
+						reader.Read(cc.IsTrigger);
+						cc.PhysicsMaterialPath = reader.ReadString();
+
+						if (!cc.PhysicsMaterialPath.empty())
+							cc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(cc.PhysicsMaterialPath);
+						break;
+					}
+					case BinaryComponentType::MeshCollider:
+					{
+						auto& mc = deserializedEntity.AddComponent<MeshColliderComponent>();
+						reader.Read(mc.IsConvex);
+						mc.OverrideAssetPath = reader.ReadString();
+						reader.Read(mc.IsTrigger);
+						mc.PhysicsMaterialPath = reader.ReadString();
+
+						if (!mc.PhysicsMaterialPath.empty())
+							mc.PhysicsMaterialAsset = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(mc.PhysicsMaterialPath);
+						break;
+					}
+					case BinaryComponentType::CharacterController:
+					{
+						auto& cct = deserializedEntity.AddComponent<CharacterControllerComponent>();
+						reader.Read(cct.SlopeLimitDegrees);
+						reader.Read(cct.StepOffset);
+						reader.Read(cct.Radius);
+						reader.Read(cct.Height);
+						break;
+					}
+					case BinaryComponentType::Script:
+					{
+						auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+						sc.ClassName = reader.ReadString();
+						uint32_t fieldsCount = 0;
+						reader.Read(fieldsCount);
+						for (uint32_t f = 0; f < fieldsCount; f++)
+						{
+							std::string fieldName = reader.ReadString();
+							ScriptFieldInstance field;
+							reader.Read(field.Type);
+							reader.ReadBytes(field.Data.data(), field.Data.size());
+							sc.FieldInstances[fieldName] = field;
+						}
+						break;
+					}
+					case BinaryComponentType::AudioSource:
+					{
+						auto& ac = deserializedEntity.AddComponent<AudioSourceComponent>();
+						ac.AudioClipPath = reader.ReadString();
+						reader.Read(ac.PlayOnAwake);
+						reader.Read(ac.Looping);
+						reader.Read(ac.Volume);
+						reader.Read(ac.MinDistance);
+						reader.Read(ac.MaxDistance);
+						break;
+					}
+					case BinaryComponentType::UICanvas:
+					{
+						auto& uc = deserializedEntity.AddComponent<UICanvasComponent>();
+						reader.Read(uc.Active);
+						uint32_t renderMode = 0;
+						reader.Read(renderMode);
+						uc.RenderMode = (CanvasRenderMode)renderMode;
+						reader.Read(uc.ReferenceResolution);
+						break;
+					}
+					case BinaryComponentType::UITransform:
+					{
+						auto& ut = deserializedEntity.AddComponent<UITransformComponent>();
+						reader.Read(ut.AnchorMin);
+						reader.Read(ut.AnchorMax);
+						reader.Read(ut.OffsetMin);
+						reader.Read(ut.OffsetMax);
+						reader.Read(ut.ZIndex);
+						break;
+					}
+					case BinaryComponentType::UIImage:
+					{
+						auto& ui = deserializedEntity.AddComponent<UIImageComponent>();
+						reader.Read(ui.TintColor);
+						ui.TextureAssetPath = reader.ReadString();
+
+						if (!ui.TextureAssetPath.empty())
+							ui.Texture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(ui.TextureAssetPath);
+						break;
+					}
+					case BinaryComponentType::UIText:
+					{
+						auto& ut = deserializedEntity.AddComponent<UITextComponent>();
+						ut.Text = reader.ReadString();
+						std::string fontPath = reader.ReadString();
+						if (!fontPath.empty())
+							ut.FontAsset = CreateRef<Font>(fontPath);
+						reader.Read(ut.Color);
+						reader.Read(ut.FontSize);
+						reader.Read(ut.LineSpacing);
+						reader.Read(ut.Kerning);
+						break;
+					}
+					case BinaryComponentType::UIButton:
+					{
+						auto& ub = deserializedEntity.AddComponent<UIButtonComponent>();
+						reader.Read(ub.NormalColor);
+						reader.Read(ub.HoverColor);
+						reader.Read(ub.PressedColor);
+						break;
+					}
+					default:
+						break;
+				}
+			}
+
+			if (primaryCameraID != 0 && uuid == primaryCameraID)
+			{
+				m_Scene->SetPrimaryCameraEntity(deserializedEntity);
+			}
+		}
+
+		return true;
 	}
 
 }

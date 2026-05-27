@@ -219,6 +219,8 @@ namespace RXNEngine {
         RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
         RenderCommand::Clear();
 
+        bool showScreenSpaceUI = false;
+
         if (!selectedEntities.empty())
         {
             RenderCommand::SetDepthTest(false);
@@ -250,7 +252,14 @@ namespace RXNEngine {
             for (Entity entity : selectedEntities)
             {
                 if (entity)
+                {
                     drawOutline(entity, drawOutline);
+
+                    if (entity.HasComponent<UITransformComponent>() || entity.HasComponent<UICanvasComponent>())
+                    {
+                        showScreenSpaceUI = true;
+                    }
+                }
             }
 
             Renderer2D::BeginScene(camera.GetViewProjection());
@@ -314,10 +323,13 @@ namespace RXNEngine {
         glm::mat4 cameraTransform = glm::inverse(camera.GetViewMatrix());
         RenderScene(camera, cameraTransform, m_Settings.ShowColliders, deltaTime, selectedEntities);
 
+        m_GeoPass->Bind();
         RenderCommand::SetBlend(true);
         glm::mat4 editorCameraTransform = glm::inverse(camera.GetViewMatrix());
         RenderUI(camera, editorCameraTransform, true);   // World Space
-        RenderUI(camera, editorCameraTransform, false);  // Screen Space
+
+        if (showScreenSpaceUI)
+            RenderUI(camera, editorCameraTransform, false, selectedEntities);  // Screen Space
 
         RenderCommand::SetBlend(true);
         RenderCommand::SetDepthTest(true);
@@ -362,7 +374,7 @@ namespace RXNEngine {
         RenderPostProcess();
     }
 
-    int SceneRenderer::GetEntityIDAtMouse(int x, int y, const EditorCamera& camera)
+    int SceneRenderer::GetEntityIDAtMouse(int x, int y, const EditorCamera& camera, const std::vector<Entity>& selectedEntities)
     {
         m_PickingPass->Bind();
         RenderCommand::SetClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
@@ -374,7 +386,7 @@ namespace RXNEngine {
 
         Application::Get().GetSubsystem<Renderer>()->ExecutePickingPass(m_PickingShader);
 
-        RenderUIPicking(camera);
+        RenderUIPicking(camera, selectedEntities);
 
         int pixelData = m_PickingPass->ReadPixel(0, x, y);
         m_PickingPass->Unbind();
@@ -937,7 +949,7 @@ namespace RXNEngine {
     
     }
 
-    void SceneRenderer::RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace)
+    void SceneRenderer::RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace, const std::vector<Entity>& selectedEntities)
     {
         RenderCommand::SetCullFace(RendererAPI::CullFace::None);
         RenderCommand::SetDepthTest(worldSpace);
@@ -947,6 +959,34 @@ namespace RXNEngine {
             viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
         else
             viewProj = glm::ortho(0.0f, (float)m_ViewportWidth, 0.0f, (float)m_ViewportHeight, -1.0f, 1.0f);
+
+        bool useCanvasFilter = !worldSpace && !selectedEntities.empty();
+        std::unordered_set<UUID> allowedCanvases;
+
+        if (useCanvasFilter)
+        {
+            for (Entity selected : selectedEntities)
+            {
+                if (!selected)
+                    continue;
+
+                Entity curr = selected;
+                while (curr)
+                {
+                    if (curr.HasComponent<UICanvasComponent>())
+                    {
+                        allowedCanvases.insert(curr.GetUUID());
+                        break;
+                    }
+                    if (curr.HasComponent<RelationshipComponent>())
+                    {
+                        UUID pid = curr.GetComponent<RelationshipComponent>().ParentHandle;
+                        curr = pid != 0 ? m_Scene->GetEntityByUUID(pid) : Entity{};
+                    }
+                    else break;
+                }
+            }
+        }
 
         struct UIRenderItem
         {
@@ -990,15 +1030,18 @@ namespace RXNEngine {
             if (isWorldSpace != worldSpace)
                 continue;
 
+            Entity e = { canvasEntity, m_Scene.get() };
+
+            if (useCanvasFilter && allowedCanvases.find(e.GetUUID()) == allowedCanvases.end())
+                continue;   
+
             glm::mat4 canvasTransform = glm::mat4(1.0f);
             if (isWorldSpace)
             {
-                Entity e = { canvasEntity, m_Scene.get() };
                 if (e.HasComponent<TransformComponent>())
                     canvasTransform = m_Scene->GetWorldTransform(e);
             }
 
-            Entity e = { canvasEntity, m_Scene.get() };
             if (e.HasComponent<UITransformComponent>())
             {
                 bool hasVisual = e.HasComponent<UIImageComponent>() || e.HasComponent<UITextComponent>();
@@ -1009,7 +1052,8 @@ namespace RXNEngine {
             collectChildren(e, canvasTransform);
         }
 
-        if (renderItems.empty()) return;
+        if (renderItems.empty())
+            return;
 
         std::sort(renderItems.begin(), renderItems.end(), [](const UIRenderItem& a, const UIRenderItem& b)
             {
@@ -1073,11 +1117,23 @@ namespace RXNEngine {
     
     }
 
-    void SceneRenderer::RenderUIPicking(const EditorCamera& camera)
+    void SceneRenderer::RenderUIPicking(const EditorCamera& camera, const std::vector<Entity>& selectedEntities)
     {
+        bool showScreenSpaceUI = false;
+        for (Entity selected : selectedEntities)
+        {
+            if (selected && (selected.HasComponent<UITransformComponent>() || selected.HasComponent<UICanvasComponent>()))
+            {
+                showScreenSpaceUI = true;
+                break;
+            }
+        }
 
         auto renderUIPickingPass = [&](bool worldSpace)
         {
+            if (!worldSpace && !showScreenSpaceUI)
+                return;
+
             RenderCommand::SetCullFace(RendererAPI::CullFace::None);
             RenderCommand::SetDepthTest(worldSpace);
 
@@ -1086,6 +1142,34 @@ namespace RXNEngine {
                 viewProj = camera.GetViewProjection();
             else
                 viewProj = glm::ortho(0.0f, (float)m_ViewportWidth, 0.0f, (float)m_ViewportHeight, -1.0f, 1.0f);
+
+            bool useCanvasFilter = !worldSpace && !selectedEntities.empty();
+            std::unordered_set<UUID> allowedCanvases;
+
+            if (useCanvasFilter)
+            {
+                for (Entity selected : selectedEntities)
+                {
+                    if (!selected)
+                        continue;
+
+                    Entity curr = selected;
+                    while (curr)
+                    {
+                        if (curr.HasComponent<UICanvasComponent>())
+                        {
+                            allowedCanvases.insert(curr.GetUUID());
+                            break;
+                        }
+                        if (curr.HasComponent<RelationshipComponent>())
+                        {
+                            UUID pid = curr.GetComponent<RelationshipComponent>().ParentHandle;
+                            curr = pid != 0 ? m_Scene->GetEntityByUUID(pid) : Entity{};
+                        }
+                        else break;
+                    }
+                }
+            }
 
             struct UIRenderItem
             {
@@ -1128,15 +1212,18 @@ namespace RXNEngine {
                 if (isWorldSpace != worldSpace)
                     continue;
 
+                Entity e = { canvasEntity, m_Scene.get() };
+
+                if (useCanvasFilter && allowedCanvases.find(e.GetUUID()) == allowedCanvases.end())
+                    continue;
+
                 glm::mat4 canvasTransform = glm::mat4(1.0f);
                 if (isWorldSpace)
                 {
-                    Entity e = { canvasEntity, m_Scene.get() };
                     if (e.HasComponent<TransformComponent>())
                         canvasTransform = m_Scene->GetWorldTransform(e);
                 }
 
-                Entity e = { canvasEntity, m_Scene.get() };
                 if (e.HasComponent<UITransformComponent>())
                 {
                     bool hasVisual = e.HasComponent<UIImageComponent>() || e.HasComponent<UITextComponent>();

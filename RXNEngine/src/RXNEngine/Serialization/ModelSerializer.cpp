@@ -2,8 +2,11 @@
 #include "ModelSerializer.h"
 #include "RXNEngine/Asset/AssetManager.h"
 #include "RXNEngine/Utils/PlatformUtils.h"
+#include "RXNEngine/Core/Application.h"
+#include "RXNEngine/Core/VFSSystem.h"
 
 #include <fstream>
+#include <sstream>
 
 namespace RXNEngine {
 
@@ -15,7 +18,7 @@ namespace RXNEngine {
             out.write(str.c_str(), size);
     }
 
-    static std::string ReadString(std::ifstream& in)
+    static std::string ReadString(std::istream& in)
     {
         uint32_t size;
         in.read((char*)&size, sizeof(uint32_t));
@@ -93,17 +96,12 @@ namespace RXNEngine {
         out.close();
     }
 
-    Ref<StaticMesh> ModelSerializer::Deserialize(const std::string& filepath)
+    static Ref<StaticMesh> DeserializeStream(std::istream& in)
     {
-        std::ifstream in(filepath, std::ios::binary);
-
-        if (!in.is_open())
-            return nullptr;
-
         char magic[4];
         in.read(magic, 4);
 
-        if (std::string(magic) != "RXN\0")
+        if (std::string(magic, 4) != std::string("RXN\0", 4))
             return nullptr;
 
         uint32_t version;
@@ -178,5 +176,24 @@ namespace RXNEngine {
         }
 
         return CreateRef<StaticMesh>(vertices, indices, submeshes, materials);
+    }
+
+    Ref<StaticMesh> ModelSerializer::Deserialize(const std::string& filepath)
+    {
+        auto vfs = Application::Get().GetSubsystem<VFSSystem>();
+        if (vfs && vfs->FileExists(filepath))
+        {
+            auto fileData = vfs->ReadFile(filepath);
+            std::string content((const char*)fileData.data(), fileData.size());
+            std::istringstream in(content, std::ios::binary);
+            return DeserializeStream(in);
+        }
+        else
+        {
+            std::ifstream in(filepath, std::ios::binary);
+            if (!in.is_open())
+                return nullptr;
+            return DeserializeStream(in);
+        }
     }
 }

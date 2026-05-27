@@ -14,4 +14,19 @@
 	  <Platforms>x64</Platforms>
 	  <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Dist'">
+    <PublishAot>true</PublishAot>
+    <DefineConstants>NATIVE_AOT</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RXNScriptCore\RXNScriptCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <ProjectReference Include="..\RXNScriptApp\RXNScriptApp.csproj" />
+    <TrimmerRootAssembly Include="RXNScriptApp" />
+    <TrimmerRootAssembly Include="RXNScriptCore" />
+  </ItemGroup>
 </Project>
