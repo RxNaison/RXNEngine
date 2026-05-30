@@ -279,18 +279,18 @@ public class Player : Entity
         {
             var textComp = AmmoTextEntity.GetComponent<UITextComponent>();
             textComp.Text = $"Ammo: {Ammo}";
-
+        
             var data = textComp.Data;
             data.Color = Ammo <= 20 ? new Vector4(1.0f, 0.2f, 0.2f, 1.0f) : new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
             textComp.Data = data;
-
+        
             Console.WriteLine("Text changed");
         }
         Console.WriteLine("Text not changed");
-
+        
         if (AmmoTextEntity == null)
             Console.WriteLine("AmmoTextEntity was null");
-
+        
         if (!(AmmoTextEntity.HasComponent<UITextComponent>()))
             Console.WriteLine("AmmoTextEntity did not have UITextComponent");
     }

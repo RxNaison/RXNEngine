@@ -1,4 +1,4 @@
-﻿using RXNScriptHost;
+using RXNScriptHost;
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -11,6 +11,19 @@ namespace RXNEngine
 
         protected Entity() { ID = 0; }
         internal Entity(ulong id) { ID = id; }
+
+        public static bool operator ==(Entity? lhs, Entity? rhs)
+        {
+            if (ReferenceEquals(lhs, rhs)) return true;
+            if (lhs is null) return rhs.ID == 0;
+            if (rhs is null) return lhs.ID == 0;
+            return lhs.ID == rhs.ID;
+        }
+
+        public static bool operator !=(Entity? lhs, Entity? rhs) => !(lhs == rhs);
+
+        public override bool Equals(object? obj) => obj is Entity other && this == other;
+        public override int GetHashCode() => ID.GetHashCode();
 
         private CoroutineRunner _coroutineRunner = new CoroutineRunner();
 
@@ -30,14 +43,14 @@ namespace RXNEngine
             unsafe { ((delegate* unmanaged<ulong, void>)Interop.NativeFunctions.Entity_Destroy)(ID); }
         }
 
-        public static Entity? FindEntityByName(string name)
+        public static Entity FindEntityByName(string name)
         {
             unsafe
             {
                 IntPtr namePtr = Marshal.StringToHGlobalAnsi(name);
                 ulong id = ((delegate* unmanaged<IntPtr, ulong>)Interop.NativeFunctions.Entity_FindByName)(namePtr);
                 Marshal.FreeHGlobal(namePtr);
-                return id == 0 ? null : new Entity(id);
+                return new Entity(id);
             }
         }
 

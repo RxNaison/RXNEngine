@@ -351,6 +351,8 @@ project "RXNEditor"
 
        prebuildcommands
        {
+           "dotnet build \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\"",
+           "dotnet build \"%{wks.location}/RXNScriptCore/RXNScriptCore.csproj\" -c Release -o \"%{wks.location}/RXNEditor/res/scripts\"",
            "dotnet publish \"%{wks.location}/RXNScriptHost/RXNScriptHost.csproj\" -c Release -r win-x64 --self-contained -p:PublishAot=true -p:DefineConstants=NATIVE_AOT -o \"%{wks.location}/RXNEditor/res/scripts\""
        }
 
@@ -369,18 +371,33 @@ group "Scripting"
         kind "SharedLib"
         language "C#"
         targetdir ("%{wks.location}/RXNEditor/res/scripts")
+        configmap {
+            ["Debug"] = "Debug",
+            ["Release"] = "Release",
+            ["Dist"] = "Release"
+        }
 
     externalproject "RXNScriptCore"
         location "RXNScriptCore"
         kind "SharedLib"
         language "C#"
         targetdir ("%{wks.location}/RXNEditor/res/scripts")
+        configmap {
+            ["Debug"] = "Debug",
+            ["Release"] = "Release",
+            ["Dist"] = "Release"
+        }
 
     externalproject "RXNScriptApp"
         location "RXNScriptApp"
         kind "SharedLib"
         language "C#"
         targetdir ("%{wks.location}/RXNEditor/res/scripts")
+        configmap {
+            ["Debug"] = "Debug",
+            ["Release"] = "Release",
+            ["Dist"] = "Release"
+        }
 group ""
 
 project "AssetCooker"
