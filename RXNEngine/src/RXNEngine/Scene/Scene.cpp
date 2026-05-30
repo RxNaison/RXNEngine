@@ -117,6 +117,7 @@ namespace RXNEngine {
         newScene->m_Skybox = other->m_Skybox;
         newScene->m_SkyboxIntensity = other->m_SkyboxIntensity;
         newScene->m_PrimaryCameraID = other->m_PrimaryCameraID;
+        newScene->m_RendererSettings = other->m_RendererSettings;
 
         auto& srcSceneRegistry = other->m_Registry;
         auto& dstSceneRegistry = newScene->m_Registry;

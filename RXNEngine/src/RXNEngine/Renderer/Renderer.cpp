@@ -6,9 +6,13 @@
 #include "RenderCommand.h"
 #include "ShadowMap.h"
 #include "Renderer2D.h"
+#include "RXNEngine/Scene/Entity.h"
+#include "RXNEngine/Scene/Components.h"
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cctype>
 
 namespace RXNEngine {
 
@@ -52,6 +56,11 @@ namespace RXNEngine {
         {
             glm::mat4 LightSpaceMatrices[4];
             glm::vec4 CascadePlaneDistances[4];
+
+            float LightSize;
+            float ContactThreshold;
+            float ContactSharpness;
+            float ContactSharpeningBias;
         } BufferLocal;
 
         std::vector<float> CascadeSplits;
@@ -79,6 +88,7 @@ namespace RXNEngine {
         std::vector<InstanceData> BatchBuffer;
 
         glm::mat4 ViewProjectionMatrix;
+        glm::mat4 PrevViewProjectionMatrix = glm::mat4(1.0f);
         glm::mat4 ViewMatrix;
         glm::vec3 CameraPosition;
         glm::vec3 CameraForward;
@@ -96,6 +106,9 @@ namespace RXNEngine {
 
         Ref<UniformBuffer> LightUniformBuffer;
         LightDataGPU LightBufferLocal;
+        Scene* ActiveScene = nullptr;
+        int PointLightEntityIDs[100];
+        int SpotLightEntityIDs[100];
 
         Ref<VertexArray> SkyboxVAO;
         Ref<Shader> SkyboxShader;
@@ -109,6 +122,16 @@ namespace RXNEngine {
 
         std::vector<LineVertex> LineVertices;
         const uint32_t MaxLineVertices = 100000;
+
+        struct AmbientVolume
+        {
+            glm::mat4 InverseTransform;
+            glm::vec3 HalfExtents;
+            float Intensity;
+            glm::vec3 TransitionMin;
+            glm::vec3 TransitionMax;
+        };
+        std::vector<AmbientVolume> ActiveAmbientVolumes;
 
         RendererStatistics Stats;
     };
@@ -150,6 +173,17 @@ namespace RXNEngine {
         float aspect = (float)m_Data->CurrentRenderTarget->GetSpecification().Width / (float)m_Data->CurrentRenderTarget->GetSpecification().Height;
         float fov = m_Data->CameraFOV < 0.01f ? glm::radians(45.0f) : m_Data->CameraFOV;
         float nearPlane = 0.1f;
+        float maxShadowDistance = 150.0f;
+
+        float lambda = 0.92f;
+        m_Data->ShadowData.CascadeSplits.resize(4);
+        for (size_t i = 0; i < 4; ++i)
+        {
+            float p = (float)(i + 1) / 4.0f;
+            float logSplit = nearPlane * std::pow(maxShadowDistance / nearPlane, p);
+            float linSplit = nearPlane + p * (maxShadowDistance - nearPlane);
+            m_Data->ShadowData.CascadeSplits[i] = lambda * logSplit + (1.0f - lambda) * linSplit;
+        }
 
         for (size_t i = 0; i < 4; ++i)
         {
@@ -160,40 +194,59 @@ namespace RXNEngine {
             auto corners = GetFrustumCornersWorldSpace(proj, cameraView);
 
             glm::vec3 center = glm::vec3(0, 0, 0);
-            for (const auto& v : corners) center += glm::vec3(v);
+            for (const auto& v : corners)
+                center += glm::vec3(v);
+
             center /= corners.size();
 
-            const auto lightView = glm::lookAt(center - glm::normalize(lightDir), center, glm::vec3(0.0f, 1.0f, 0.0f));
+            float radius = 0.0f;
+            for (const auto& v : corners) radius = std::max(radius, glm::distance(glm::vec3(v), center));
+            radius = std::ceil(radius * 16.0f) / 16.0f;
 
-            float minX = std::numeric_limits<float>::max(); float maxX = std::numeric_limits<float>::lowest();
-            float minY = std::numeric_limits<float>::max(); float maxY = std::numeric_limits<float>::lowest();
-            float minZ = std::numeric_limits<float>::max(); float maxZ = std::numeric_limits<float>::lowest();
+            glm::vec3 maxExtents = glm::vec3(radius);
+            glm::vec3 minExtents = -maxExtents;
 
-            for (const auto& v : corners)
-            {
-                const auto trf = lightView * v;
-                minX = std::min(minX, trf.x); maxX = std::max(maxX, trf.x);
-                minY = std::min(minY, trf.y); maxY = std::max(maxY, trf.y);
-                minZ = std::min(minZ, trf.z); maxZ = std::max(maxZ, trf.z);
-            }
-
-            minZ -= 200.0f;
-            maxZ += 200.0f;
+            glm::vec3 lightDirectionNormalized = glm::normalize(lightDir);
+            glm::vec3 shadowCameraPos = center - lightDirectionNormalized * radius;
+            glm::mat4 lightViewMatrix = glm::lookAt(shadowCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
 
             float shadowMapRes = (float)m_Data->ShadowData.ShadowTarget->GetSize();
-            float unitsPerTexelX = (maxX - minX) / shadowMapRes;
-            float unitsPerTexelY = (maxY - minY) / shadowMapRes;
+            float worldTexelSize = (radius * 2.0f) / shadowMapRes;
 
-            minX = std::floor(minX / unitsPerTexelX) * unitsPerTexelX;
-            maxX = std::floor(maxX / unitsPerTexelX) * unitsPerTexelX;
-            minY = std::floor(minY / unitsPerTexelY) * unitsPerTexelY;
-            maxY = std::floor(maxY / unitsPerTexelY) * unitsPerTexelY;
+            glm::vec4 lightSpaceCenter = lightViewMatrix * glm::vec4(center, 1.0f);
+            lightSpaceCenter.x = std::floor(lightSpaceCenter.x / worldTexelSize) * worldTexelSize;
+            lightSpaceCenter.y = std::floor(lightSpaceCenter.y / worldTexelSize) * worldTexelSize;
+
+            glm::mat4 invLightView = glm::inverse(lightViewMatrix);
+            glm::vec4 snappedCenter = invLightView * lightSpaceCenter;
+
+            lightViewMatrix = glm::lookAt(glm::vec3(snappedCenter) - lightDirectionNormalized * radius, glm::vec3(snappedCenter), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            float minX = minExtents.x;
+            float maxX = maxExtents.x;
+            float minY = minExtents.y;
+            float maxY = maxExtents.y;
+
+            float zPadding = 50.0f;
+            if (i == 0)
+                zPadding = 15.0f;  // Cascade 0: 15m
+            else if (i == 1)
+                zPadding = 35.0f;  // Cascade 1: 35m
+            else if (i == 2)
+                zPadding = 80.0f;  // Cascade 2: 80m
+            else             
+                zPadding = 200.0f; // Cascade 3: 200m
+
+            float minZ = minExtents.z - zPadding;
+            float maxZ = maxExtents.z + zPadding;
 
             const glm::mat4 lightProjection = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
 
-            m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i] = lightProjection * lightView;
+            m_Data->ShadowData.BufferLocal.LightSpaceMatrices[i] = lightProjection * lightViewMatrix;
             m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].x = pFar;
-            m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].y = unitsPerTexelX;
+            m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].y = worldTexelSize;
+            m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].z = maxZ - minZ;
+            m_Data->ShadowData.BufferLocal.CascadePlaneDistances[i].w = radius * 2.0f;
         }
 
         m_Data->ShadowData.ShadowUniformBuffer->SetData(&m_Data->ShadowData.BufferLocal, sizeof(ShadowData::ShadowDataGPU));
@@ -210,11 +263,11 @@ namespace RXNEngine {
         m_Data->OpaqueQueue.reserve(1000);
         m_Data->InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
         m_Data->InstanceVertexBuffer->SetLayout({
-            { ShaderDataType::Float4, "a_ModelMatrixCol0", false, true },
-            { ShaderDataType::Float4, "a_ModelMatrixCol1", false, true },
-            { ShaderDataType::Float4, "a_ModelMatrixCol2", false, true },
-            { ShaderDataType::Float4, "a_ModelMatrixCol3", false, true },
-            { ShaderDataType::Int,    "a_EntityID",        false, true }
+                { ShaderDataType::Float4, "a_ModelMatrixCol0", false, true },
+                { ShaderDataType::Float4, "a_ModelMatrixCol1", false, true },
+                { ShaderDataType::Float4, "a_ModelMatrixCol2", false, true },
+                { ShaderDataType::Float4, "a_ModelMatrixCol3", false, true },
+                { ShaderDataType::Int,    "a_EntityID",        false, true }
             });
         m_Data->LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataGPU), 1);
 
@@ -308,14 +361,14 @@ namespace RXNEngine {
     }
 
     void Renderer::BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
-        const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
+        const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget, Scene* scene, const glm::mat4& prevViewProj)
     {
         RXN_PROFILE_SCOPE();
-        PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, renderTarget);
+        PrepareScene(camera.GetViewProjection(), camera.GetViewMatrix(), camera.GetPosition(), camera.GetFOV(), lights, environment, renderTarget, scene, prevViewProj);
     }
 
     void Renderer::BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
-        const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget)
+        const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget, Scene* scene, const glm::mat4& prevViewProj)
     {
         RXN_PROFILE_SCOPE();
 
@@ -324,7 +377,7 @@ namespace RXNEngine {
         glm::vec3 cameraPos = glm::vec3(transform[3]);
         float fov = 2.0f * glm::atan(1.0f / camera.GetProjection()[1][1]);
 
-        PrepareScene(viewProj, view, cameraPos, fov, lights, environment, renderTarget);
+        PrepareScene(viewProj, view, cameraPos, fov, lights, environment, renderTarget, scene, prevViewProj);
     }
 
     void Renderer::PrepareScene(
@@ -334,9 +387,40 @@ namespace RXNEngine {
         float cameraFOV,
         const LightEnvironment& lights,
         const Ref<Cubemap>& environment,
-        const Ref<RenderTarget>& renderTarget)
+        const Ref<RenderTarget>& renderTarget,
+        Scene* scene,
+        const glm::mat4& prevViewProj)
     {
         RXN_PROFILE_SCOPE();
+        m_Data->ActiveScene = scene;
+
+        m_Data->ActiveAmbientVolumes.clear();
+        if (scene)
+        {
+            auto boxView = scene->GetRaw().view<BoxColliderComponent, TransformComponent>();
+            for (auto entity : boxView)
+            {
+                const auto& bc = boxView.get<BoxColliderComponent>(entity);
+                if (bc.IsAmbientZone)
+                {
+                    glm::mat4 worldTransform = scene->GetWorldTransform({ entity, scene });
+                    glm::mat4 offsetTransform = glm::translate(worldTransform, bc.Offset);
+                    
+                    RendererData::AmbientVolume vol;
+                    vol.InverseTransform = glm::inverse(offsetTransform);
+                    vol.HalfExtents = bc.HalfExtents;
+                    vol.Intensity = bc.AmbientIntensity;
+                    vol.TransitionMin = bc.TransitionMin;
+                    vol.TransitionMax = bc.TransitionMax;
+                    m_Data->ActiveAmbientVolumes.push_back(vol);
+                    
+                    if (m_Data->ActiveAmbientVolumes.size() >= 8)
+                        break;
+                }
+            }
+        }
+        std::fill(std::begin(m_Data->PointLightEntityIDs), std::end(m_Data->PointLightEntityIDs), -1);
+        std::fill(std::begin(m_Data->SpotLightEntityIDs), std::end(m_Data->SpotLightEntityIDs), -1);
 
         if (environment)
         {
@@ -370,6 +454,7 @@ namespace RXNEngine {
         }
 
         m_Data->ViewProjectionMatrix = viewProjection;
+        m_Data->PrevViewProjectionMatrix = prevViewProj;
         m_Data->ViewMatrix = viewMatrix;
         m_Data->CameraPosition = cameraPosition;
         m_Data->CameraForward = -glm::normalize(glm::vec3(glm::inverse(viewMatrix)[2]));
@@ -396,6 +481,7 @@ namespace RXNEngine {
                 shadowIndex = (float)activePointShadows++;
 
             m_Data->LightBufferLocal.PointLights[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
+            m_Data->PointLightEntityIDs[i] = light.EntityID;
         }
 
 
@@ -429,6 +515,7 @@ namespace RXNEngine {
                 shadowIndex = (float)activeSpotShadows++;
 
             m_Data->LightBufferLocal.SpotLights[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
+            m_Data->SpotLightEntityIDs[i] = light.EntityID;
         }
 
         m_Data->LightUniformBuffer->SetData(&m_Data->LightBufferLocal, sizeof(LightDataGPU));
@@ -442,6 +529,11 @@ namespace RXNEngine {
         std::fill(m_Data->TextureSlots.begin(), m_Data->TextureSlots.end(), 0);
         m_Data->LineVertices.clear();
 
+        m_Data->ShadowData.BufferLocal.LightSize = lights.ShadowLightSize;
+        m_Data->ShadowData.BufferLocal.ContactThreshold = lights.ShadowContactThreshold;
+        m_Data->ShadowData.BufferLocal.ContactSharpness = lights.ShadowContactSharpness;
+        m_Data->ShadowData.BufferLocal.ContactSharpeningBias = lights.ShadowContactSharpeningBias;
+
         CalculateShadowMapMatrices(m_Data->ViewMatrix, m_Data->LightBufferLocal.DirLightDirection);
     }
 
@@ -450,7 +542,9 @@ namespace RXNEngine {
         RXN_PROFILE_SCOPE();
 
         const auto& submeshes = mesh->GetSubmeshes();
-        if (submeshIndex >= submeshes.size()) return;
+
+        if (submeshIndex >= submeshes.size()) 
+            return;
 
         RenderCommandPacket packet;
         packet.Mesh = mesh;
@@ -791,8 +885,10 @@ namespace RXNEngine {
         FlushSpotShadows();
         FlushPointShadows();
 
-        if (m_Data->CurrentRenderTarget) m_Data->CurrentRenderTarget->Bind();
-        else RenderCommand::BindDefaultRenderTarget();
+        if (m_Data->CurrentRenderTarget)
+            m_Data->CurrentRenderTarget->Bind();
+        else
+            RenderCommand::BindDefaultRenderTarget();
 
         RenderCommand::SetViewport(0, 0,
             m_Data->CurrentRenderTarget ? m_Data->CurrentRenderTarget->GetSpecification().Width : 1280,
@@ -814,6 +910,7 @@ namespace RXNEngine {
             {
                 if (a->SortKey != b->SortKey)
                     return a->SortKey < b->SortKey;
+
                 return a->DistanceToCamera < b->DistanceToCamera;
             });
 
@@ -826,6 +923,7 @@ namespace RXNEngine {
 
         std::vector<const RenderCommandPacket*> transparentPointers;
         transparentPointers.reserve(m_Data->TransparentQueue.size());
+
         for (const auto& packet : m_Data->TransparentQueue)
             transparentPointers.push_back(&packet);
 
@@ -833,6 +931,7 @@ namespace RXNEngine {
             {
                 if (glm::abs(a->DistanceToCamera - b->DistanceToCamera) < 0.001f)
                     return a->EntityID < b->EntityID;
+
                 return a->DistanceToCamera > b->DistanceToCamera;
             });
 
@@ -857,7 +956,8 @@ namespace RXNEngine {
     {
         RXN_PROFILE_SCOPE();
 
-        if (queue.empty()) return;
+        if (queue.empty()) 
+            return;
 
         const RenderCommandPacket* batchStart = queue.front();
 
@@ -900,7 +1000,9 @@ namespace RXNEngine {
     void Renderer::FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count)
     {
         RXN_PROFILE_SCOPE();
-        if (count == 0) return;
+
+        if (count == 0)
+            return;
 
         m_Data->InstanceVertexBuffer->SetData(instanceData, count * sizeof(InstanceData));
         material->Bind();
@@ -911,8 +1013,22 @@ namespace RXNEngine {
             shader->Bind();
             m_Data->CurrentShaderID = shader->GetRendererID();
             shader->SetMat4("u_ViewProjection", m_Data->ViewProjectionMatrix);
+            shader->SetMat4("u_InverseViewProjection", glm::inverse(m_Data->ViewProjectionMatrix));
+            shader->SetMat4("u_PrevViewProjection", m_Data->PrevViewProjectionMatrix);
+            shader->SetMat4("u_PrevInverseViewProjection", glm::inverse(m_Data->PrevViewProjectionMatrix));
             shader->SetFloat3("u_CameraPosition", m_Data->CameraPosition);
             shader->SetMat4("u_View", m_Data->ViewMatrix);
+
+            shader->SetInt("u_AmbientVolumeCount", (int)m_Data->ActiveAmbientVolumes.size());
+            for (size_t i = 0; i < m_Data->ActiveAmbientVolumes.size(); i++)
+            {
+                std::string prefix = "u_AmbientVolumes[" + std::to_string(i) + "].";
+                shader->SetMat4(prefix + "InverseTransform", m_Data->ActiveAmbientVolumes[i].InverseTransform);
+                shader->SetFloat3(prefix + "HalfExtents", m_Data->ActiveAmbientVolumes[i].HalfExtents);
+                shader->SetFloat(prefix + "Intensity", m_Data->ActiveAmbientVolumes[i].Intensity);
+                shader->SetFloat3(prefix + "TransitionMin", m_Data->ActiveAmbientVolumes[i].TransitionMin);
+                shader->SetFloat3(prefix + "TransitionMax", m_Data->ActiveAmbientVolumes[i].TransitionMax);
+            }
         }
 
         mesh->GetVertexArray()->Bind();
@@ -940,7 +1056,8 @@ namespace RXNEngine {
             const glm::mat4& M = m_Data->ShadowData.BufferLocal.LightSpaceMatrices[cascade];
             m_Data->ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrix", M);
 
-            if (m_Data->ShadowQueue.empty()) continue;
+            if (m_Data->ShadowQueue.empty())
+                continue;
 
             InstanceData* batchData = m_Data->BatchBuffer.data();
             uint32_t transformCount = 0;
@@ -948,15 +1065,25 @@ namespace RXNEngine {
 
             for (const auto& packet : m_Data->ShadowQueue)
             {
+                float minRadius = 0.0f;
+
+                if (cascade == 1)
+                    minRadius = 0.15f;
+                else if (cascade == 2)
+                    minRadius = 0.50f;
+                else if (cascade == 3) 
+                    minRadius = 1.50f;
+
+                if (packet.BoundingRadius < minRadius)
+                    continue;
+
                 glm::vec4 centerNDC = M * glm::vec4(packet.BoundingCenter, 1.0f);
                 float rX = packet.BoundingRadius * glm::length(glm::vec3(M[0][0], M[1][0], M[2][0]));
                 float rY = packet.BoundingRadius * glm::length(glm::vec3(M[0][1], M[1][1], M[2][1]));
                 float rZ = packet.BoundingRadius * glm::length(glm::vec3(M[0][2], M[1][2], M[2][2]));
 
-                if (!(glm::abs(centerNDC.x) <= 1.0f + rX &&
-                    glm::abs(centerNDC.y) <= 1.0f + rY &&
-                    centerNDC.z >= -1.0f - rZ &&
-                    centerNDC.z <= 1.0f + rZ))
+                if (!(glm::abs(centerNDC.x) <= 1.0f + rX && glm::abs(centerNDC.y) <= 1.0f + rY &&
+                    centerNDC.z >= -1.0f - rZ && centerNDC.z <= 1.0f + rZ))
                 {
                     continue;
                 }
@@ -985,7 +1112,8 @@ namespace RXNEngine {
                     const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
                     RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-                    if (cascade == 0) {
+                    if (cascade == 0)
+                    {
                         m_Data->Stats.DrawCalls++;
                         m_Data->Stats.Instances += transformCount;
                         m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
@@ -1006,7 +1134,8 @@ namespace RXNEngine {
                 const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
                 RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
-                if (cascade == 0) {
+                if (cascade == 0)
+                {
                     m_Data->Stats.DrawCalls++;
                     m_Data->Stats.Instances += transformCount;
                     m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
@@ -1024,8 +1153,65 @@ namespace RXNEngine {
 
             uint32_t layer = (uint32_t)m_Data->LightBufferLocal.SpotLights[i].ExtraData.x;
 
+            glm::vec3 lightPos = m_Data->LightBufferLocal.SpotLights[i].Position;
+            float lightRadius = m_Data->LightBufferLocal.SpotLights[i].Direction.w;
+
+            int entityID = m_Data->SpotLightEntityIDs[i];
+            bool hasCache = false;
+            bool isCacheValid = false;
+            Entity entity;
+
+            if (m_Data->ActiveScene && entityID != -1)
+            {
+                entity = Entity((entt::entity)entityID, m_Data->ActiveScene);
+                if (entity && entity.HasComponent<SpotLightComponent>())
+                {
+                    hasCache = true;
+                    auto& slc = entity.GetComponent<SpotLightComponent>();
+
+                    if (glm::distance(slc.LastCachedPosition, lightPos) > 0.01f)
+                        slc.IsShadowCacheValid = false;
+
+                    if (slc.LastShadowLayer != (int)layer)
+                    {
+                        slc.IsShadowCacheValid = false;
+                        slc.LastShadowLayer = (int)layer;
+                    }
+
+                    isCacheValid = slc.IsShadowCacheValid;
+                }
+            }
+
+            bool isVolumeDirty = false;
+            uint32_t dynamicOverlapCount = 0;
+            uint32_t totalOverlapCount = 0;
+
+            for (const auto& packet : m_Data->ShadowQueue)
+            {
+                float distance = glm::distance(packet.BoundingCenter, lightPos);
+                if (distance <= lightRadius + packet.BoundingRadius)
+                {
+                    totalOverlapCount++;
+                    if (packet.IsDynamic)
+                    {
+                        isVolumeDirty = true;
+                        dynamicOverlapCount++;
+                    }
+                }
+            }
+
+            if (hasCache && isCacheValid && !isVolumeDirty)
+                continue;
+
             m_Data->SpotShadowTarget->BindWriteLayer(layer);
-            DrawShadowBatch(m_Data, m_Data->ShadowData.ShadowShader, m_Data->LightBufferLocal.SpotLights[i].LightSpaceMatrix, false);
+            DrawShadowBatch(m_Data, m_Data->ShadowData.ShadowShader, m_Data->LightBufferLocal.SpotLights[i].LightSpaceMatrix, false, lightPos, lightRadius);
+
+            if (hasCache)
+            {
+                auto& slc = entity.GetComponent<SpotLightComponent>();
+                slc.LastCachedPosition = lightPos;
+                slc.IsShadowCacheValid = !isVolumeDirty;
+            }
         }
     }
 
@@ -1040,6 +1226,53 @@ namespace RXNEngine {
 
             glm::vec3 lightPos = m_Data->LightBufferLocal.PointLights[i].Position;
             float farPlane = m_Data->LightBufferLocal.PointLights[i].Color.w; // Radius
+
+            int entityID = m_Data->PointLightEntityIDs[i];
+            bool hasCache = false;
+            bool isCacheValid = false;
+            Entity entity;
+
+            if (m_Data->ActiveScene && entityID != -1)
+            {
+                entity = Entity((entt::entity)entityID, m_Data->ActiveScene);
+                if (entity && entity.HasComponent<PointLightComponent>())
+                {
+                    hasCache = true;
+                    auto& plc = entity.GetComponent<PointLightComponent>();
+
+                    if (glm::distance(plc.LastCachedPosition, lightPos) > 0.01f)
+                        plc.IsShadowCacheValid = false;
+
+                    if (plc.LastShadowLayer != (int)layer)
+                    {
+                        plc.IsShadowCacheValid = false;
+                        plc.LastShadowLayer = (int)layer;
+                    }
+
+                    isCacheValid = plc.IsShadowCacheValid;
+                }
+            }
+
+            bool isVolumeDirty = false;
+            uint32_t dynamicOverlapCount = 0;
+            uint32_t totalOverlapCount = 0;
+
+            for (const auto& packet : m_Data->ShadowQueue)
+            {
+                float distance = glm::distance(packet.BoundingCenter, lightPos);
+                if (distance <= farPlane + packet.BoundingRadius)
+                {
+                    totalOverlapCount++;
+                    if (packet.IsDynamic)
+                    {
+                        isVolumeDirty = true;
+                        dynamicOverlapCount++;
+                    }
+                }
+            }
+
+            if (hasCache && isCacheValid && !isVolumeDirty)
+                continue;
 
             glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, farPlane);
             glm::mat4 shadowTransforms[] = {
@@ -1056,6 +1289,13 @@ namespace RXNEngine {
                 m_Data->PointShadowTarget->BindWriteLayer(layer, face);
                 DrawShadowBatch(m_Data, m_Data->PointShadowShader, shadowTransforms[face], true, lightPos, farPlane);
             }
+
+            if (hasCache)
+            {
+                auto& plc = entity.GetComponent<PointLightComponent>();
+                plc.LastCachedPosition = lightPos;
+                plc.IsShadowCacheValid = !isVolumeDirty;
+            }
         }
     }
 
@@ -1065,7 +1305,8 @@ namespace RXNEngine {
 
         auto drawQueue = [&](const std::vector<RenderCommandPacket>& queue)
             {
-                if (queue.empty()) return;
+                if (queue.empty())
+                    return;
 
                 auto batchStart = queue.begin();
                 InstanceData* batchData = m_Data->BatchBuffer.data();
@@ -1139,7 +1380,7 @@ namespace RXNEngine {
         return false;
     }
 
-    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius)
+    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius, bool isDynamic)
     {
         RenderCommandPacket packet;
         packet.Mesh = mesh;
@@ -1149,8 +1390,14 @@ namespace RXNEngine {
 
         packet.BoundingCenter = boundingCenter;
         packet.BoundingRadius = boundingRadius;
+        packet.IsDynamic = isDynamic;
 
         m_Data->ShadowQueue.push_back(packet);
+    }
+
+    void Renderer::SubmitShadowImpostorQuad(Entity entity)
+    {
+        //TODO
     }
 
     void Renderer::DrawShadowBatch(RendererData* data, Ref<Shader> shader, const glm::mat4& matrix, bool isOmni, const glm::vec3& lightPos, float farPlane)
@@ -1167,12 +1414,18 @@ namespace RXNEngine {
             return;
 
         glm::vec4 planes[6];
-        for (int i = 0; i < 4; ++i) planes[0][i] = matrix[i][3] + matrix[i][0]; // Left
-        for (int i = 0; i < 4; ++i) planes[1][i] = matrix[i][3] - matrix[i][0]; // Right
-        for (int i = 0; i < 4; ++i) planes[2][i] = matrix[i][3] + matrix[i][1]; // Bottom
-        for (int i = 0; i < 4; ++i) planes[3][i] = matrix[i][3] - matrix[i][1]; // Top
-        for (int i = 0; i < 4; ++i) planes[4][i] = matrix[i][3] + matrix[i][2]; // Near
-        for (int i = 0; i < 4; ++i) planes[5][i] = matrix[i][3] - matrix[i][2]; // Far
+        for (int i = 0; i < 4; ++i)
+            planes[0][i] = matrix[i][3] + matrix[i][0]; // Left
+        for (int i = 0; i < 4; ++i)
+            planes[1][i] = matrix[i][3] - matrix[i][0]; // Right
+        for (int i = 0; i < 4; ++i)
+            planes[2][i] = matrix[i][3] + matrix[i][1]; // Bottom
+        for (int i = 0; i < 4; ++i)
+            planes[3][i] = matrix[i][3] - matrix[i][1]; // Top
+        for (int i = 0; i < 4; ++i)
+            planes[4][i] = matrix[i][3] + matrix[i][2]; // Near
+        for (int i = 0; i < 4; ++i)
+            planes[5][i] = matrix[i][3] - matrix[i][2]; // Far
 
         for (int i = 0; i < 6; ++i)
         {
@@ -1186,24 +1439,21 @@ namespace RXNEngine {
 
         for (const auto& packet : data->ShadowQueue)
         {
+            float minRadius = isOmni ? 0.15f : 0.10f; // 15cm for points, 10cm for spots
+            if (packet.BoundingRadius < minRadius)
+                continue;
+
+            float dist = glm::distance(packet.BoundingCenter, lightPos);
+            if (dist > farPlane + packet.BoundingRadius)
+                continue;
+
             bool visible = true;
-
-            if (isOmni)
+            for (int i = 0; i < 6; ++i)
             {
-                float dist = glm::distance(packet.BoundingCenter, lightPos);
-                if (dist > farPlane + packet.BoundingRadius)
-                    visible = false;
-            }
-
-            if (visible)
-            {
-                for (int i = 0; i < 6; ++i)
+                if (glm::dot(glm::vec3(planes[i]), packet.BoundingCenter) + planes[i].w < -packet.BoundingRadius)
                 {
-                    if (glm::dot(glm::vec3(planes[i]), packet.BoundingCenter) + planes[i].w < -packet.BoundingRadius)
-                    {
-                        visible = false;
-                        break;
-                    }
+                    visible = false;
+                    break;
                 }
             }
 

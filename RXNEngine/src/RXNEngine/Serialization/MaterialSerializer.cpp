@@ -68,9 +68,14 @@ namespace RXNEngine {
                 data = YAML::LoadFile(filepath);
             }
         }
-        catch (const std::exception& e) { RXN_CORE_ERROR("Failed to load .rxnmat file '{0}'\n     {1}", filepath, e.what()); return false; }
+        catch (const std::exception& e)
+        {
+            RXN_CORE_ERROR("Failed to load .rxnmat file '{0}'\n     {1}", filepath, e.what());
+            return false;
+        }
 
-        if (!data["Material"]) return false;
+        if (!data["Material"])
+            return false;
 
         auto paramsNode = data["Parameters"];
         if (paramsNode)

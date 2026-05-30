@@ -571,6 +571,16 @@ namespace RXNEditor {
             {
                 auto assetManager = Application::Get().GetSubsystem<AssetManager>();
 
+                bool castsShadows = component.CastsShadows;
+                if (UI::DrawCheckbox("Casts Shadows", castsShadows))
+                {
+                    StaticMeshComponent oldState = component;
+                    StaticMeshComponent newState = component;
+                    newState.CastsShadows = castsShadows;
+
+                    CommandHistory::AddAndExecute(CreateScope<ChangeComponentCommand<StaticMeshComponent>>(m_Context, entity.GetUUID(), oldState, newState));
+                }
+
                 ImGui::Text("Mesh");
                 ImGui::SameLine(100.0f);
 
@@ -832,6 +842,16 @@ namespace RXNEditor {
                 m |= UI::DrawVec3Control("HalfExtents", component.HalfExtents, 0.5f);
                 m |= UI::DrawVec3Control("Offset", component.Offset);
                 m |= UI::DrawCheckbox("Is Trigger", component.IsTrigger);
+                m |= UI::DrawCheckbox("Ambient Zone", component.IsAmbientZone);
+
+                if (component.IsAmbientZone)
+                {
+                    ImGui::Indent();
+                    m |= UI::DrawFloatControl("Ambient Intensity", component.AmbientIntensity, 0.05f, 0.0f, 1.0f);
+                    m |= UI::DrawVec3Control("Transition Min", component.TransitionMin, 0.0f);
+                    m |= UI::DrawVec3Control("Transition Max", component.TransitionMax, 0.0f);
+                    ImGui::Unindent();
+                }
 
                 m_BoxColliderTracker.EndEdit(m_Context, entity, component, m);
                 drawPhysMat(component);

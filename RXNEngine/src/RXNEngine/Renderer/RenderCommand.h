@@ -4,6 +4,8 @@
 
 namespace RXNEngine {
 
+	class RenderTarget;
+
 	class RenderCommand
 	{
 	public:
@@ -86,6 +88,21 @@ namespace RXNEngine {
 		inline static void SetBlendEquation(RendererAPI::BlendEquation equation)
 		{
 			s_RendererAPI->SetBlendEquation(equation);
+		}
+
+		inline static void SetScissorTest(bool enabled)
+		{
+			s_RendererAPI->SetScissorTest(enabled);
+		}
+
+		inline static bool IsScissorTestEnabled()
+		{
+			return s_RendererAPI->IsScissorTestEnabled();
+		}
+
+		inline static void BlitRenderTarget(const Ref<RenderTarget>& src, const Ref<RenderTarget>& dst)
+		{
+			s_RendererAPI->BlitRenderTarget(src, dst);
 		}
 
 		inline static void BindDefaultRenderTarget()

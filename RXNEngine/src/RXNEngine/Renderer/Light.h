@@ -26,6 +26,7 @@ namespace RXNEngine {
         float Padding[3];
 
         bool CastsShadows = false;
+        int EntityID = -1;
     };
 
     struct SpotLight
@@ -48,6 +49,7 @@ namespace RXNEngine {
         float CookieSize = 1.0f;
 
         bool CastsShadows = false;
+        int EntityID = -1;
     };
 
     struct LightEnvironment
@@ -57,5 +59,10 @@ namespace RXNEngine {
         std::vector<SpotLight> SpotLights;
 
         float EnvironmentIntensity = 1.0f;
+
+        float ShadowLightSize = 0.12f;
+        float ShadowContactThreshold = 2.0f;
+        float ShadowContactSharpness = 2.0f;
+        float ShadowContactSharpeningBias = 1.0f;
     };
 }

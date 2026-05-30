@@ -17,6 +17,26 @@
 
 namespace RXNEngine {
 
+	struct SceneRendererSettings
+	{
+		float Exposure = 1.0f;
+		float Gamma = 2.2f;
+		bool AutoExposure = false; //TODO
+		bool ShowBoundingBoxes = false; //TODO
+		bool ShowColliders = false;
+
+		float BloomThreshold = 1.0f;
+		float BloomKnee = 0.1f;
+		float BloomIntensity = 0.04f;
+		float BloomFilterRadius = 0.005f;
+
+		// PCSS shadow controls
+		float LightSize = 0.12f;
+		float ContactThreshold = 2.0f;
+		float ContactSharpness = 2.0f;
+		float ContactSharpeningBias = 1.0f;
+	};
+
 	class Entity;
 
 	class Scene : public SubsystemRegistry
@@ -79,6 +99,7 @@ namespace RXNEngine {
 
 		Ref<Cubemap> m_Skybox = nullptr;
 		float m_SkyboxIntensity = 1.0f;
+		SceneRendererSettings m_RendererSettings;
 
 		uint32_t m_ViewportWidth = 0;
 		uint32_t m_ViewportHeight = 0;

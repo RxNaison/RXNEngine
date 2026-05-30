@@ -226,4 +226,10 @@ namespace RXNEngine {
 			Utils::TextureFormatToOpenGL(spec.TextureFormat), GL_INT, &value);
 	}
 
+	void OpenGLRenderTarget::GenerateMipmaps(uint32_t attachmentIndex)
+	{
+		RXN_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
+		glGenerateTextureMipmap(m_ColorAttachments[attachmentIndex]);
+	}
+
 }

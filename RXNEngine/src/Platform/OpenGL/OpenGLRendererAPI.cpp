@@ -1,5 +1,6 @@
 #include "rxnpch.h"
 #include "OpenGLRendererAPI.h"
+#include "RXNEngine/Renderer/RenderTarget.h"
 
 #include "glad/glad.h"
 
@@ -73,6 +74,7 @@ namespace RXNEngine {
 		glEnable(GL_STENCIL_TEST);
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 		glEnable(GL_CULL_FACE);
+		glEnable(GL_MULTISAMPLE);
 	}
 
 	void OpenGLRendererAPI::BindDefaultRenderTarget()
@@ -168,6 +170,32 @@ namespace RXNEngine {
 			};
 
 		glBlendEquation(BlendEquationToGL(equation));
+	}
+
+	void OpenGLRendererAPI::SetScissorTest(bool enabled)
+	{
+		if (enabled)
+			glEnable(GL_SCISSOR_TEST);
+		else
+			glDisable(GL_SCISSOR_TEST);
+	}
+
+	bool OpenGLRendererAPI::IsScissorTestEnabled()
+	{
+		return glIsEnabled(GL_SCISSOR_TEST);
+	}
+
+	void OpenGLRendererAPI::BlitRenderTarget(const Ref<RenderTarget>& src, const Ref<RenderTarget>& dst)
+	{
+		uint32_t srcWidth = (uint32_t)src->GetSpecification().Width;
+		uint32_t srcHeight = (uint32_t)src->GetSpecification().Height;
+		uint32_t dstWidth = (uint32_t)dst->GetSpecification().Width;
+		uint32_t dstHeight = (uint32_t)dst->GetSpecification().Height;
+
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, src->GetRendererID());
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->GetRendererID());
+		glBlitFramebuffer(0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	void OpenGLRendererAPI::SetStencilTest(bool enabled)

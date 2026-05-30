@@ -81,6 +81,8 @@ namespace RXNEngine {
 		Ref<Material> MaterialTableOverride = nullptr;
 		std::string MaterialAssetPath = "";
 
+		bool CastsShadows = true;
+
 		StaticMeshComponent() = default;
 		StaticMeshComponent(const StaticMeshComponent&) = default;
 	};
@@ -108,6 +110,10 @@ namespace RXNEngine {
 		float Falloff = 1.0f;
 
 		bool CastsShadows = false;
+
+		bool IsShadowCacheValid = false;
+		glm::vec3 LastCachedPosition = { 0.0f, 0.0f, 0.0f };
+		int LastShadowLayer = -1;
 	};
 
 	struct SpotLightComponent
@@ -116,8 +122,8 @@ namespace RXNEngine {
 		float Intensity = 1.0f;
 		float Radius = 10.0f;
 		float Falloff = 1.0f;
-		float InnerAngle = 12.5f; // In degrees
-		float OuterAngle = 17.5f; // In degrees
+		float InnerAngle = 12.5f; // in degrees
+		float OuterAngle = 17.5f; // in degrees
 
 		Ref<Texture2D> CookieTexture = nullptr;
 		Ref<VideoTexture> CookieVideo = nullptr;
@@ -126,6 +132,10 @@ namespace RXNEngine {
 		float CookieSize = 1.0f;
 
 		bool CastsShadows = false;
+
+		bool IsShadowCacheValid = false;
+		glm::vec3 LastCachedPosition = { 0.0f, 0.0f, 0.0f };
+		int LastShadowLayer = -1;
 	};
 
 	class ScriptableEntity;
@@ -185,6 +195,10 @@ namespace RXNEngine {
 		glm::vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
 		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
 		bool IsTrigger = false;
+		bool IsAmbientZone = false;
+		float AmbientIntensity = 1.0f;
+		glm::vec3 TransitionMin = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 TransitionMax = { 0.0f, 0.0f, 0.0f };
 
 		Ref<PhysicsMaterial> PhysicsMaterialAsset;
 		std::string PhysicsMaterialPath = "";
@@ -354,6 +368,15 @@ namespace RXNEngine {
 		UIButtonComponent(const UIButtonComponent&) = default;
 	};
 
+	struct FoliageComponent //TODO
+	{
+		std::string ImpostorAssetPath = "";
+		float ImpostorSize = 1.0f;
+
+		FoliageComponent() = default;
+		FoliageComponent(const FoliageComponent&) = default;
+	};
+
 	template<typename... Component>
 	struct ComponentGroup {};
 
@@ -378,6 +401,7 @@ namespace RXNEngine {
 		UITransformComponent,
 		UIImageComponent,
 		UITextComponent,
-		UIButtonComponent
+		UIButtonComponent,
+		FoliageComponent
 	>;
 }

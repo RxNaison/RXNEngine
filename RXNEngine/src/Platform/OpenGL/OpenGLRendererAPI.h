@@ -23,6 +23,10 @@ namespace RXNEngine {
 		virtual void SetBlendFunc(BlendFactor source, BlendFactor destination) override;
 		virtual void SetBlendEquation(BlendEquation equation) override;
 
+		virtual void SetScissorTest(bool enabled) override;
+		virtual bool IsScissorTestEnabled() override;
+		virtual void BlitRenderTarget(const Ref<RenderTarget>& src, const Ref<RenderTarget>& dst) override;
+
 		virtual void SetStencilTest(bool enabled) override;
 		virtual void SetStencilMask(uint32_t mask) override;
 		virtual void SetStencilFunc(StencilFunc func, int ref, uint32_t mask) override;

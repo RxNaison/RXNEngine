@@ -34,23 +34,19 @@ namespace RXNEngine {
         {
             for (int i = 0; i < 4; ++i)
                 Planes[0][i] = viewProj[i][3] + viewProj[i][0]; // Left
-
             for (int i = 0; i < 4; ++i)
                 Planes[1][i] = viewProj[i][3] - viewProj[i][0]; // Right
-
             for (int i = 0; i < 4; ++i)
                 Planes[2][i] = viewProj[i][3] + viewProj[i][1]; // Bottom
-
             for (int i = 0; i < 4; ++i)
                 Planes[3][i] = viewProj[i][3] - viewProj[i][1]; // Top
-
             for (int i = 0; i < 4; ++i)
                 Planes[4][i] = viewProj[i][3] + viewProj[i][2]; // Near
-
             for (int i = 0; i < 4; ++i)
                 Planes[5][i] = viewProj[i][3] - viewProj[i][2]; // Far
 
-            for (int i = 0; i < 6; ++i) {
+            for (int i = 0; i < 6; ++i)
+            {
                 float length = glm::length(glm::vec3(Planes[i]));
                 Planes[i] /= length;
             }
@@ -78,6 +74,7 @@ namespace RXNEngine {
         bool IsVisibleToShadows;
         glm::vec3 BoundingCenter;
         float BoundingRadius;
+        bool IsDynamic;
     };
 
     SceneRenderer::SceneRenderer(Ref<Scene> scene, const SceneRendererSpecification& spec)
@@ -99,7 +96,16 @@ namespace RXNEngine {
         geoSpec.Attachments = { RenderTargetTextureFormat::RGBA16F, RenderTargetTextureFormat::Depth };
         geoSpec.Width = width;
         geoSpec.Height = height;
+        geoSpec.Samples = 4;
         m_GeoPass = RenderTarget::Create(geoSpec);
+
+        RenderTargetSpecification resolveSpec;
+        resolveSpec.Attachments = { RenderTargetTextureFormat::RGBA16F, RenderTargetTextureFormat::Depth };
+        resolveSpec.Width = width;
+        resolveSpec.Height = height;
+        resolveSpec.Samples = 1;
+        m_ResolvePass = RenderTarget::Create(resolveSpec);
+        m_PrevResolvePass = RenderTarget::Create(resolveSpec);
 
         RenderTargetSpecification finalSpec;
         finalSpec.Attachments = { RenderTargetTextureFormat::RGBA8 };
@@ -119,6 +125,13 @@ namespace RXNEngine {
         maskSpec.Height = height;
         m_OutlineMaskPass = RenderTarget::Create(maskSpec);
 
+        RenderTargetSpecification aoSpec;
+        aoSpec.Attachments = { RenderTargetTextureFormat::RGBA8 };
+        aoSpec.Width = std::max(width / 4, 1u);
+        aoSpec.Height = std::max(height / 4, 1u);
+        aoSpec.Samples = 1;
+        m_AOPass = RenderTarget::Create(aoSpec);
+        m_AOBlurPass = RenderTarget::Create(aoSpec);
 
         m_PostProcessShader = Shader::Create("res/shaders/postprocess/screen.glsl");
         m_BloomDownsampleShader = Shader::Create("res/shaders/postprocess/bloom_downsample.glsl");
@@ -127,6 +140,9 @@ namespace RXNEngine {
         m_UIPickingShader = Shader::Create("res/shaders/editor_ui_picking.glsl");
         m_GridShader = Shader::Create("res/shaders/grid.glsl");
         m_OutlineMaskShader = Shader::Create("res/shaders/outline_mask.glsl");
+
+        m_AOShader = Shader::Create("res/shaders/postprocess/hbao.glsl");
+        m_AOBlurShader = Shader::Create("res/shaders/postprocess/ao_blur.glsl");
 
         float quadVertices[] = {
             -1.0f, -1.0f, 0.0f, 0.0f,  1.0f, -1.0f, 1.0f, 0.0f,
@@ -176,9 +192,17 @@ namespace RXNEngine {
             m_ViewportHeight = height;
 
             m_GeoPass->Resize(width, height);
+            m_ResolvePass->Resize(width, height);
+            m_PrevResolvePass->Resize(width, height);
             m_FinalPass->Resize(width, height);
             m_PickingPass->Resize(width, height);
             m_OutlineMaskPass->Resize(width, height);
+
+            uint32_t aoWidth = std::max(width / 4, 1u);
+            uint32_t aoHeight = std::max(height / 4, 1u);
+            m_AOPass->Resize(aoWidth, aoHeight);
+            m_AOBlurPass->Resize(aoWidth, aoHeight);
+
             m_Scene->OnViewportResize(width, height);
 
             m_BloomMips.clear();
@@ -208,6 +232,9 @@ namespace RXNEngine {
     void SceneRenderer::RenderEditor(uint32_t targetWidth, uint32_t targetHeight, float deltaTime, EditorCamera& camera, const std::vector<Entity>& selectedEntities)
     {
         RXN_PROFILE_SCOPE();
+
+        std::swap(m_ResolvePass, m_PrevResolvePass);
+        m_PrevResolvePass->GenerateMipmaps(0);
 
         if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
         {
@@ -256,9 +283,7 @@ namespace RXNEngine {
                     drawOutline(entity, drawOutline);
 
                     if (entity.HasComponent<UITransformComponent>() || entity.HasComponent<UICanvasComponent>())
-                    {
                         showScreenSpaceUI = true;
-                    }
                 }
             }
 
@@ -321,7 +346,7 @@ namespace RXNEngine {
         m_Scene->GetSubsystem<UISystem>()->Update(deltaTime);
 
         glm::mat4 cameraTransform = glm::inverse(camera.GetViewMatrix());
-        RenderScene(camera, cameraTransform, m_Settings.ShowColliders, deltaTime, selectedEntities);
+        RenderScene(camera, cameraTransform, GetSettings().ShowColliders, deltaTime, selectedEntities);
 
         m_GeoPass->Bind();
         RenderCommand::SetBlend(true);
@@ -344,15 +369,18 @@ namespace RXNEngine {
         RenderCommand::SetCullFace(RendererAPI::CullFace::Back);
         m_GeoPass->Unbind();
 
+        ResolveMSAA();
+        RenderAO(camera, cameraTransform);
         RenderBloom();
-        RenderPostProcess();
+        RenderPostProcess(false);
     }
-
-
 
     void SceneRenderer::RenderToTarget(uint32_t width, uint32_t height, Camera& camera, const glm::mat4& cameraTransform)
     {
         RXN_PROFILE_SCOPE();
+
+        std::swap(m_ResolvePass, m_PrevResolvePass);
+        m_PrevResolvePass->GenerateMipmaps(0);
 
         SetViewportSize(width, height);
 
@@ -370,8 +398,10 @@ namespace RXNEngine {
 
         m_GeoPass->Unbind();
 
+        ResolveMSAA();
+        RenderAO(camera, cameraTransform);
         RenderBloom();
-        RenderPostProcess();
+        RenderPostProcess(true);
     }
 
     int SceneRenderer::GetEntityIDAtMouse(int x, int y, const EditorCamera& camera, const std::vector<Entity>& selectedEntities)
@@ -394,9 +424,83 @@ namespace RXNEngine {
         return pixelData;
     }
 
-    void SceneRenderer::RenderPostProcess()
+    void SceneRenderer::ResolveMSAA()
     {
         RXN_PROFILE_SCOPE();
+
+        bool scissorEnabled = RenderCommand::IsScissorTestEnabled();
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(false);
+
+        RenderCommand::BlitRenderTarget(m_GeoPass, m_ResolvePass);
+
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(true);
+    }
+
+    void SceneRenderer::RenderAO(const Camera& camera, const glm::mat4& cameraTransform)
+    {
+        RXN_PROFILE_SCOPE();
+
+        uint32_t w = m_ViewportWidth > 0 ? m_ViewportWidth : 1;
+        uint32_t h = m_ViewportHeight > 0 ? m_ViewportHeight : 1;
+        uint32_t aoW = std::max(w / 4, 1u);
+        uint32_t aoH = std::max(h / 4, 1u);
+
+        bool scissorEnabled = RenderCommand::IsScissorTestEnabled();
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(false);
+
+        RenderCommand::SetDepthTest(false);
+        m_ScreenQuadVAO->Bind();
+
+        m_AOPass->Bind();
+        RenderCommand::SetViewport(0, 0, aoW, aoH);
+        RenderCommand::SetClearColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        RenderCommand::Clear();
+
+        m_AOShader->Bind();
+        m_AOShader->SetInt("u_DepthTexture", 0);
+        m_AOShader->SetMat4("u_InverseViewProjection", glm::inverse(camera.GetProjection() * glm::inverse(cameraTransform)));
+        m_AOShader->SetFloat2("u_TexelSize", glm::vec2(1.0f / (float)w, 1.0f / (float)h));
+
+        RenderCommand::BindTextureID(0, m_ResolvePass->GetDepthAttachmentRendererID());
+
+        RenderCommand::DrawIndexed(m_ScreenQuadVAO);
+        m_AOPass->Unbind();
+
+        m_AOBlurPass->Bind();
+        RenderCommand::SetViewport(0, 0, aoW, aoH);
+        RenderCommand::SetClearColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        RenderCommand::Clear();
+
+        m_AOBlurShader->Bind();
+        m_AOBlurShader->SetInt("u_AOTexture", 0);
+        m_AOBlurShader->SetInt("u_DepthTexture", 1);
+        m_AOBlurShader->SetMat4("u_InverseViewProjection", glm::inverse(camera.GetProjection() * glm::inverse(cameraTransform)));
+        m_AOBlurShader->SetFloat2("u_TexelSize", glm::vec2(1.0f / (float)aoW, 1.0f / (float)aoH));
+
+        RenderCommand::BindTextureID(0, m_AOPass->GetColorAttachmentRendererID());
+        RenderCommand::BindTextureID(1, m_ResolvePass->GetDepthAttachmentRendererID());
+
+        RenderCommand::DrawIndexed(m_ScreenQuadVAO);
+        m_AOBlurPass->Unbind();
+
+        RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
+
+        RenderCommand::SetDepthTest(true);
+
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(true);
+    }
+
+    void SceneRenderer::RenderPostProcess(bool enableMotionBlur)
+    {
+        RXN_PROFILE_SCOPE();
+
+        bool scissorEnabled = RenderCommand::IsScissorTestEnabled();
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(false);
 
         m_FinalPass->Bind();
 
@@ -407,20 +511,35 @@ namespace RXNEngine {
         m_PostProcessShader->SetInt("u_ScreenTexture", 0);
         m_PostProcessShader->SetInt("u_BloomTexture", 1);
         m_PostProcessShader->SetInt("u_OutlineTexture", 2);
+        m_PostProcessShader->SetInt("u_DepthTexture", 3);
+        m_PostProcessShader->SetInt("u_AOTexture", 4);
+
+        m_PostProcessShader->SetInt("u_EnableMotionBlur", enableMotionBlur ? 1 : 0);
+        m_PostProcessShader->SetMat4("u_InverseViewProjection", glm::inverse(m_CurrentViewProjection));
+
+        glm::mat4 reprojectionMatrix;
+        if (m_PrevViewProjection == m_CurrentViewProjection)
+            reprojectionMatrix = glm::mat4(1.0f);
+        else
+            reprojectionMatrix = m_PrevViewProjection * glm::inverse(m_CurrentViewProjection);
+        
+        m_PostProcessShader->SetMat4("u_ReprojectionMatrix", reprojectionMatrix);
 
         const auto& spec = m_FinalPass->GetSpecification();
         m_PostProcessShader->SetFloat2("u_TexelSize", glm::vec2(1.0f / spec.Width, 1.0f / spec.Height));
 
-        m_PostProcessShader->SetFloat("u_Exposure", m_Settings.Exposure);
-        m_PostProcessShader->SetFloat("u_Gamma", m_Settings.Gamma);
-        m_PostProcessShader->SetFloat("u_BloomIntensity", m_Settings.BloomIntensity);
+        m_PostProcessShader->SetFloat("u_Exposure", GetSettings().Exposure);
+        m_PostProcessShader->SetFloat("u_Gamma", GetSettings().Gamma);
+        m_PostProcessShader->SetFloat("u_BloomIntensity", GetSettings().BloomIntensity);
 
-        RenderCommand::BindTextureID(0, m_GeoPass->GetColorAttachmentRendererID());
+        RenderCommand::BindTextureID(0, m_ResolvePass->GetColorAttachmentRendererID());
 
         if (!m_BloomMips.empty())
             RenderCommand::BindTextureID(1, m_BloomMips[0].Target->GetColorAttachmentRendererID());
 
         RenderCommand::BindTextureID(2, m_OutlineMaskPass->GetColorAttachmentRendererID());
+        RenderCommand::BindTextureID(3, m_ResolvePass->GetDepthAttachmentRendererID());
+        RenderCommand::BindTextureID(4, m_AOBlurPass->GetColorAttachmentRendererID());
 
         m_ScreenQuadVAO->Bind();
         RenderCommand::DrawIndexed(m_ScreenQuadVAO);
@@ -428,13 +547,21 @@ namespace RXNEngine {
         RenderCommand::SetDepthTest(true);
 
         m_FinalPass->Unbind();
+
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(true);
     }
 
     void SceneRenderer::RenderBloom()
     {
         RXN_PROFILE_SCOPE();
 
-        if (m_BloomMips.empty()) return;
+        if (m_BloomMips.empty())
+            return;
+
+        bool scissorEnabled = RenderCommand::IsScissorTestEnabled();
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(false);
 
         RenderCommand::SetDepthTest(false);
         m_ScreenQuadVAO->Bind();
@@ -442,16 +569,16 @@ namespace RXNEngine {
         m_BloomDownsampleShader->Bind();
         m_BloomDownsampleShader->SetInt("u_Texture", 0);
 
-        float knee = m_Settings.BloomThreshold * m_Settings.BloomKnee;
+        float knee = GetSettings().BloomThreshold * GetSettings().BloomKnee;
         glm::vec4 filter = {
-            m_Settings.BloomThreshold,
-            m_Settings.BloomThreshold - knee,
+            GetSettings().BloomThreshold,
+            GetSettings().BloomThreshold - knee,
             2.0f * knee,
             0.25f / (knee + 0.00001f)
         };
         m_BloomDownsampleShader->SetFloat4("u_Threshold", filter);
 
-        uint32_t currentTexture = m_GeoPass->GetColorAttachmentRendererID();
+        uint32_t currentTexture = m_ResolvePass->GetColorAttachmentRendererID();
 
         for (uint32_t i = 0; i < m_BloomMips.size(); i++)
         {
@@ -472,7 +599,7 @@ namespace RXNEngine {
 
         m_BloomUpsampleShader->Bind();
         m_BloomUpsampleShader->SetInt("u_Texture", 0);
-        m_BloomUpsampleShader->SetFloat("u_FilterRadius", m_Settings.BloomFilterRadius);
+        m_BloomUpsampleShader->SetFloat("u_FilterRadius", GetSettings().BloomFilterRadius);
 
         RenderCommand::SetBlend(true);
         RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::One, RendererAPI::BlendFactor::One);
@@ -495,18 +622,35 @@ namespace RXNEngine {
 
         RenderCommand::SetBlendFunc(RendererAPI::BlendFactor::SrcAlpha, RendererAPI::BlendFactor::OneMinusSrcAlpha);
         RenderCommand::SetDepthTest(true);
+
+        if (scissorEnabled)
+            RenderCommand::SetScissorTest(true);
     }
 
 
     void SceneRenderer::RenderScene(const Camera& camera, const glm::mat4& cameraTransform, bool showColliders, float deltaTime, const std::vector<Entity>& selectedEntities)
     {
+        glm::mat4 viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
+        if (m_IsFirstFrame)
+        {
+            m_PrevViewProjection = viewProj;
+            m_IsFirstFrame = false;
+        }
+        else
+        {
+            m_PrevViewProjection = m_CurrentViewProjection;
+        }
+        m_CurrentViewProjection = viewProj;
+
+        ViewFrustum frustum;
+        frustum.Extract(viewProj);
+
         LightEnvironment lightEnv;
         {
             auto view = m_Scene->m_Registry.view<DirectionalLightComponent, TransformComponent>();
             for (auto entity : view)
             {
                 auto [light, transform] = view.get<DirectionalLightComponent, TransformComponent>(entity);
-
                 glm::vec3 direction = glm::toMat3(glm::quat(transform.Rotation)) * glm::vec3(0, 0, -1);
 
                 lightEnv.DirLight.Direction = direction;
@@ -514,20 +658,26 @@ namespace RXNEngine {
                 lightEnv.DirLight.Intensity = light.Intensity;
             }
         }
+
         {
             auto view = m_Scene->m_Registry.view<PointLightComponent>();
             for (auto entity : view)
             {
                 auto light = view.get<PointLightComponent>(entity);
                 glm::mat4 worldTransform = m_Scene->GetWorldTransform({ entity, m_Scene.get() });
+                glm::vec3 position = glm::vec3(worldTransform[3]);
+
+                if (!frustum.IsSphereVisible(position, light.Radius))
+                    continue;
 
                 PointLight pl;
-                pl.Position = glm::vec3(worldTransform[3]);
+                pl.Position = position;
                 pl.Color = light.Color;
                 pl.Intensity = light.Intensity;
                 pl.Radius = light.Radius;
                 pl.Falloff = light.Falloff;
                 pl.CastsShadows = light.CastsShadows;
+                pl.EntityID = (int)(uint32_t)entity;
                 lightEnv.PointLights.push_back(pl);
             }
         }
@@ -546,9 +696,13 @@ namespace RXNEngine {
             {
                 auto light = view.get<SpotLightComponent>(entity);
                 glm::mat4 worldTransform = m_Scene->GetWorldTransform({ entity, m_Scene.get() });
+                glm::vec3 position = glm::vec3(worldTransform[3]);
+
+                if (!frustum.IsSphereVisible(position, light.Radius))
+                    continue;
 
                 SpotLight sl;
-                sl.Position = glm::vec3(worldTransform[3]);
+                sl.Position = position;
                 sl.Direction = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
 
                 glm::vec3 up = glm::normalize(glm::vec3(worldTransform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
@@ -564,6 +718,7 @@ namespace RXNEngine {
                 sl.CutOff = glm::cos(glm::radians(light.InnerAngle));
                 sl.OuterCutOff = glm::cos(glm::radians(light.OuterAngle));
                 sl.CastsShadows = light.CastsShadows;
+                sl.EntityID = (int)(uint32_t)entity;
 
                 sl.CookieTexture = light.IsVideo ?
                     (light.CookieVideo ? light.CookieVideo->GetTexture() : nullptr) : light.CookieTexture;
@@ -594,11 +749,15 @@ namespace RXNEngine {
         auto jobSys = Application::Get().GetSubsystem<JobSystem>();
 
         lightEnv.EnvironmentIntensity = m_Scene->m_SkyboxIntensity;
-        renderSys->BeginScene(camera, cameraTransform, lightEnv, m_Scene->m_Skybox, m_GeoPass);
+        lightEnv.ShadowLightSize = GetSettings().LightSize;
+        lightEnv.ShadowContactThreshold = GetSettings().ContactThreshold;
+        lightEnv.ShadowContactSharpness = GetSettings().ContactSharpness;
+        lightEnv.ShadowContactSharpeningBias = GetSettings().ContactSharpeningBias;
 
-        glm::mat4 viewProj = camera.GetProjection() * glm::inverse(cameraTransform);
-        ViewFrustum frustum;
-        frustum.Extract(viewProj);
+        renderSys->BeginScene(camera, cameraTransform, lightEnv, m_Scene->m_Skybox, m_GeoPass, m_Scene.get(), m_PrevViewProjection);
+
+        RenderCommand::BindTextureID(15, m_PrevResolvePass->GetColorAttachmentRendererID());
+        RenderCommand::BindTextureID(24, m_PrevResolvePass->GetDepthAttachmentRendererID());
 
         std::vector<RenderCommandData> renderQueue;
         std::mutex queueMutex;
@@ -610,7 +769,8 @@ namespace RXNEngine {
         {
             uint32_t threadCount = jobSys->GetThreadCount();
             uint32_t viewSize = (uint32_t)entities.size() / threadCount;
-            if (viewSize == 0) viewSize = 1;
+            if (viewSize == 0)
+                viewSize = 1;
 
             jobSys->Dispatch(entities.size(), viewSize, [&](JobDispatchArgs args)
                 {
@@ -629,26 +789,80 @@ namespace RXNEngine {
                     glm::vec3 center = (worldAABB.Min + worldAABB.Max) * 0.5f;
                     float radius = glm::distance(worldAABB.Min, worldAABB.Max) * 0.5f;
 
-                    bool isVisible = frustum.IsSphereVisible(center, radius);
-                    bool isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
+                    bool castsShadows = mc.CastsShadows;
 
-                    bool isVisibleToLocalLights = false;
-                    for (const auto& pl : lightEnv.PointLights)
+                    bool isDynamic = false;
+                    if (e != entt::null)
                     {
-                        if (pl.CastsShadows && glm::distance(center, pl.Position) <= pl.Radius + radius)
+                        entt::entity current = e;
+                        while (current != entt::null)
                         {
-                            isVisibleToLocalLights = true;
+                            if (m_Scene->m_Registry.all_of<RigidbodyComponent>(current))
+                            {
+                                auto& rb = m_Scene->m_Registry.get<RigidbodyComponent>(current);
+                                isDynamic = (rb.Type == RigidbodyComponent::BodyType::Dynamic || rb.Type == RigidbodyComponent::BodyType::Kinematic);
+                                break;
+                            }
+                            if (m_Scene->m_Registry.all_of<CharacterControllerComponent>(current))
+                            {
+                                isDynamic = true;
+                                break;
+                            }
+                            
+                            if (m_Scene->m_Registry.all_of<RelationshipComponent>(current))
+                            {
+                                auto& rc = m_Scene->m_Registry.get<RelationshipComponent>(current);
+                                if (rc.ParentHandle != 0)
+                                {
+                                    Entity parent = m_Scene->GetEntityByUUID(rc.ParentHandle);
+                                    if (parent)
+                                    {
+                                        current = (entt::entity)parent;
+                                        continue;
+                                    }
+                                }
+                            }
                             break;
                         }
                     }
-                    if (!isVisibleToLocalLights)
+
+                    bool isVisible = frustum.IsSphereVisible(center, radius);
+                    float distanceToCam = glm::distance(worldPos, cameraPos);
+                    float maxShadowDistance = 150.0f;
+
+                    bool isVisibleToShadows = false;
+                    if (castsShadows && distanceToCam <= maxShadowDistance + radius)
                     {
-                        for (const auto& sl : lightEnv.SpotLights)
+                        isVisibleToShadows = renderSys->IsSphereVisibleToShadows(center, radius);
+
+                        if (e != entt::null && m_Scene->m_Registry.all_of<FoliageComponent>(e) && distanceToCam > 60.0f)
                         {
-                            if (sl.CastsShadows && glm::distance(center, sl.Position) <= sl.Radius + radius)
+                            Entity foliageEntity = { e, m_Scene.get() };
+                            renderSys->SubmitShadowImpostorQuad(foliageEntity);
+                            isVisibleToShadows = false;
+                        }
+                    }
+
+                    bool isVisibleToLocalLights = false;
+                    if (castsShadows)
+                    {
+                        for (const auto& pl : lightEnv.PointLights)
+                        {
+                            if (pl.CastsShadows && glm::distance(center, pl.Position) <= pl.Radius + radius)
                             {
                                 isVisibleToLocalLights = true;
                                 break;
+                            }
+                        }
+                        if (!isVisibleToLocalLights)
+                        {
+                            for (const auto& sl : lightEnv.SpotLights)
+                            {
+                                if (sl.CastsShadows && glm::distance(center, sl.Position) <= sl.Radius + radius)
+                                {
+                                    isVisibleToLocalLights = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -666,9 +880,10 @@ namespace RXNEngine {
 
                     cmd.BoundingCenter = center;
                     cmd.BoundingRadius = radius;
+                    cmd.IsDynamic = isDynamic;
 
                     cmd.IsVisibleToCamera = isVisible;
-                    cmd.IsVisibleToShadows = isVisible || isVisibleToShadows || isVisibleToLocalLights;
+                    cmd.IsVisibleToShadows = castsShadows && (isVisible || isVisibleToShadows || isVisibleToLocalLights);
 
                     {
                         std::lock_guard<std::mutex> lock(queueMutex);
@@ -685,13 +900,13 @@ namespace RXNEngine {
                 renderSys->Submit(cmd.Mesh, cmd.SubmeshIndex, cmd.Material, cmd.Transform, cmd.EntityID);
 
             if (cmd.IsVisibleToShadows)
-                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID, cmd.BoundingCenter, cmd.BoundingRadius);
+                renderSys->SubmitShadowCaster(cmd.Mesh, cmd.SubmeshIndex, cmd.Transform, cmd.EntityID, cmd.BoundingCenter, cmd.BoundingRadius, cmd.IsDynamic);
         }
 
         if (m_Scene->m_Skybox)
             renderSys->DrawSkybox(m_Scene->m_Skybox, camera, cameraTransform);
 
-        if (m_Settings.ShowColliders)
+        if (GetSettings().ShowColliders)
         {
             {
                 auto view = m_Scene->m_Registry.view<TransformComponent, BoxColliderComponent>();
@@ -913,15 +1128,19 @@ namespace RXNEngine {
 
     void SceneRenderer::RenderRuntime(uint32_t targetWidth, uint32_t targetHeight)
     {
-
         RXN_PROFILE_SCOPE();
+        std::swap(m_ResolvePass, m_PrevResolvePass);
+        m_PrevResolvePass->GenerateMipmaps(0);
 
         Entity cameraEntity = m_Scene->GetPrimaryCameraEntity();
-        if (!cameraEntity) return;
+
+        if (!cameraEntity)
+            return;
+
         Camera& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
         glm::mat4 cameraTransform = m_Scene->GetWorldTransform(cameraEntity);
         Ref<RenderTarget>& renderTarget = m_GeoPass;
-        bool showColliders = m_Settings.ShowColliders;
+        bool showColliders = GetSettings().ShowColliders;
 
         if (targetWidth > 0 && targetHeight > 0 && (m_ViewportWidth != targetWidth || m_ViewportHeight != targetHeight))
             SetViewportSize(targetWidth, targetHeight);
@@ -936,17 +1155,22 @@ namespace RXNEngine {
         RenderCommand::SetDepthTest(true);
         RenderCommand::Clear();
 
-        RenderScene(camera, cameraTransform, m_Settings.ShowColliders);
+        RenderScene(camera, cameraTransform, GetSettings().ShowColliders);
 
         renderTarget->Bind();
         RenderCommand::SetBlend(true);
         RenderUI(camera, cameraTransform, true);   // World Space
-        RenderUI(camera, cameraTransform, false);  // Screen Space
         renderTarget->Unbind();
 
+        ResolveMSAA();
+        RenderAO(camera, cameraTransform);
         RenderBloom();
-        RenderPostProcess();
-    
+        RenderPostProcess(true);
+
+        m_FinalPass->Bind();
+        RenderCommand::SetBlend(true);
+        RenderUI(camera, cameraTransform, false);  // Screen Space
+        m_FinalPass->Unbind();
     }
 
     void SceneRenderer::RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace, const std::vector<Entity>& selectedEntities)

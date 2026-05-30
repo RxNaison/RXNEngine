@@ -24,9 +24,7 @@ namespace RXNEngine {
         {
             m_VideoBuffer = vfs->ReadFile(filepath);
             if (!m_VideoBuffer.empty())
-            {
                 plm = plm_create_with_memory(m_VideoBuffer.data(), m_VideoBuffer.size(), 0);
-            }
         }
         else
         {

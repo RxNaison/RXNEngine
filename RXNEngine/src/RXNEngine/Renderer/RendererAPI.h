@@ -6,6 +6,8 @@
 
 namespace RXNEngine {
 
+	class RenderTarget;
+
 	class RendererAPI
 	{
 	public:
@@ -95,6 +97,11 @@ namespace RXNEngine {
 		virtual void SetBlend(bool enabled) = 0;
 		virtual void SetBlendFunc(BlendFactor source, BlendFactor destination) = 0;
 		virtual void SetBlendEquation(BlendEquation equation) = 0;
+
+		virtual void SetScissorTest(bool enabled) = 0;
+		virtual bool IsScissorTestEnabled() = 0;
+
+		virtual void BlitRenderTarget(const Ref<RenderTarget>& src, const Ref<RenderTarget>& dst) = 0;
 
 		virtual void SetStencilTest(bool enabled) = 0;
 		virtual void SetStencilMask(uint32_t mask) = 0;

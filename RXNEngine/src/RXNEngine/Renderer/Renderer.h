@@ -13,6 +13,9 @@
 
 namespace RXNEngine {
 
+    class Entity;
+    class Scene;
+
     struct RenderCommandPacket
     {
         Ref<StaticMesh> Mesh = nullptr;
@@ -26,6 +29,7 @@ namespace RXNEngine {
 
         glm::vec3 BoundingCenter = { 0.0f, 0.0f, 0.0f };
         float BoundingRadius = 0.0f;
+        bool IsDynamic = false;
     };
 
     struct InstanceData
@@ -58,10 +62,10 @@ namespace RXNEngine {
         void OnWindowResize(uint32_t width, uint32_t height);
 
         void BeginScene(const Camera& camera, const glm::mat4& transform, const LightEnvironment& lights,
-            const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr);
+            const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr, Scene* scene = nullptr, const glm::mat4& prevViewProj = glm::mat4(1.0f));
 
         void BeginScene(const EditorCamera& camera, const LightEnvironment& lights,
-            const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr);
+            const Ref<Cubemap>& environment = nullptr, const Ref<RenderTarget>& renderTarget = nullptr, Scene* scene = nullptr, const glm::mat4& prevViewProj = glm::mat4(1.0f));
 
         void EndScene();
 
@@ -88,7 +92,8 @@ namespace RXNEngine {
         void ExecutePickingPass(const Ref<Shader>& pickingShader);
 
         bool IsSphereVisibleToShadows(const glm::vec3& center, float radius);
-        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius);
+        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius, bool isDynamic = false);
+        void SubmitShadowImpostorQuad(Entity entity);
 
         RendererStatistics GetStats();
         void ResetStats();
@@ -97,7 +102,7 @@ namespace RXNEngine {
 
     private:
         void PrepareScene(const glm::mat4& viewProjection, const glm::mat4& viewMatrix, const glm::vec3& cameraPosition, float cameraFOV,
-            const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget);
+            const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget, Scene* scene = nullptr, const glm::mat4& prevViewProj = glm::mat4(1.0f));
 
         void ExecuteQueue(const std::vector<const RenderCommandPacket*>& queue);
         void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count);

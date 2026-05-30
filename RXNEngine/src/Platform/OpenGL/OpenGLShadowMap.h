@@ -18,6 +18,7 @@ namespace RXNEngine {
 	private:
 		uint32_t m_FBO = 0;
 		uint32_t m_DepthMapTexture = 0;
+		uint32_t m_RawSampler = 0;
 		uint32_t m_Size = 0;
 		bool m_IsCubemap = false;
 	};

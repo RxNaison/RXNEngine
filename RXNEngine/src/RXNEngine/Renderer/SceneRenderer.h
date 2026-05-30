@@ -23,19 +23,7 @@ namespace RXNEngine {
     class SceneRenderer
     {
     public:
-        struct Settings
-        {
-            float Exposure = 1.0f;
-            float Gamma = 2.2f;
-            bool AutoExposure = false; //TODO
-            bool ShowBoundingBoxes = false; //TODO
-            bool ShowColliders = false;
-
-            float BloomThreshold = 1.0f;
-            float BloomKnee = 0.1f;
-            float BloomIntensity = 0.04f;
-            float BloomFilterRadius = 0.005f;
-        };
+        using Settings = SceneRendererSettings;
     public:
         SceneRenderer(Ref<Scene> scene, const SceneRendererSpecification& spec = SceneRendererSpecification());
         ~SceneRenderer();
@@ -53,20 +41,26 @@ namespace RXNEngine {
         Ref<RenderTarget> GetFinalPass() { return m_FinalPass; }
         uint32_t GetFinalColorAttachmentRendererID() { return m_FinalPass->GetColorAttachmentRendererID(); }
 
-        Settings& GetSettings() { return m_Settings; }
+        Settings& GetSettings() { return m_Scene ? m_Scene->m_RendererSettings : m_Settings; }
+        const Settings& GetSettings() const { return m_Scene ? m_Scene->m_RendererSettings : m_Settings; }
         int GetEntityIDAtMouse(int x, int y, const EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
 
-        void RenderPostProcess();
+        void RenderPostProcess(bool enableMotionBlur = true);
         void RenderBloom();
+        void ResolveMSAA();
         void RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace, const std::vector<Entity>& selectedEntities = {});
         void RenderUIPicking(const EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
         void RenderScene(const Camera& camera, const glm::mat4& cameraTransform, bool showColliders, float deltaTime = 0.0f, const std::vector<Entity>& selectedEntities = {});
+    private:
+        void RenderAO(const Camera& camera, const glm::mat4& cameraTransform);
     private:
         Ref<Scene> m_Scene;
         SceneRendererSpecification m_Specification;
         Settings m_Settings;
 
         Ref<RenderTarget> m_GeoPass;
+        Ref<RenderTarget> m_ResolvePass;
+        Ref<RenderTarget> m_PrevResolvePass;
         Ref<RenderTarget> m_FinalPass;
 
         Ref<RenderTarget> m_PickingPass;
@@ -87,6 +81,14 @@ namespace RXNEngine {
         Ref<RenderTarget> m_OutlineMaskPass;
         Ref<Shader> m_OutlineMaskShader;
 
+        Ref<RenderTarget> m_AOPass;
+        Ref<RenderTarget> m_AOBlurPass;
+        Ref<Shader> m_AOShader;
+        Ref<Shader> m_AOBlurShader;
+
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+        bool m_IsFirstFrame = true;
+        glm::mat4 m_CurrentViewProjection = glm::mat4(1.0f);
+        glm::mat4 m_PrevViewProjection = glm::mat4(1.0f);
     };
 }

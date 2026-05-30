@@ -141,6 +141,9 @@ namespace RXNEngine {
                 shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, true);
             }
 
+            if (bc.IsAmbientZone)
+                shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, false);
+
             bc.RuntimeShape = shape;
         }
 

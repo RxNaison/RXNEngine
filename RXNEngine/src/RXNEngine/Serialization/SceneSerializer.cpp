@@ -102,6 +102,7 @@ namespace RXNEngine {
 			out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mc.AssetPath);
 			out << YAML::Key << "SubmeshIndex" << YAML::Value << mc.SubmeshIndex;
 			out << YAML::Key << "MaterialAssetPath" << YAML::Value << FileSystem::GetRelativePath(mc.MaterialAssetPath);
+			out << YAML::Key << "CastsShadows" << YAML::Value << mc.CastsShadows;
 
 			out << YAML::EndMap;
 		}
@@ -182,6 +183,10 @@ namespace RXNEngine {
 			out << YAML::Key << "HalfExtents" << YAML::Value << bc.HalfExtents;
 			out << YAML::Key << "Offset" << YAML::Value << bc.Offset;
 			out << YAML::Key << "IsTrigger" << YAML::Value << bc.IsTrigger;
+			out << YAML::Key << "IsAmbientZone" << YAML::Value << bc.IsAmbientZone;
+			out << YAML::Key << "AmbientIntensity" << YAML::Value << bc.AmbientIntensity;
+			out << YAML::Key << "TransitionMin" << YAML::Value << bc.TransitionMin;
+			out << YAML::Key << "TransitionMax" << YAML::Value << bc.TransitionMax;
 			out << YAML::Key << "PhysicsMaterialPath" << YAML::Value << FileSystem::GetRelativePath(bc.PhysicsMaterialPath);
 
 			out << YAML::EndMap; // BoxColliderComponent
@@ -449,6 +454,9 @@ namespace RXNEngine {
 					mc.MaterialTableOverride = Application::Get().GetSubsystem<AssetManager>()->GetMaterial(matPath);
 				}
 			}
+
+			if (staticMeshComponent["CastsShadows"])
+				mc.CastsShadows = staticMeshComponent["CastsShadows"].as<bool>();
 		}
 
 		auto directionalLightComponent = entity["DirectionalLightComponent"];
@@ -552,6 +560,14 @@ namespace RXNEngine {
 				bc.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
 			if (boxColliderComponent["IsTrigger"])
 				bc.IsTrigger = boxColliderComponent["IsTrigger"].as<bool>();
+			if (boxColliderComponent["IsAmbientZone"])
+				bc.IsAmbientZone = boxColliderComponent["IsAmbientZone"].as<bool>();
+			if (boxColliderComponent["AmbientIntensity"])
+				bc.AmbientIntensity = boxColliderComponent["AmbientIntensity"].as<float>();
+			if (boxColliderComponent["TransitionMin"])
+				bc.TransitionMin = boxColliderComponent["TransitionMin"].as<glm::vec3>();
+			if (boxColliderComponent["TransitionMax"])
+				bc.TransitionMax = boxColliderComponent["TransitionMax"].as<glm::vec3>();
 
 			if (boxColliderComponent["PhysicsMaterialPath"])
 			{
@@ -833,6 +849,21 @@ namespace RXNEngine {
 			out << YAML::EndMap;
 		}
 
+		out << YAML::Key << "RendererSettings";
+		out << YAML::BeginMap;
+		out << YAML::Key << "Exposure" << YAML::Value << m_Scene->m_RendererSettings.Exposure;
+		out << YAML::Key << "Gamma" << YAML::Value << m_Scene->m_RendererSettings.Gamma;
+		out << YAML::Key << "BloomThreshold" << YAML::Value << m_Scene->m_RendererSettings.BloomThreshold;
+		out << YAML::Key << "BloomKnee" << YAML::Value << m_Scene->m_RendererSettings.BloomKnee;
+		out << YAML::Key << "BloomIntensity" << YAML::Value << m_Scene->m_RendererSettings.BloomIntensity;
+		out << YAML::Key << "BloomFilterRadius" << YAML::Value << m_Scene->m_RendererSettings.BloomFilterRadius;
+		out << YAML::Key << "ShowColliders" << YAML::Value << m_Scene->m_RendererSettings.ShowColliders;
+		out << YAML::Key << "LightSize" << YAML::Value << m_Scene->m_RendererSettings.LightSize;
+		out << YAML::Key << "ContactThreshold" << YAML::Value << m_Scene->m_RendererSettings.ContactThreshold;
+		out << YAML::Key << "ContactSharpness" << YAML::Value << m_Scene->m_RendererSettings.ContactSharpness;
+		out << YAML::Key << "ContactSharpeningBias" << YAML::Value << m_Scene->m_RendererSettings.ContactSharpeningBias;
+		out << YAML::EndMap;
+
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 		m_Scene->GetRaw().view<entt::entity>().each([&](auto entityID)
 			{
@@ -949,7 +980,7 @@ namespace RXNEngine {
 
 		// Magic and header
 		writer.WriteBytes("RXNBIN\0\0", 8);
-		uint32_t version = 1;
+		uint32_t version = 2;
 		writer.Write(version);
 		// Scene properties
 		Entity primaryCam = m_Scene->GetPrimaryCameraEntity();
@@ -965,6 +996,19 @@ namespace RXNEngine {
 		}
 		writer.WriteString(skyboxPath);
 		writer.Write(skyboxIntensity);
+
+		// Renderer settings
+		writer.Write(m_Scene->m_RendererSettings.Exposure);
+		writer.Write(m_Scene->m_RendererSettings.Gamma);
+		writer.Write(m_Scene->m_RendererSettings.BloomThreshold);
+		writer.Write(m_Scene->m_RendererSettings.BloomKnee);
+		writer.Write(m_Scene->m_RendererSettings.BloomIntensity);
+		writer.Write(m_Scene->m_RendererSettings.BloomFilterRadius);
+		writer.Write(m_Scene->m_RendererSettings.ShowColliders);
+		writer.Write(m_Scene->m_RendererSettings.LightSize);
+		writer.Write(m_Scene->m_RendererSettings.ContactThreshold);
+		writer.Write(m_Scene->m_RendererSettings.ContactSharpness);
+		writer.Write(m_Scene->m_RendererSettings.ContactSharpeningBias);
 
 		// Gather entities
 		std::vector<entt::entity> entities;
@@ -1110,6 +1154,10 @@ namespace RXNEngine {
 				writer.Write(bc.HalfExtents);
 				writer.Write(bc.Offset);
 				writer.Write(bc.IsTrigger);
+				writer.Write(bc.IsAmbientZone);
+				writer.Write(bc.AmbientIntensity);
+				writer.Write(bc.TransitionMin);
+				writer.Write(bc.TransitionMax);
 				writer.WriteString(bc.PhysicsMaterialPath);
 			}
 
@@ -1272,6 +1320,22 @@ namespace RXNEngine {
 				m_Scene->m_SkyboxIntensity = skyboxData["Intensity"].as<float>();
 		}
 
+		auto rendererSettings = data["RendererSettings"];
+		if (rendererSettings)
+		{
+			if (rendererSettings["Exposure"]) m_Scene->m_RendererSettings.Exposure = rendererSettings["Exposure"].as<float>();
+			if (rendererSettings["Gamma"]) m_Scene->m_RendererSettings.Gamma = rendererSettings["Gamma"].as<float>();
+			if (rendererSettings["BloomThreshold"]) m_Scene->m_RendererSettings.BloomThreshold = rendererSettings["BloomThreshold"].as<float>();
+			if (rendererSettings["BloomKnee"]) m_Scene->m_RendererSettings.BloomKnee = rendererSettings["BloomKnee"].as<float>();
+			if (rendererSettings["BloomIntensity"]) m_Scene->m_RendererSettings.BloomIntensity = rendererSettings["BloomIntensity"].as<float>();
+			if (rendererSettings["BloomFilterRadius"]) m_Scene->m_RendererSettings.BloomFilterRadius = rendererSettings["BloomFilterRadius"].as<float>();
+			if (rendererSettings["ShowColliders"]) m_Scene->m_RendererSettings.ShowColliders = rendererSettings["ShowColliders"].as<bool>();
+			if (rendererSettings["LightSize"]) m_Scene->m_RendererSettings.LightSize = rendererSettings["LightSize"].as<float>();
+			if (rendererSettings["ContactThreshold"]) m_Scene->m_RendererSettings.ContactThreshold = rendererSettings["ContactThreshold"].as<float>();
+			if (rendererSettings["ContactSharpness"]) m_Scene->m_RendererSettings.ContactSharpness = rendererSettings["ContactSharpness"].as<float>();
+			if (rendererSettings["ContactSharpeningBias"]) m_Scene->m_RendererSettings.ContactSharpeningBias = rendererSettings["ContactSharpeningBias"].as<float>();
+		}
+
 		auto entities = data["Entities"];
 		if (entities)
 		{
@@ -1348,7 +1412,7 @@ namespace RXNEngine {
 
 		uint32_t version = 0;
 		reader.Read(version);
-		if (version != 1)
+		if (version != 1 && version != 2)
 		{
 			RXN_CORE_ERROR("Unsupported binary scene version {0} in file '{1}'", version, filepath);
 			return false;
@@ -1360,6 +1424,21 @@ namespace RXNEngine {
 		std::string skyboxPath = reader.ReadString();
 		float skyboxIntensity = 1.0f;
 		reader.Read(skyboxIntensity);
+
+		if (version == 2)
+		{
+			reader.Read(m_Scene->m_RendererSettings.Exposure);
+			reader.Read(m_Scene->m_RendererSettings.Gamma);
+			reader.Read(m_Scene->m_RendererSettings.BloomThreshold);
+			reader.Read(m_Scene->m_RendererSettings.BloomKnee);
+			reader.Read(m_Scene->m_RendererSettings.BloomIntensity);
+			reader.Read(m_Scene->m_RendererSettings.BloomFilterRadius);
+			reader.Read(m_Scene->m_RendererSettings.ShowColliders);
+			reader.Read(m_Scene->m_RendererSettings.LightSize);
+			reader.Read(m_Scene->m_RendererSettings.ContactThreshold);
+			reader.Read(m_Scene->m_RendererSettings.ContactSharpness);
+			reader.Read(m_Scene->m_RendererSettings.ContactSharpeningBias);
+		}
 
 		if (!skyboxPath.empty())
 		{
@@ -1511,6 +1590,10 @@ namespace RXNEngine {
 						reader.Read(bc.HalfExtents);
 						reader.Read(bc.Offset);
 						reader.Read(bc.IsTrigger);
+						reader.Read(bc.IsAmbientZone);
+						reader.Read(bc.AmbientIntensity);
+						reader.Read(bc.TransitionMin);
+						reader.Read(bc.TransitionMax);
 						bc.PhysicsMaterialPath = reader.ReadString();
 
 						if (!bc.PhysicsMaterialPath.empty())
