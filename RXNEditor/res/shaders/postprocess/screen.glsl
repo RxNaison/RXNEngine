@@ -29,12 +29,7 @@ uniform sampler2D u_OutlineTexture;
 uniform vec2 u_TexelSize;
 
 uniform sampler2D u_DepthTexture;
-uniform mat4 u_ReprojectionMatrix;
-
 uniform mat4 u_InverseViewProjection;
-
-uniform int u_EnableMotionBlur; 
-
 
 vec3 ACESFilm(vec3 x)
 {
@@ -188,81 +183,6 @@ float GetLinearDepth(vec2 uv, float depth)
     return abs(1.0 / wp.w);
 }
 
-vec3 ApplyDepthCappedMotionBlur(vec3 color, vec2 uv, float centerDepth)
-{
-    if (centerDepth >= 0.99999)
-    {
-        return color;
-    }
-
-    vec4 ndcPos = vec4(uv * 2.0 - 1.0, centerDepth * 2.0 - 1.0, 1.0);
-    
-    vec4 prevNdcPos = u_ReprojectionMatrix * ndcPos;
-    if (abs(prevNdcPos.w) < 0.0001)
-    {
-        return color;
-    }
-    prevNdcPos /= prevNdcPos.w;
-    
-    vec2 currentUV = uv;
-    vec2 prevUV = prevNdcPos.xy * 0.5 + 0.5;
-    vec2 velocity = currentUV - prevUV;
-    
-    const float maxVelocity = 0.04;
-    float len = length(velocity);
-    if (len > maxVelocity)
-    {
-        velocity = (velocity / len) * maxVelocity;
-    }
-    
-    float velocityWeight = smoothstep(0.0002, 0.001, len);
-    if (velocityWeight <= 0.0)
-    {
-        return color;
-    }
-    
-    float centerLinearDepth = GetLinearDepth(uv, centerDepth);
-    
-    const int numSamples = 8;
-    vec3 resultColor = vec3(0.0);
-    float totalWeight = 0.0;
-    
-    for (int i = 0; i < numSamples; ++i)
-    {
-        float t = float(i) / float(numSamples - 1);
-        vec2 offsetUV = uv - velocity * t;
-        
-        if (offsetUV.x < 0.0 || offsetUV.x > 1.0 || offsetUV.y < 0.0 || offsetUV.y > 1.0)
-        {
-            continue;
-        }
-        
-        vec3 neighborColor = texture(u_ScreenTexture, offsetUV).rgb;
-        float neighborDepth = texture(u_DepthTexture, offsetUV).r;
-        
-        float neighborLinearDepth = GetLinearDepth(offsetUV, neighborDepth);
-        float depthDiff = abs(neighborLinearDepth - centerLinearDepth);
-        
-        float weight = 1.0 - smoothstep(0.1, 1.5, depthDiff);
-        
-        resultColor += neighborColor * weight;
-        totalWeight += weight;
-    }
-    
-    vec3 blurredColor = totalWeight > 0.0 ? resultColor / totalWeight : color;
-
-    float distToCenter = length(uv - vec2(0.5));
-    float centerFocus = smoothstep(0.12, 0.45, distToCenter);
-    
-    float verticalWeight = 1.0 - smoothstep(0.2, 0.7, uv.y);
-    
-    float depthFadeWeight = 1.0 - smoothstep(15.0, 60.0, centerLinearDepth);
-    
-    float finalBlurWeight = velocityWeight * centerFocus * verticalWeight * depthFadeWeight;
-    
-    return mix(color, blurredColor, finalBlurWeight);
-}
-
 void main()
 {
     vec3 hdrColor = GetChromaticAberrationColor(v_TexCoord);
@@ -272,10 +192,6 @@ void main()
     hdrColor += (bloomColor + flareColor) * u_BloomIntensity;
     
     float centerDepth = texture(u_DepthTexture, v_TexCoord).r;
-    if (u_EnableMotionBlur > 0)
-    {
-        hdrColor = ApplyDepthCappedMotionBlur(hdrColor, v_TexCoord, centerDepth);
-    }
 
     if (centerDepth < 0.9999)
     {

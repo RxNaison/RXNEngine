@@ -372,7 +372,7 @@ namespace RXNEngine {
         ResolveMSAA();
         RenderAO(camera, cameraTransform);
         RenderBloom();
-        RenderPostProcess(false);
+        RenderPostProcess();
     }
 
     void SceneRenderer::RenderToTarget(uint32_t width, uint32_t height, Camera& camera, const glm::mat4& cameraTransform)
@@ -401,7 +401,7 @@ namespace RXNEngine {
         ResolveMSAA();
         RenderAO(camera, cameraTransform);
         RenderBloom();
-        RenderPostProcess(true);
+        RenderPostProcess();
     }
 
     int SceneRenderer::GetEntityIDAtMouse(int x, int y, const EditorCamera& camera, const std::vector<Entity>& selectedEntities)
@@ -494,7 +494,7 @@ namespace RXNEngine {
             RenderCommand::SetScissorTest(true);
     }
 
-    void SceneRenderer::RenderPostProcess(bool enableMotionBlur)
+    void SceneRenderer::RenderPostProcess()
     {
         RXN_PROFILE_SCOPE();
 
@@ -514,17 +514,8 @@ namespace RXNEngine {
         m_PostProcessShader->SetInt("u_DepthTexture", 3);
         m_PostProcessShader->SetInt("u_AOTexture", 4);
 
-        m_PostProcessShader->SetInt("u_EnableMotionBlur", enableMotionBlur ? 1 : 0);
         m_PostProcessShader->SetMat4("u_InverseViewProjection", glm::inverse(m_CurrentViewProjection));
-
-        glm::mat4 reprojectionMatrix;
-        if (m_PrevViewProjection == m_CurrentViewProjection)
-            reprojectionMatrix = glm::mat4(1.0f);
-        else
-            reprojectionMatrix = m_PrevViewProjection * glm::inverse(m_CurrentViewProjection);
         
-        m_PostProcessShader->SetMat4("u_ReprojectionMatrix", reprojectionMatrix);
-
         const auto& spec = m_FinalPass->GetSpecification();
         m_PostProcessShader->SetFloat2("u_TexelSize", glm::vec2(1.0f / spec.Width, 1.0f / spec.Height));
 
@@ -1165,7 +1156,7 @@ namespace RXNEngine {
         ResolveMSAA();
         RenderAO(camera, cameraTransform);
         RenderBloom();
-        RenderPostProcess(true);
+        RenderPostProcess();
 
         m_FinalPass->Bind();
         RenderCommand::SetBlend(true);

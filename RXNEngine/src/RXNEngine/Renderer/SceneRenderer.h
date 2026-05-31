@@ -45,7 +45,7 @@ namespace RXNEngine {
         const Settings& GetSettings() const { return m_Scene ? m_Scene->m_RendererSettings : m_Settings; }
         int GetEntityIDAtMouse(int x, int y, const EditorCamera& camera, const std::vector<Entity>& selectedEntities = {});
 
-        void RenderPostProcess(bool enableMotionBlur = true);
+        void RenderPostProcess();
         void RenderBloom();
         void ResolveMSAA();
         void RenderUI(const Camera& camera, const glm::mat4& cameraTransform, bool worldSpace, const std::vector<Entity>& selectedEntities = {});
