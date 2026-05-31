@@ -728,7 +728,7 @@ namespace RXNEditor {
                         std::string path = (const char*)p->Data;
                         SpotLightComponent oldState = component;
 
-                        if (path.ends_with(".png") || path.ends_with(".jpg"))
+                        if (path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".dds"))
                         {
                             component.CookieAssetPath = path;
                             component.IsVideo = false;
@@ -1229,7 +1229,7 @@ namespace RXNEditor {
                     if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
                         std::string path = (const char*)p->Data;
-                        if (path.ends_with(".png") || path.ends_with(".jpg"))
+                        if (path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".dds"))
                         {
                             component.TextureAssetPath = path;
                             component.Texture = Application::Get().GetSubsystem<AssetManager>()->GetTexture(path);

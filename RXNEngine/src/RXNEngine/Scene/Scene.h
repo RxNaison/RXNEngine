@@ -32,9 +32,9 @@ namespace RXNEngine {
 
 		// PCSS shadow controls
 		float LightSize = 0.12f;
-		float ContactThreshold = 2.0f;
-		float ContactSharpness = 2.0f;
-		float ContactSharpeningBias = 1.0f;
+		float ContactThreshold = 4.0f;
+		float ContactSharpness = 0.75f;
+		float ContactSharpeningBias = 0.0f;
 	};
 
 	class Entity;

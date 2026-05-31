@@ -33,6 +33,8 @@ namespace RXNEngine {
 			return m_RendererID == other.GetRendererID();
 		}
 	private:
+		bool LoadDDS(const uint8_t* data, size_t size);
+
 		TextureSpecification m_Specification;
 
 		std::string m_Path;

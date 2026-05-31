@@ -61,7 +61,7 @@ namespace RXNEditor {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
                     {
                         std::string path = (const char*)payload->Data;
-                        if (path.ends_with(".png") || path.ends_with(".jpg"))
+                        if (path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".dds"))
                         {
                             setterFunc(assetManager->GetTexture(path), path);
                         }

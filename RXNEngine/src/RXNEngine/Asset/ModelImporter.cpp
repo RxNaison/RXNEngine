@@ -91,7 +91,7 @@ namespace RXNEngine {
 		return nullptr;
 	}
 
-	static std::string GetMaterialTexturePath(aiMaterial* mat, const std::vector<aiTextureType>& types, const aiScene* scene, const std::string& directory)
+	static std::string GetMaterialTexturePath(aiMaterial* mat, const std::vector<aiTextureType>& types, const aiScene* scene, const std::string& directory, const std::string& modelPath)
 	{
 		for (auto type : types)
 		{
@@ -100,9 +100,51 @@ namespace RXNEngine {
 				aiString str;
 				mat->GetTexture(type, 0, &str);
 
-				std::string filename = std::string(str.C_Str());
-				std::replace(filename.begin(), filename.end(), '\\', '/');
-				return FileSystem::GetRelativePath(directory + "/" + filename);
+				const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(str.C_Str());
+				if (embeddedTexture)
+				{
+					std::filesystem::path mPath = modelPath;
+					std::string modelName = mPath.stem().string();
+
+					std::string texIdentifier = str.C_Str();
+					std::replace(texIdentifier.begin(), texIdentifier.end(), '*', '_');
+
+					std::string ext = "png";
+					if (embeddedTexture->achFormatHint[0] != '\0')
+					{
+						std::string hint = embeddedTexture->achFormatHint;
+						if (hint[0] == '.')
+							ext = hint.substr(1);
+						else
+							ext = hint;
+					}
+
+					std::string extractedPath = directory + "/" + modelName + "_tex" + texIdentifier + "." + ext;
+
+					if (!std::filesystem::exists(extractedPath))
+					{
+						if (embeddedTexture->mHeight == 0)
+						{
+							std::ofstream out(extractedPath, std::ios::binary);
+							out.write((const char*)embeddedTexture->pcData, embeddedTexture->mWidth);
+							out.close();
+							RXN_CORE_INFO("Extracted embedded texture to: {0}", extractedPath);
+						}
+						else
+						{
+							RXN_CORE_WARN("Uncompressed embedded textures not supported for extraction!");
+							return "";
+						}
+					}
+
+					return FileSystem::GetRelativePath(extractedPath);
+				}
+				else
+				{
+					std::string filename = std::string(str.C_Str());
+					std::replace(filename.begin(), filename.end(), '\\', '/');
+					return FileSystem::GetRelativePath(directory + "/" + filename);
+				}
 			}
 		}
 		return "";
@@ -370,12 +412,12 @@ namespace RXNEngine {
 			std::replace(desc.Name.begin(), desc.Name.end(), '\\', '_');
 			std::replace(desc.Name.begin(), desc.Name.end(), ':', '_');
 
-			desc.AlbedoPath = GetMaterialTexturePath(aiMat, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, scene, directory);
-			desc.NormalPath = GetMaterialTexturePath(aiMat, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, scene, directory);
-			desc.MetalPath = GetMaterialTexturePath(aiMat, { aiTextureType_METALNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory);
-			desc.RoughPath = GetMaterialTexturePath(aiMat, { aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory);
-			desc.AOPath = GetMaterialTexturePath(aiMat, { aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP, aiTextureType_AMBIENT }, scene, directory);
-			desc.EmissivePath = GetMaterialTexturePath(aiMat, { aiTextureType_EMISSIVE }, scene, directory);
+			desc.AlbedoPath = GetMaterialTexturePath(aiMat, { aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE }, scene, directory, filepath);
+			desc.NormalPath = GetMaterialTexturePath(aiMat, { aiTextureType_NORMALS, aiTextureType_HEIGHT }, scene, directory, filepath);
+			desc.MetalPath = GetMaterialTexturePath(aiMat, { aiTextureType_METALNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory, filepath);
+			desc.RoughPath = GetMaterialTexturePath(aiMat, { aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_SPECULAR, aiTextureType_SHININESS }, scene, directory, filepath);
+			desc.AOPath = GetMaterialTexturePath(aiMat, { aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP, aiTextureType_AMBIENT }, scene, directory, filepath);
+			desc.EmissivePath = GetMaterialTexturePath(aiMat, { aiTextureType_EMISSIVE }, scene, directory, filepath);
 
 			aiColor4D color(1.0f, 1.0f, 1.0f, 1.0f);
 			if (aiMat->Get(AI_MATKEY_BASE_COLOR, color) != AI_SUCCESS)
