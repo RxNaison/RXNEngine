@@ -32,6 +32,18 @@ namespace RXNEngine {
 		return nullptr;
 	}
 
+	Ref<Texture2D> Texture2D::Create(const std::string& path, TextureUsage usage)
+	{
+		switch (Renderer::GetAPI())
+		{
+			case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
+			case RendererAPI::API::OpenGL:  return CreateRef<OpenGLTexture2D>(path, usage);
+		}
+
+		RXN_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
+	}
+
 	Ref<Texture2D> Texture2D::Create(const void* data, size_t size)
 	{
 		switch (Renderer::GetAPI())

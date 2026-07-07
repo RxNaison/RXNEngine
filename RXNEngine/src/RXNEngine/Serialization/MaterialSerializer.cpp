@@ -8,6 +8,8 @@
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+#include <sstream>
+#include <filesystem>
 
 namespace RXNEngine {
 
@@ -46,7 +48,7 @@ namespace RXNEngine {
 
         out << YAML::EndMap;
 
-        std::ofstream fout(filepath);
+        std::ofstream fout(std::filesystem::u8path(filepath));
         fout << out.c_str();
         return true;
     }
@@ -65,7 +67,12 @@ namespace RXNEngine {
             }
             else
             {
-                data = YAML::LoadFile(filepath);
+                std::ifstream fin(std::filesystem::u8path(filepath), std::ios::binary);
+                if (!fin)
+                    throw std::runtime_error("could not open file (check path encoding): " + filepath);
+                std::stringstream ss;
+                ss << fin.rdbuf();
+                data = YAML::Load(ss.str());
             }
         }
         catch (const std::exception& e)
@@ -101,7 +108,7 @@ namespace RXNEngine {
 
             std::string normalPath = texturesNode["NormalMap"].as<std::string>();
             if (!normalPath.empty())
-                m_Material->SetNormalMap(assetManager->GetTexture(normalPath), normalPath);
+                m_Material->SetNormalMap(assetManager->GetTexture(normalPath, TextureUsage::NormalMap), normalPath);
 
             std::string metalPath = texturesNode["MetalMap"].as<std::string>();
             if (!metalPath.empty())

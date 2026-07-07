@@ -321,7 +321,9 @@ project "RXNEditor"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Debug/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Debug/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmodL.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
 
     filter "configurations:Release"
@@ -341,7 +343,9 @@ project "RXNEditor"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
 
     filter "configurations:Dist"
@@ -362,7 +366,9 @@ project "RXNEditor"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
 
 group "Scripting"
@@ -412,6 +418,13 @@ project "AssetCooker"
     
     files { "%{prj.name}/src/**.h", "%{prj.name}/src/**.cpp" }
     
+    defines
+    {
+         "_CRT_SECURE_NO_WARNINGS",
+         "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+         "YAML_CPP_STATIC_DEFINE"
+    }
+    
     includedirs
     {
         "RXNEngine/src"
@@ -427,7 +440,9 @@ project "AssetCooker"
        {
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Debug/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmodL.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
        
     filter "configurations:Release"
@@ -441,7 +456,9 @@ project "AssetCooker"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
 
     filter "configurations:Dist"
@@ -455,7 +472,9 @@ project "AssetCooker"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
 
 project "RXNRuntime"
@@ -465,7 +484,7 @@ project "RXNRuntime"
     language "C++"
     cppdialect "C++latest"
     staticruntime "off"
-    defines { "RXN_RUNTIME" }
+    defines { "RXN_RUNTIME", "_CRT_SECURE_NO_WARNINGS", "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING", "YAML_CPP_STATIC_DEFINE" }
     
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -523,7 +542,9 @@ project "RXNRuntime"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Debug/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Debug/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmodL.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudioL.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
        
     filter "configurations:Release"
@@ -537,7 +558,9 @@ project "RXNRuntime"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }
        
     filter "configurations:Dist"
@@ -551,5 +574,7 @@ project "RXNRuntime"
            "{COPY} \"%{wks.location}/RXNEngine/vendor/SDL/build/Release/*.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/CoACD/build/Release/lib_coacd.dll\" \"%{cfg.targetdir}\"",
            "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/core/lib/x64/fmod.dll\" \"%{cfg.targetdir}\"",
-           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\""
+           "{COPY} \"%{wks.location}/RXNEngine/vendor/fmod/api/studio/lib/x64/fmodstudio.dll\" \"%{cfg.targetdir}\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{wks.location}/RXNRuntime/scripts/\"",
+            "{COPY} \"%{wks.location}/RXNEditor/res/scripts/RXNScript*.*\" \"%{cfg.targetdir}/scripts/\""
        }

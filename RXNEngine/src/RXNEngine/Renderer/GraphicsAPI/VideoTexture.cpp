@@ -71,28 +71,22 @@ namespace RXNEngine {
 
     void VideoTexture::Update(float deltaTime)
     {
-        if (m_Plm && m_IsPlaying)
-            plm_decode((plm_t*)m_Plm, deltaTime);
+        RXN_PROFILE_SCOPE_NAMED("VideoTexture Decode");
+        if (!m_Plm || !m_IsPlaying)
+            return;
+
+        plm_t* plm = (plm_t*)m_Plm;
+        double framerate = plm_get_framerate(plm);
+        double maxStep = framerate > 0.0 ? (2.0 / framerate) : (double)deltaTime;
+        plm_decode(plm, std::min((double)deltaTime, maxStep));
     }
 
     void VideoTexture::OnFrameDecoded(void* framePtr)
     {
         plm_frame_t* frame = (plm_frame_t*)framePtr;
 
-        plm_frame_to_rgb(frame, m_RGBBuffer.data(), frame->width * 3);
-
         int pitch = frame->width * 3;
-        std::vector<uint8_t> tempRow(pitch);
-
-        for (int y = 0; y < frame->height / 2; ++y)
-        {
-            uint8_t* rowTop = m_RGBBuffer.data() + y * pitch;
-            uint8_t* rowBottom = m_RGBBuffer.data() + (frame->height - 1 - y) * pitch;
-
-            std::memcpy(tempRow.data(), rowTop, pitch);
-            std::memcpy(rowTop, rowBottom, pitch);
-            std::memcpy(rowBottom, tempRow.data(), pitch);
-        }
+        plm_frame_to_rgb(frame, m_RGBBuffer.data() + (size_t)(frame->height - 1) * pitch, -pitch);
 
         m_Texture->SetData(m_RGBBuffer.data(), m_RGBBuffer.size());
     }

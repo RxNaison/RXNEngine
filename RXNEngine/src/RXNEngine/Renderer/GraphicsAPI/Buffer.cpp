@@ -41,4 +41,28 @@ namespace RXNEngine {
         RXN_CORE_ASSERT(false, "Unknown RendererAPI!");
         return nullptr;
     }
+
+    Ref<ShaderStorageBuffer> ShaderStorageBuffer::Create(const void* data, uint32_t size)
+    {
+        switch (Renderer::GetAPI())
+        {
+            case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
+            case RendererAPI::API::OpenGL:  return CreateRef<OpenGLShaderStorageBuffer>(data, size);
+        }
+
+        RXN_CORE_ASSERT(false, "Unknown RendererAPI!");
+        return nullptr;
+    }
+
+    Ref<StreamVertexBuffer> StreamVertexBuffer::Create(uint32_t size)
+    {
+        switch (Renderer::GetAPI())
+        {
+            case RendererAPI::API::None:    RXN_CORE_ASSERT(false, "RendererAPI::None is not supported!"); return nullptr;
+            case RendererAPI::API::OpenGL:  return CreateRef<OpenGLStreamVertexBuffer>(size);
+        }
+
+        RXN_CORE_ASSERT(false, "Unknown RendererAPI!");
+        return nullptr;
+    }
 }

@@ -29,7 +29,7 @@ namespace RXNEngine {
         void* m_Plm = nullptr;
         Ref<Texture2D> m_Texture;
         std::vector<uint8_t> m_RGBBuffer;
-        bool m_IsPlaying = true;
+        bool m_IsPlaying = false;
         std::vector<uint8_t> m_VideoBuffer;
     };
 }

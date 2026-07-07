@@ -5,6 +5,9 @@
 
 #include <assimp/scene.h>
 
+#include "SkeletalMesh.h"
+#include "AnimationClip.h"
+
 namespace RXNEngine {
 
 	struct ModelImportSettings
@@ -39,9 +42,13 @@ namespace RXNEngine {
 	struct ImporterData
 	{
 		std::vector<Vertex> Vertices;
+		std::vector<SkinnedVertex> SkinnedVertices;
 		std::vector<uint32_t> Indices;
 		std::vector<Submesh> Submeshes;
 		std::vector<MaterialDesc> Materials;
+
+		Ref<Skeleton> MeshSkeleton = nullptr;
+		std::vector<Ref<AnimationClip>> Animations;
 	};
 
 	class ModelImporter
@@ -50,12 +57,22 @@ namespace RXNEngine {
 		static Ref<StaticMesh> ImportAsset(const std::string& filepath, const ModelImportSettings& settings = ModelImportSettings());
 		static Entity InstantiateToScene(Ref<Scene> scene, const std::string& filepath, const ModelImportSettings& settings = ModelImportSettings());
 
+		static Ref<SkeletalMesh> ImportSkeletalMesh(const std::string& filepath, const ModelImportSettings& settings = ModelImportSettings());
+
 		static bool LoadModelData(const std::string& filepath, ImporterData& outData, const ModelImportSettings& settings = ModelImportSettings());
 		static Ref<StaticMesh> BuildMeshFromData(const ImporterData& data, const std::string& modelFilepath);
+
+		static bool LoadSkeletalData(const std::string& filepath, ImporterData& outData, const ModelImportSettings& settings = ModelImportSettings());
+		static Ref<SkeletalMesh> BuildSkeletalMeshFromData(const ImporterData& data, const std::string& modelFilepath);
 	private:
 		static void ProcessNode(aiNode* node, const aiScene* scene, ImporterData& data,
 			const glm::mat4& parentTransform, const std::string& parentNodeName, const ModelImportSettings& settings);
 		static void ProcessMesh(aiMesh* mesh, const aiScene* scene, ImporterData& data,
+			const std::string& nodeName, const glm::mat4& localTransform, const ModelImportSettings& settings);
+
+		static void ProcessSkeletalNode(aiNode* node, const aiScene* scene, ImporterData& data,
+			const glm::mat4& parentTransform, const std::string& parentNodeName, const ModelImportSettings& settings);
+		static void ProcessSkeletalMesh(aiMesh* mesh, const aiScene* scene, ImporterData& data,
 			const std::string& nodeName, const glm::mat4& localTransform, const ModelImportSettings& settings);
 	};
 

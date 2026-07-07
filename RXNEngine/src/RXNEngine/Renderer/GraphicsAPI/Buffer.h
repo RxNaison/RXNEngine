@@ -113,8 +113,25 @@ namespace RXNEngine {
 		virtual const BufferLayout& GetLayout() const = 0;
 		virtual void SetLayout(const BufferLayout& layout) = 0;
 
+		virtual void BindBase(uint32_t bindingPoint) const = 0;
+
 		static Ref<VertexBuffer> Create(uint32_t size);
 		static Ref<VertexBuffer> Create(float* vertices, uint32_t size);
+	};
+
+	class StreamVertexBuffer
+	{
+	public:
+		virtual ~StreamVertexBuffer() {}
+
+		virtual uint32_t Push(const void* data, uint32_t size) = 0;
+
+		virtual uint32_t GetRendererID() const = 0;
+
+		virtual const BufferLayout& GetLayout() const = 0;
+		virtual void SetLayout(const BufferLayout& layout) = 0;
+
+		static Ref<StreamVertexBuffer> Create(uint32_t size);
 	};
 
 	class IndexBuffer
@@ -128,6 +145,20 @@ namespace RXNEngine {
 		virtual uint32_t GetCount() const = 0;
 
 		static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t count);
+	};
+
+	class ShaderStorageBuffer
+	{
+	public:
+		virtual ~ShaderStorageBuffer() {}
+
+		virtual void Bind(uint32_t bindingPoint) const = 0;
+		virtual void Unbind() const = 0;
+
+		virtual void SetData(const void* data, uint32_t size) = 0;
+		virtual uint32_t GetRendererID() const = 0;
+
+		static Ref<ShaderStorageBuffer> Create(const void* data, uint32_t size);
 	};
 
 }

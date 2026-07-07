@@ -10,7 +10,7 @@ namespace RXNEngine {
 	{
 	public:
 		OpenGLTexture2D(const TextureSpecification& specification);
-		OpenGLTexture2D(const std::string& path);
+		OpenGLTexture2D(const std::string& path, TextureUsage usage = TextureUsage::Default);
 		OpenGLTexture2D(const void* data, size_t size);
 		virtual ~OpenGLTexture2D();
 
@@ -28,12 +28,15 @@ namespace RXNEngine {
 
 		virtual bool IsLoaded() const override { return m_IsLoaded; }
 
+		virtual bool IsTwoChannelNormal() const override { return m_InternalFormat == 0x8DBD; }
+
 		virtual bool operator==(const Texture& other) const override
 		{
 			return m_RendererID == other.GetRendererID();
 		}
 	private:
 		bool LoadDDS(const uint8_t* data, size_t size);
+		void WriteDDSSidecar(uint32_t levels);
 
 		TextureSpecification m_Specification;
 
@@ -42,5 +45,6 @@ namespace RXNEngine {
 		uint32_t m_Width, m_Height;
 		uint32_t m_RendererID;
 		GLenum m_InternalFormat, m_DataFormat;
+		TextureUsage m_Usage = TextureUsage::Default;
 	};
 }

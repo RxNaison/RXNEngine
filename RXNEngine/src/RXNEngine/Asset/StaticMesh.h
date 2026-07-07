@@ -22,6 +22,12 @@ namespace RXNEngine {
 		std::vector<uint32_t> Indices;
 	};
 
+	struct LODInfo
+	{
+		uint32_t BaseIndex = 0;
+		uint32_t IndexCount = 0;
+	};
+
 	struct Submesh
 	{
 		uint32_t BaseVertex;
@@ -33,6 +39,7 @@ namespace RXNEngine {
 		std::string NodeName;
 		glm::mat4 LocalTransform;
 		std::vector<ConvexHullData> ConvexHulls;
+		std::vector<LODInfo> LODs;
 	};
 
 	class StaticMesh

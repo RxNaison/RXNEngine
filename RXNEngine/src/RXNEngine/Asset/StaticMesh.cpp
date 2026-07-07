@@ -8,6 +8,13 @@ namespace RXNEngine {
 		const std::vector<Submesh>& submeshes, const std::vector<Ref<Material>>& materials)
 		: m_Submeshes(submeshes), m_Materials(materials), m_Vertices(vertices), m_Indices(indices)
 	{
+		for (auto& submesh : m_Submeshes)
+		{
+			if (submesh.LODs.empty())
+			{
+				submesh.LODs.push_back({ submesh.BaseIndex, submesh.IndexCount });
+			}
+		}
 		m_VAO = VertexArray::Create();
 
 		Ref<VertexBuffer> vbo = VertexBuffer::Create((float*)vertices.data(), vertices.size() * sizeof(Vertex));

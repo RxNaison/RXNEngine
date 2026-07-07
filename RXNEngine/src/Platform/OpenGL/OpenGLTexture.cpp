@@ -6,6 +6,9 @@
 #include <stb_image.h>
 #include <fstream>
 
+#include <filesystem>
+#include <fstream>
+
 namespace RXNEngine {
 
 	namespace Utils {
@@ -185,14 +188,76 @@ namespace RXNEngine {
 		return true;
 	}
 
+	void OpenGLTexture2D::WriteDDSSidecar(uint32_t levels)
+	{
+		if (m_Path.empty() || m_Path.ends_with(".dds") || m_Path.ends_with(".DDS"))
+			return;
+
+		uint32_t fourCC = 0;
+		switch (m_InternalFormat)
+		{
+			case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT: fourCC = 0x31545844; break;
+			case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: fourCC = 0x35545844; break;
+			case GL_COMPRESSED_RG_RGTC2:           fourCC = 0x32495441; break;
+			case GL_COMPRESSED_RED_RGTC1:          fourCC = 0x31495441; break;
+			default: return;
+		}
+
+		std::filesystem::path ddsPath = m_Path;
+		ddsPath.replace_extension(".dds");
+		std::error_code ec;
+		if (std::filesystem::exists(ddsPath, ec))
+			return;
+
+		std::vector<std::vector<uint8_t>> mips(levels);
+		for (uint32_t level = 0; level < levels; level++)
+		{
+			GLint compressed = 0, size = 0;
+			glGetTextureLevelParameteriv(m_RendererID, (GLint)level, GL_TEXTURE_COMPRESSED, &compressed);
+			if (!compressed)
+				return;
+			glGetTextureLevelParameteriv(m_RendererID, (GLint)level, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &size);
+			if (size <= 0)
+				return;
+			mips[level].resize((size_t)size);
+			glGetCompressedTextureImage(m_RendererID, (GLint)level, size, mips[level].data());
+		}
+
+		DDS_HEADER header{};
+		header.dwSize = 124;
+		header.dwFlags = 0x000A1007;
+		header.dwHeight = m_Height;
+		header.dwWidth = m_Width;
+		header.dwPitchOrLinearSize = (uint32_t)mips[0].size();
+		header.dwMipMapCount = levels;
+		header.ddspf.dwSize = 32;
+		header.ddspf.dwFlags = 0x00000004;
+		header.ddspf.dwFourCC = fourCC;
+		header.dwCaps = 0x00401008;
+
+		std::ofstream out(ddsPath, std::ios::binary);
+		if (!out)
+			return;
+
+		const uint32_t magic = 0x20534444;
+		out.write((const char*)&magic, 4);
+		out.write((const char*)&header, sizeof(DDS_HEADER));
+		for (const auto& mip : mips)
+			out.write((const char*)mip.data(), (std::streamsize)mip.size());
+
+		RXN_CORE_INFO("Baked compressed texture sidecar: {0}", ddsPath.generic_string());
+	}
+
 	OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
 		: m_Specification(specification), m_Width(m_Specification.Width), m_Height(m_Specification.Height)
 	{
 		m_InternalFormat = Utils::ImageFormatToGLInternalFormat(m_Specification.Format);
 		m_DataFormat = Utils::ImageFormatToGLDataFormat(m_Specification.Format);
 
+		uint32_t levels = m_Specification.GenerateMips ? (uint32_t)std::floor(std::log2(std::max(m_Width, m_Height))) + 1 : 1;
+
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-		glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
+		glTextureStorage2D(m_RendererID, levels, m_InternalFormat, m_Width, m_Height);
 
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -201,8 +266,8 @@ namespace RXNEngine {
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
 
-	OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
-		: m_Path(path)
+	OpenGLTexture2D::OpenGLTexture2D(const std::string& path, TextureUsage usage)
+		: m_Path(path), m_Usage(usage)
 	{
 		int width, height, channels;
 		stbi_set_flip_vertically_on_load(1);
@@ -232,9 +297,12 @@ namespace RXNEngine {
 
 						m_InternalFormat = GL_RGB16F;
 						m_DataFormat = GL_RGB;
+						m_Specification.GenerateMips = true;
+
+						uint32_t levels = (uint32_t)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
 
 						glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-						glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
+						glTextureStorage2D(m_RendererID, levels, m_InternalFormat, m_Width, m_Height);
 
 						glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 						glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -255,12 +323,20 @@ namespace RXNEngine {
 						m_Width = width;
 						m_Height = height;
 
-						GLenum internalFormat = GL_RGBA8, dataFormat = GL_RGBA;
+					GLenum internalFormat;
+					if (m_Usage == TextureUsage::NormalMap)
+						internalFormat = GL_COMPRESSED_RG_RGTC2;
+					else
+						internalFormat = (channels <= 3) ? GL_COMPRESSED_RGBA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+					GLenum dataFormat = GL_RGBA;
 						m_InternalFormat = internalFormat;
 						m_DataFormat = dataFormat;
+						m_Specification.GenerateMips = true;
+
+						uint32_t levels = (uint32_t)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
 
 						glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-						glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+						glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
 
 						glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 						glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -273,6 +349,7 @@ namespace RXNEngine {
 
 						glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
 						glGenerateTextureMipmap(m_RendererID);
+						WriteDDSSidecar(levels);
 						stbi_image_free(data);
 					}
 				}
@@ -305,9 +382,12 @@ namespace RXNEngine {
 
 					m_InternalFormat = GL_RGB16F;
 					m_DataFormat = GL_RGB;
+					m_Specification.GenerateMips = true;
+
+					uint32_t levels = (uint32_t)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
 
 					glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-					glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
+					glTextureStorage2D(m_RendererID, levels, m_InternalFormat, m_Width, m_Height);
 
 					glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 					glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -333,13 +413,21 @@ namespace RXNEngine {
 					m_Width = width;
 					m_Height = height;
 
-					GLenum internalFormat = GL_RGBA8, dataFormat = GL_RGBA;
+					GLenum internalFormat;
+					if (m_Usage == TextureUsage::NormalMap)
+						internalFormat = GL_COMPRESSED_RG_RGTC2;
+					else
+						internalFormat = (channels <= 3) ? GL_COMPRESSED_RGBA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+					GLenum dataFormat = GL_RGBA;
 
 					m_InternalFormat = internalFormat;
 					m_DataFormat = dataFormat;
+					m_Specification.GenerateMips = true;
+
+					uint32_t levels = (uint32_t)std::floor(std::log2(std::max(m_Width, m_Height))) + 1;
 
 					glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-					glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+					glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
 
 					glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 					glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -352,6 +440,7 @@ namespace RXNEngine {
 
 					glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
 					glGenerateTextureMipmap(m_RendererID);
+					WriteDDSSidecar(levels);
 
 					stbi_image_free(data);
 				}
@@ -392,6 +481,7 @@ namespace RXNEngine {
 
 			m_InternalFormat = internalFormat;
 			m_DataFormat = dataFormat;
+			m_Specification.GenerateMips = false;
 
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 			glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);

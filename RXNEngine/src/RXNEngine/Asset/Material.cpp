@@ -35,6 +35,7 @@ namespace RXNEngine {
 
         m_Shader->SetInt("u_NormalMap", 1);
         m_Shader->SetInt("u_UseNormalMap", m_NormalMap ? 1 : 0);
+        m_Shader->SetInt("u_NormalMapIsBC5", (m_NormalMap && m_NormalMap->IsTwoChannelNormal()) ? 1 : 0);
 
         // Slot 2: Metalness
         if (m_MetalnessMap)

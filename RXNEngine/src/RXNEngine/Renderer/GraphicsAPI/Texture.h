@@ -16,6 +16,12 @@ namespace RXNEngine {
 		RGBA32F
 	};
 
+	enum class TextureUsage
+	{
+		Default = 0,
+		NormalMap,
+	};
+
 	struct TextureSpecification
 	{
 		uint32_t Width = 1;
@@ -43,6 +49,8 @@ namespace RXNEngine {
 
 		virtual bool IsLoaded() const = 0;
 
+		virtual bool IsTwoChannelNormal() const { return false; }
+
 		virtual bool operator==(const Texture& other) const = 0;
 	};
 
@@ -51,6 +59,7 @@ namespace RXNEngine {
 	public:
 		static Ref<Texture2D> Create(const TextureSpecification& specification);
 		static Ref<Texture2D> Create(const std::string& path);
+		static Ref<Texture2D> Create(const std::string& path, TextureUsage usage);
 		static Ref<Texture2D> Create(const void* data, size_t size);
 		static Ref<Texture2D> WhiteTexture();
 		static Ref<Texture2D> BlackTexture();
