@@ -37,15 +37,25 @@ namespace RXNEngine {
 
 		virtual void BindTextureID(uint32_t slot, uint32_t textureID);
 
+		virtual void SetColorMaskIndexed(uint32_t attachmentIndex, bool r, bool g, bool b, bool a) override;
+
+		virtual void QueryTextureBindings(std::vector<TextureUnitBinding>& outBindings, uint32_t unitCount) override;
+
 		virtual void Draw(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) override;
 		virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount = 0) override;
 
 		virtual void DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& transformBuffer,
 			uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex) override;
 
+		virtual void DrawIndexedInstancedStream(const Ref<VertexArray>& vertexArray, uint32_t instanceBufferID,
+			uint32_t instanceStride, uint32_t instanceOffsetBytes, uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex) override;
+
 		virtual void DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) override;
 
 		void SetLineWidth(float width) override;
+
+		virtual void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;
+		virtual void MemoryBarrier(BarrierType type) override;
 	};
 
 }

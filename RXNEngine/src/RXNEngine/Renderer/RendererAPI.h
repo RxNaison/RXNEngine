@@ -81,6 +81,14 @@ namespace RXNEngine {
 			DecrementWrap,
 			Invert
 		};
+
+		enum class BarrierType
+		{
+			None = 0,
+			ShaderStorage,
+			VertexAttribArray,
+			ShaderStorageAndAttribArray
+		};
 	public:
 		virtual void Init() = 0;
 
@@ -110,15 +118,30 @@ namespace RXNEngine {
 
 		virtual void SetDepthMask(bool writeEnabled) = 0;
 		virtual void SetColorMask(bool r, bool g, bool b, bool a) = 0;
+		virtual void SetColorMaskIndexed(uint32_t attachmentIndex, bool r, bool g, bool b, bool a) = 0;
+
+		struct TextureUnitBinding
+		{
+			uint32_t Unit = 0;
+			uint32_t Tex2D = 0;
+			uint32_t TexCube = 0;
+			uint32_t Tex2DArray = 0;
+			uint32_t TexCubeArray = 0;
+		};
+		virtual void QueryTextureBindings(std::vector<TextureUnitBinding>& outBindings, uint32_t unitCount) = 0;
 
 		virtual void BindTextureID(uint32_t slot, uint32_t textureID) = 0;
 
 		virtual void Draw(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) = 0;
 		virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount = 0) = 0;
 		virtual void DrawIndexedInstanced(const Ref<VertexArray>& vertexArray, const Ref<VertexBuffer>& transformBuffer, uint32_t instanceCount, uint32_t indexCount = 0, uint32_t baseIndex = 0) = 0;
+		virtual void DrawIndexedInstancedStream(const Ref<VertexArray>& vertexArray, uint32_t instanceBufferID, uint32_t instanceStride, uint32_t instanceOffsetBytes, uint32_t instanceCount, uint32_t indexCount = 0, uint32_t baseIndex = 0) = 0;
 		virtual void DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) = 0;
 
 		virtual void SetLineWidth(float width) = 0;
+
+		virtual void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
+		virtual void MemoryBarrier(BarrierType type) = 0;
 
 		inline static API GetAPI() { return s_API; }
 	private:

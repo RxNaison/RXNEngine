@@ -9,6 +9,8 @@
 #include "RXNEngine/Project/ProjectSerializer.h"
 #include "RXNEngine/Serialization/PrefabSerializer.h"
 #include "RXNEngine/Physics/PhysicsWorld.h"
+#include "RXNEngine/Animation/AnimationSystem.h"
+#include "RXNEngine/Renderer/GPUProfiler.h"
 
 #include <array>
 #include <cstdio>
@@ -80,9 +82,16 @@ namespace RXNEditor {
         m_SceneRenderer = CreateRef<SceneRenderer>(m_ActiveScene);
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(m_ActiveScene);
         m_EnvironmentPanel.SetContext(m_SceneRenderer);
 
-        m_PIPRenderer = CreateRef<SceneRenderer>(m_ActiveScene);
+        SceneRendererSpecification pipSpec;
+        pipSpec.DisableMSAA = true;
+        pipSpec.DisableAO = true;
+        pipSpec.DisableBloom = true;
+        pipSpec.DisablePicking = true;
+        pipSpec.DisableOutline = true;
+        m_PIPRenderer = CreateRef<SceneRenderer>(m_ActiveScene, pipSpec);
 
         auto loadIcon = [](const std::string& path) { return std::filesystem::exists(path) ? Texture2D::Create(path) : Texture2D::WhiteTexture(); };
         m_IconCamera = loadIcon("res/icons/Camera.png");
@@ -105,6 +114,16 @@ namespace RXNEditor {
             {
                 auto physMat = Application::Get().GetSubsystem<AssetManager>()->GetPhysicsMaterial(filepath);
                 m_PhysicsMaterialEditorPanel.SetContext(physMat, filepath);
+            });
+        m_ContentBrowserPanel.SetAnimationOpenCallback([this](const std::string& filepath)
+            {
+                std::filesystem::path absPath = std::filesystem::absolute(filepath);
+                std::filesystem::path assetRelPath = std::filesystem::relative(absPath, Project::GetAssetDirectory());
+                std::string assetRelStr = assetRelPath.generic_string();
+
+                std::string fullPath = Project::GetAssetFileSystemPath(assetRelStr).string();
+                auto clip = Application::Get().GetSubsystem<AssetManager>()->GetAnimationClip(fullPath);
+                m_AnimationEditorPanel.SetContext(clip, assetRelStr);
             });
         m_LauncherPanel.SetProjectLoadedCallback([this](Ref<Project> project)
             {
@@ -171,11 +190,18 @@ namespace RXNEditor {
             inputSys->IsMouseButtonPressed(MouseCode::ButtonLeft);
 
         if (!isAnyMouseButtonDown)
-            m_AllowViewportCamera = m_ViewportHovered && !ImGuizmo::IsOver();
+        {
+            auto [mx, my] = ImGui::GetMousePos();
+            bool isHoveringViewportContent = m_ViewportHovered &&
+                (mx >= m_ViewportBounds[0].x && mx <= m_ViewportBounds[1].x &&
+                 my >= m_ViewportBounds[0].y && my <= m_ViewportBounds[1].y);
+
+            m_AllowViewportCamera = isHoveringViewportContent && !ImGuizmo::IsOver();
+        }
 
         if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
         {
-            if (m_AllowViewportCamera && isAnyMouseButtonDown && !ImGuizmo::IsUsing())
+            if (m_AllowViewportCamera && m_EditorCamera->IsNavigating() && !ImGuizmo::IsUsing())
                 Application::Get().GetWindow().SetCursorMode(CursorMode::Locked);
             else
                 Application::Get().GetWindow().SetCursorMode(CursorMode::Normal);
@@ -256,63 +282,6 @@ namespace RXNEditor {
 
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<KeyPressedEvent>([this](KeyPressedEvent& e)->bool { return OnKeyPressed(e); });
-
-        dispatcher.Dispatch<MouseButtonPressedEvent>([this](MouseButtonPressedEvent& e) -> bool
-            {
-                if (e.GetMouseButton() == MouseCode::ButtonLeft)
-                {
-                    if (m_ViewportHovered && !ImGuizmo::IsOver() && !Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftAlt))
-                    {
-                        auto [mx, my] = ImGui::GetMousePos();
-                        bool isCtrlHeld = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
-
-                        bool hitIcon = false;
-                        for (auto it = m_IconHitboxes.rbegin(); it != m_IconHitboxes.rend(); ++it)
-                        {
-                            if (mx >= it->Min.x && mx <= it->Max.x && my >= it->Min.y && my <= it->Max.y)
-                            {
-                                hitIcon = true;
-                                if (isCtrlHeld)
-                                    m_SceneHierarchyPanel.ToggleSelection(it->Ent);
-                                else 
-                                    m_SceneHierarchyPanel.SetSelectedEntity(it->Ent);
-                                break;
-                            }
-                        }
-
-                        if (!hitIcon)
-                        {
-                            float relX = mx - m_ViewportBounds[0].x;
-                            float relY = my - m_ViewportBounds[0].y;
-
-                            glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-                            if (relX >= 0 && relY >= 0 && relX < viewportSize.x && relY < viewportSize.y)
-                            {
-                                relY = viewportSize.y - relY;
-
-                                int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)relX, (int)relY, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
-
-                                if (pickedID > -1)
-                                {
-                                    Entity pickedEntity = { (entt::entity)pickedID, m_ActiveScene.get() };
-                                    pickedEntity = m_SceneHierarchyPanel.ResolvePickedEntity(pickedEntity);
-
-                                    if (isCtrlHeld)
-                                        m_SceneHierarchyPanel.ToggleSelection(pickedEntity);
-                                    else
-                                        m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
-                                }
-                                else
-                                {
-                                    if (!isCtrlHeld)
-                                        m_SceneHierarchyPanel.ClearSelection();
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
-            });
 	}
 
 	void EditorLayer::OnImGuiRenderer()
@@ -428,6 +397,8 @@ namespace RXNEditor {
         m_EnvironmentPanel.OnImGuiRender();
         m_MaterialEditorPanel.OnImGuiRender();
         m_PhysicsMaterialEditorPanel.OnImGuiRender();
+        Entity selectedEntityForAnim = m_SceneHierarchyPanel.GetSelectedEntities().empty() ? Entity{} : m_SceneHierarchyPanel.GetSelectedEntities()[0];
+        m_AnimationEditorPanel.OnImGuiRender(m_ActiveScene, selectedEntityForAnim);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
         ImGui::Begin("Renderer");
@@ -604,17 +575,46 @@ namespace RXNEditor {
             glm::mat4 cameraView = m_EditorCamera->GetViewMatrix();
             glm::mat4 cameraProj = m_EditorCamera->GetProjection();
 
-            if (isScreenSpace)
+                if (isScreenSpace)
             {
                 cameraProj = glm::ortho(0.0f, (float)m_ViewportWidth, 0.0f, (float)m_ViewportHeight, -1.0f, 1.0f);
                 cameraView = glm::mat4(1.0f);
             }
+            int selectedJointIdx = m_AnimationEditorPanel.GetSelectedJointIndex();
+            bool isEditingBone = false;
+            if (m_AnimationEditorPanel.IsOpen() && primaryEntity.HasComponent<AnimatorComponent>())
+            {
+                auto& animator = primaryEntity.GetComponent<AnimatorComponent>();
+                if (animator.MeshAsset && animator.MeshAsset->GetSkeleton() && animator.CurrentPose.JointCount > 0 && selectedJointIdx >= 0)
+                {
+                    isEditingBone = true;
+                }
+                else if (!animator.MeshAsset && animator.CurrentClip)
+                {
+                    selectedJointIdx = 0;
+                    isEditingBone = true;
+                }
+            }
 
-            bool snap = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
-            float snapValue = m_GizmoType == ImGuizmo::OPERATION::ROTATE ? 5.0f : 0.5f;
-            float snapValues[3] = { snapValue, snapValue, snapValue };
-
-            glm::mat4 groupTransform = isUI ? primaryEntity.GetComponent<UITransformComponent>().ComputedTransform : m_ActiveScene->GetWorldTransform(primaryEntity);
+            glm::mat4 groupTransform;
+            if (isEditingBone)
+            {
+                auto& animator = primaryEntity.GetComponent<AnimatorComponent>();
+                if (animator.MeshAsset)
+                {
+                    glm::mat4 entityWorld = m_ActiveScene->GetWorldTransform(primaryEntity);
+                    glm::mat4 jointModel = animator.CurrentPose.ModelTransforms[selectedJointIdx];
+                    groupTransform = entityWorld * jointModel;
+                }
+                else
+                {
+                    groupTransform = m_ActiveScene->GetWorldTransform(primaryEntity);
+                }
+            }
+            else
+            {
+                groupTransform = isUI ? primaryEntity.GetComponent<UITransformComponent>().ComputedTransform : m_ActiveScene->GetWorldTransform(primaryEntity);
+            }
             glm::mat4 deltaMatrix(1.0f);
 
             bool isUsing = ImGuizmo::IsUsing();
@@ -629,80 +629,165 @@ namespace RXNEditor {
                     if (entity.HasComponent<UITransformComponent>())
                         m_GizmoStartUITransforms.push_back({ entity.GetUUID(), entity.GetComponent<UITransformComponent>() });
                 }
+
+                if (isEditingBone)
+                {
+                    auto& animator = primaryEntity.GetComponent<AnimatorComponent>();
+                    if (selectedJointIdx >= (int)animator.CurrentClip->GetRawTracks().size())
+                    {
+                        animator.CurrentClip->InitializeRawTracks(selectedJointIdx + 1);
+                    }
+                    m_GizmoStartKeyframeTrack = animator.CurrentClip->GetRawTracks()[selectedJointIdx];
+                }
             }
+
+            bool snap = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
+            float snapValue = 0.5f;
+            if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
+                snapValue = 45.0f;
+            float snapValues[3] = { snapValue, snapValue, snapValue };
 
             ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProj), (ImGuizmo::OPERATION)m_GizmoType,
                 ImGuizmo::LOCAL, glm::value_ptr(groupTransform), glm::value_ptr(deltaMatrix), snap ? snapValues : nullptr);
 
             if (ImGuizmo::IsUsing())
             {
-                glm::mat4 primaryOriginalTransform = isUI ? primaryEntity.GetComponent<UITransformComponent>().ComputedTransform : m_ActiveScene->GetWorldTransform(primaryEntity);
-                glm::vec3 pivotTranslation, tempRot, tempScale;
-                Math::DecomposeTransform(primaryOriginalTransform, pivotTranslation, tempRot, tempScale);
-                glm::mat4 pivot = glm::translate(glm::mat4(1.0f), pivotTranslation);
-
-                for (Entity entity : selectedEntities)
+                if (isEditingBone)
                 {
-                    if (isUI && entity.HasComponent<UITransformComponent>())
+                    auto& animator = primaryEntity.GetComponent<AnimatorComponent>();
+                    if (animator.MeshAsset)
                     {
-                        auto& ui = entity.GetComponent<UITransformComponent>();
-                        
-                        glm::vec3 deltaTranslation, deltaRotation, deltaScale;
-                        Math::DecomposeTransform(deltaMatrix, deltaTranslation, deltaRotation, deltaScale);
-                        
-                        if (m_GizmoType == ImGuizmo::OPERATION::TRANSLATE)
+                        auto skeleton = animator.MeshAsset->GetSkeleton();
+                        glm::mat4 entityWorld = m_ActiveScene->GetWorldTransform(primaryEntity);
+                        glm::mat4 jointModelNew = glm::inverse(entityWorld) * groupTransform;
+                        glm::mat4 jointLocalNew;
+                        int parentIdx = skeleton->GetParentIndices()[selectedJointIdx];
+                        if (parentIdx >= 0)
                         {
-                            ui.OffsetMin.x += deltaTranslation.x;
-                            ui.OffsetMax.x += deltaTranslation.x;
-                            ui.OffsetMin.y += deltaTranslation.y;
-                            ui.OffsetMax.y += deltaTranslation.y;
-                        }
-                        else if (m_GizmoType == ImGuizmo::OPERATION::SCALE)
-                        {
-                            glm::vec2 size = ui.OffsetMax - ui.OffsetMin;
-                            glm::vec2 center = ui.OffsetMin + (size * 0.5f);
-                            glm::vec2 newSize = size * glm::vec2(deltaScale.x, deltaScale.y);
-                            ui.OffsetMin = center - (newSize * 0.5f);
-                            ui.OffsetMax = center + (newSize * 0.5f);
-                        }
-                        ui.IsDirty = true;
-                    }
-                    else
-                    {
-                        auto& entityTC = entity.GetComponent<TransformComponent>();
-                        auto& entityRC = entity.GetComponent<RelationshipComponent>();
-
-                        glm::mat4 entityWorldTransform;
-
-                        if (entity == primaryEntity)
-                        {
-                            entityWorldTransform = groupTransform;
+                            jointLocalNew = glm::inverse(animator.CurrentPose.ModelTransforms[parentIdx]) * jointModelNew;
                         }
                         else
                         {
-                            glm::mat4 oldEntityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
-                            entityWorldTransform = pivot * deltaMatrix * glm::inverse(pivot) * oldEntityWorldTransform;
+                            jointLocalNew = jointModelNew;
                         }
 
-                        if (entityRC.ParentHandle != 0)
+                        glm::vec3 translation, rotationEuler, scale;
+                        Math::DecomposeTransform(jointLocalNew, translation, rotationEuler, scale);
+                        glm::quat rotation = glm::quat(rotationEuler);
+
+                        animator.CurrentPose.LocalTranslations[selectedJointIdx] = glm::vec4(translation, 1.0f);
+                        animator.CurrentPose.LocalRotations[selectedJointIdx] = rotation;
+                        animator.CurrentPose.LocalScales[selectedJointIdx] = glm::vec4(scale, 1.0f);
+
+                        AnimationSystem::PropagateLocalToModelTransforms(animator.CurrentPose, skeleton->GetParentIndices(), animator.CurrentPose.ModelTransforms);
+
+                        if (m_AnimationEditorPanel.IsAutoKeyEnabled())
                         {
-                            Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
-                            if (parent)
+                            m_AnimationEditorPanel.AddKeyframe(selectedJointIdx, animator.PlaybackTime, translation, rotation, scale);
+                        }
+                    }
+                    else
+                    {
+                        glm::mat4 entityWorldTransform = groupTransform;
+                        if (primaryEntity.HasComponent<RelationshipComponent>())
+                        {
+                            auto& entityRC = primaryEntity.GetComponent<RelationshipComponent>();
+                            if (entityRC.ParentHandle != 0)
                             {
-                                glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
-                                entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                                Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
+                                if (parent)
+                                {
+                                    glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
+                                    entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                                }
                             }
                         }
 
-                        glm::vec3 translation, rotation, scale;
-                        Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
+                        glm::vec3 translation, rotationEuler, scale;
+                        Math::DecomposeTransform(entityWorldTransform, translation, rotationEuler, scale);
+                        glm::quat rotation = glm::quat(rotationEuler);
 
-                        entityTC.Translation = translation;
-                        entityTC.Rotation = rotation;
-                        entityTC.Scale = scale;
+                        auto& tc = primaryEntity.GetComponent<TransformComponent>();
+                        tc.Translation = translation;
+                        tc.Rotation = rotationEuler;
+                        tc.Scale = scale;
 
-                        if (m_SceneState == SceneState::Simulate)
-                            RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
+                        if (m_AnimationEditorPanel.IsAutoKeyEnabled())
+                        {
+                            m_AnimationEditorPanel.AddKeyframe(selectedJointIdx, animator.PlaybackTime, translation, rotation, scale);
+                        }
+                    }
+                }
+                else
+                {
+                    glm::mat4 primaryOriginalTransform = isUI ? primaryEntity.GetComponent<UITransformComponent>().ComputedTransform : m_ActiveScene->GetWorldTransform(primaryEntity);
+                    glm::vec3 pivotTranslation, tempRot, tempScale;
+                    Math::DecomposeTransform(primaryOriginalTransform, pivotTranslation, tempRot, tempScale);
+                    glm::mat4 pivot = glm::translate(glm::mat4(1.0f), pivotTranslation);
+
+                    for (Entity entity : selectedEntities)
+                    {
+                        if (isUI && entity.HasComponent<UITransformComponent>())
+                        {
+                            auto& ui = entity.GetComponent<UITransformComponent>();
+                            
+                            glm::vec3 deltaTranslation, deltaRotation, deltaScale;
+                            Math::DecomposeTransform(deltaMatrix, deltaTranslation, deltaRotation, deltaScale);
+                            
+                            if (m_GizmoType == ImGuizmo::OPERATION::TRANSLATE)
+                            {
+                                ui.OffsetMin.x += deltaTranslation.x;
+                                ui.OffsetMax.x += deltaTranslation.x;
+                                ui.OffsetMin.y += deltaTranslation.y;
+                                ui.OffsetMax.y += deltaTranslation.y;
+                            }
+                            else if (m_GizmoType == ImGuizmo::OPERATION::SCALE)
+                            {
+                                glm::vec2 size = ui.OffsetMax - ui.OffsetMin;
+                                glm::vec2 center = ui.OffsetMin + (size * 0.5f);
+                                glm::vec2 newSize = size * glm::vec2(deltaScale.x, deltaScale.y);
+                                ui.OffsetMin = center - (newSize * 0.5f);
+                                ui.OffsetMax = center + (newSize * 0.5f);
+                            }
+                            ui.IsDirty = true;
+                        }
+                        else
+                        {
+                            auto& entityTC = entity.GetComponent<TransformComponent>();
+                            auto& entityRC = entity.GetComponent<RelationshipComponent>();
+
+                            glm::mat4 entityWorldTransform;
+
+                            if (entity == primaryEntity)
+                            {
+                                entityWorldTransform = groupTransform;
+                            }
+                            else
+                            {
+                                glm::mat4 oldEntityWorldTransform = m_ActiveScene->GetWorldTransform(entity);
+                                entityWorldTransform = pivot * deltaMatrix * glm::inverse(pivot) * oldEntityWorldTransform;
+                            }
+
+                            if (entityRC.ParentHandle != 0)
+                            {
+                                Entity parent = m_ActiveScene->GetEntityByUUID(entityRC.ParentHandle);
+                                if (parent)
+                                {
+                                    glm::mat4 parentTransform = m_ActiveScene->GetWorldTransform(parent);
+                                    entityWorldTransform = glm::inverse(parentTransform) * entityWorldTransform;
+                                }
+                            }
+
+                            glm::vec3 translation, rotation, scale;
+                            Math::DecomposeTransform(entityWorldTransform, translation, rotation, scale);
+
+                            entityTC.Translation = translation;
+                            entityTC.Rotation = rotation;
+                            entityTC.Scale = scale;
+
+                            if (m_SceneState == SceneState::Simulate)
+                                RXNEngine::Application::Get().GetSubsystem<RXNEngine::PhysicsWorld>()->SyncTransformToPhysics(entity);
+                        }
                     }
                 }
             }
@@ -711,40 +796,53 @@ namespace RXNEditor {
             {
                 m_WasGizmoUsing = false;
 
-                std::vector<ChangeMultiTransformCommand::TransformData> transforms;
-                for (const auto& [id, startTransform] : m_GizmoStartTransforms)
+                if (isEditingBone)
                 {
-                    Entity entity = m_ActiveScene->GetEntityByUUID(id);
-                    if (entity)
+                    auto& animator = primaryEntity.GetComponent<AnimatorComponent>();
+                    if (selectedJointIdx >= (int)animator.CurrentClip->GetRawTracks().size())
                     {
-                        TransformComponent endTransform = entity.GetComponent<TransformComponent>();
-                        if (startTransform.Translation != endTransform.Translation ||
-                            startTransform.Rotation != endTransform.Rotation ||
-                            startTransform.Scale != endTransform.Scale)
+                        animator.CurrentClip->InitializeRawTracks(selectedJointIdx + 1);
+                    }
+                    auto endTrack = animator.CurrentClip->GetRawTracks()[selectedJointIdx];
+                    CommandHistory::AddAndExecute(CreateScope<EditKeyframeCommand>(animator.CurrentClip, selectedJointIdx, m_GizmoStartKeyframeTrack, endTrack));
+                }
+                else
+                {
+                    std::vector<ChangeMultiTransformCommand::TransformData> transforms;
+                    for (const auto& [id, startTransform] : m_GizmoStartTransforms)
+                    {
+                        Entity entity = m_ActiveScene->GetEntityByUUID(id);
+                        if (entity)
                         {
-                            transforms.push_back({ id, startTransform, endTransform });
+                            TransformComponent endTransform = entity.GetComponent<TransformComponent>();
+                            if (startTransform.Translation != endTransform.Translation ||
+                                startTransform.Rotation != endTransform.Rotation ||
+                                startTransform.Scale != endTransform.Scale)
+                            {
+                                transforms.push_back({ id, startTransform, endTransform });
+                            }
                         }
                     }
-                }
-                if (!transforms.empty())
-                    CommandHistory::Push(CreateScope<ChangeMultiTransformCommand>(m_ActiveScene, transforms));
-                    
-                std::vector<ChangeMultiUITransformCommand::UITransformData> uiTransforms;
-                for (const auto& [id, startTransform] : m_GizmoStartUITransforms)
-                {
-                    Entity entity = m_ActiveScene->GetEntityByUUID(id);
-                    if (entity && entity.HasComponent<UITransformComponent>())
+                    if (!transforms.empty())
+                        CommandHistory::Push(CreateScope<ChangeMultiTransformCommand>(m_ActiveScene, transforms));
+                        
+                    std::vector<ChangeMultiUITransformCommand::UITransformData> uiTransforms;
+                    for (const auto& [id, startTransform] : m_GizmoStartUITransforms)
                     {
-                        UITransformComponent endTransform = entity.GetComponent<UITransformComponent>();
-                        if (startTransform.OffsetMin != endTransform.OffsetMin ||
-                            startTransform.OffsetMax != endTransform.OffsetMax)
+                        Entity entity = m_ActiveScene->GetEntityByUUID(id);
+                        if (entity && entity.HasComponent<UITransformComponent>())
                         {
-                            uiTransforms.push_back({ id, startTransform, endTransform });
+                            UITransformComponent endTransform = entity.GetComponent<UITransformComponent>();
+                            if (startTransform.OffsetMin != endTransform.OffsetMin ||
+                                startTransform.OffsetMax != endTransform.OffsetMax)
+                            {
+                                uiTransforms.push_back({ id, startTransform, endTransform });
+                            }
                         }
                     }
-                }
-                if (!uiTransforms.empty())
-                    CommandHistory::Push(CreateScope<ChangeMultiUITransformCommand>(m_ActiveScene, uiTransforms));
+                    if (!uiTransforms.empty())
+                        CommandHistory::Push(CreateScope<ChangeMultiUITransformCommand>(m_ActiveScene, uiTransforms));
+                };
             }
         }
 
@@ -780,6 +878,55 @@ namespace RXNEditor {
             }
             ImGui::EndDragDropTarget();
         }
+        if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftAlt))
+        {
+            auto [mx, my] = ImGui::GetMousePos();
+            bool isCtrlHeld = Application::Get().GetSubsystem<Input>()->IsKeyPressed(KeyCode::LeftControl);
+
+            bool hitIcon = false;
+            for (auto it = m_IconHitboxes.rbegin(); it != m_IconHitboxes.rend(); ++it)
+            {
+                if (mx >= it->Min.x && mx <= it->Max.x && my >= it->Min.y && my <= it->Max.y)
+                {
+                    hitIcon = true;
+                    if (isCtrlHeld)
+                        m_SceneHierarchyPanel.ToggleSelection(it->Ent);
+                    else 
+                        m_SceneHierarchyPanel.SetSelectedEntity(it->Ent);
+                    break;
+                }
+            }
+
+            if (!hitIcon)
+            {
+                float relX = mx - m_ViewportBounds[0].x;
+                float relY = my - m_ViewportBounds[0].y;
+
+                glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+                if (relX >= 0 && relY >= 0 && relX < viewportSize.x && relY < viewportSize.y)
+                {
+                    relY = viewportSize.y - relY;
+
+                    int pickedID = m_SceneRenderer->GetEntityIDAtMouse((int)relX, (int)relY, *m_EditorCamera, m_SceneHierarchyPanel.GetSelectedEntities());
+
+                    if (pickedID > -1)
+                    {
+                        Entity pickedEntity = { (entt::entity)pickedID, m_ActiveScene.get() };
+                        pickedEntity = m_SceneHierarchyPanel.ResolvePickedEntity(pickedEntity);
+
+                        if (isCtrlHeld)
+                            m_SceneHierarchyPanel.ToggleSelection(pickedEntity);
+                        else
+                            m_SceneHierarchyPanel.SetSelectedEntity(pickedEntity);
+                    }
+                    else
+                    {
+                        if (!isCtrlHeld)
+                            m_SceneHierarchyPanel.ClearSelection();
+                    }
+                }
+            }
+        }
 
         ImGui::End();
         ImGui::PopStyleVar();
@@ -793,8 +940,27 @@ namespace RXNEditor {
         ImGui::Text("Total Indices: %d", stats.TotalIndices);
 
         ImGui::Text("Total Triangles: %d", stats.TotalIndices / 3);
+        ImGui::Text("Hi-Z Occluded: %d", m_SceneRenderer ? (int)m_SceneRenderer->GetHiZOccludedCount() : 0);
 
         ImGui::Text(std::to_string(m_FPS).c_str());
+
+        ImGui::SeparatorText("GPU Timings");
+
+        auto& gpuProfiler = GPUProfiler::Get();
+        ImGui::Text("GPU Frame: %.2f ms", gpuProfiler.GetFrameGPUTime());
+        for (const auto& scope : gpuProfiler.GetResults())
+            ImGui::Text("%*s%s: %.2f ms | CPU %.2f ms", (int)scope.Depth * 2, "", scope.Name.c_str(), scope.Milliseconds, scope.CPUMilliseconds);
+
+        if (ImGui::CollapsingHeader("Texture Units (opaque pass)"))
+        {
+            const auto& bindings = Application::Get().GetSubsystem<Renderer>()->GetDebugTextureBindings();
+            for (const auto& b : bindings)
+            {
+                if (b.Tex2D == 0 && b.TexCube == 0 && b.Tex2DArray == 0 && b.TexCubeArray == 0)
+                    continue;
+                ImGui::Text("u%02u: 2D=%u Cube=%u 2DArr=%u CubeArr=%u", b.Unit, b.Tex2D, b.TexCube, b.Tex2DArray, b.TexCubeArray);
+            }
+        }
 
         ImGui::End();
 
@@ -850,9 +1016,15 @@ namespace RXNEditor {
             {
                 Entity importedEntity = ModelImporter::InstantiateToScene(m_ActiveScene, m_PendingImportPath, m_ImportSettings);
 
-                m_SceneHierarchyPanel.SetSelectedEntity(importedEntity);
-
-                CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, importedEntity));
+                if (importedEntity)
+                {
+                    m_SceneHierarchyPanel.SetSelectedEntity(importedEntity);
+                    CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, importedEntity));
+                }
+                else
+                {
+                    RXN_CORE_ERROR("Failed to import model: {0}", m_PendingImportPath);
+                }
 
                 ImGui::CloseCurrentPopup();
                 m_PendingImportPath.clear();
@@ -981,7 +1153,10 @@ namespace RXNEditor {
                 if (!m_BuildError.empty())
                 {
                     ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Build Failed!");
-                    ImGui::TextWrapped("%s", m_BuildError.c_str());
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.05f, 0.05f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+                    ImGui::InputTextMultiline("##BuildErrorLog", const_cast<char*>(m_BuildError.c_str()), m_BuildError.size() + 1, ImVec2(-FLT_MIN, 180), ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopStyleColor(2);
                 }
                 else if (m_BuildSuccess)
                 {
@@ -1151,13 +1326,16 @@ namespace RXNEditor {
                 }
                 case KeyCode::Delete:
                 {
+                    if (m_AnimationEditorPanel.IsFocused())
+                        return true;
+
                     const auto& selected = m_SceneHierarchyPanel.GetSelectedEntities();
                     if (!selected.empty())
                     {
                         CommandHistory::AddAndExecute(CreateScope<DeleteEntitiesCommand>(m_ActiveScene, selected));
                         m_SceneHierarchyPanel.ClearSelection();
                     }
-                    break;
+                    return true;
                 }
                 case KeyCode::D:
                 {
@@ -1195,8 +1373,11 @@ namespace RXNEditor {
                             if (entity)
                             {
                                 Entity duplicate = m_ActiveScene->DuplicateEntity(entity);
-                                CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, duplicate));
-                                m_SceneHierarchyPanel.ToggleSelection(duplicate);
+                                if (duplicate)
+                                {
+                                    CommandHistory::Push(CreateScope<SpawnEntityTreeCommand>(m_ActiveScene, duplicate));
+                                    m_SceneHierarchyPanel.ToggleSelection(duplicate);
+                                }
                             }
                         }
                     }
@@ -1305,6 +1486,7 @@ namespace RXNEditor {
             m_ActiveScene = m_EditorScene;
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
             m_SceneRenderer->SetScene(m_ActiveScene);
+            Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(m_ActiveScene);
             m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
 
             if (Project::GetActive())
@@ -1332,6 +1514,7 @@ namespace RXNEditor {
         m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
+        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(m_ActiveScene);
 
         m_ActiveScenePath = {};
         CommandHistory::Clear();
@@ -1365,12 +1548,12 @@ namespace RXNEditor {
             m_ActiveScene->OnSimulationStop();
 
         m_SceneState = SceneState::Edit;
-        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(nullptr);
 
         Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
         UUID selectedUUID = selected ? selected.GetUUID() : UUID::Null;
 
         m_ActiveScene = m_EditorScene;
+        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(m_ActiveScene);
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
@@ -1394,6 +1577,7 @@ namespace RXNEditor {
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneRenderer->SetScene(m_ActiveScene);
+        Application::Get().GetSubsystem<SceneManager>()->SetActiveScene(m_ActiveScene);
 
         m_ActiveScene->OnViewportResize(m_ViewportWidth, m_ViewportHeight);
 
@@ -1667,6 +1851,73 @@ namespace RXNEditor {
                 return false;
             }
 
+            fs::path resSourceDir;
+            if (fs::exists(editorDir / "res"))
+            {
+                resSourceDir = fs::canonical(editorDir / "res");
+            }
+            else if (fs::exists(editorDir / ".." / ".." / ".." / "RXNEditor" / "res"))
+            {
+                resSourceDir = fs::canonical(editorDir / ".." / ".." / ".." / "RXNEditor" / "res");
+            }
+            else if (fs::exists(fs::current_path() / "res"))
+            {
+                resSourceDir = fs::canonical(fs::current_path() / "res");
+            }
+
+            if (resSourceDir.empty())
+            {
+                m_BuildError = "Engine resources directory (res) not found. Build incomplete.";
+                return false;
+            }
+
+            if (fs::exists(resSourceDir / "scripts"))
+            {
+                fs::path targetScripts = buildDir / "scripts";
+                if (!fs::exists(targetScripts))
+                    fs::create_directories(targetScripts);
+
+                fs::path hostCsproj = resSourceDir.parent_path().parent_path() / "RXNScriptHost" / "RXNScriptHost.csproj";
+                if (!fs::exists(hostCsproj))
+                    hostCsproj = resSourceDir.parent_path() / "RXNScriptHost" / "RXNScriptHost.csproj";
+
+                if (fs::exists(hostCsproj))
+                {
+                    std::string publishCommand = "dotnet publish \"" + hostCsproj.string() + "\""
+                        + " -c Release -r win-x64 --self-contained -p:PublishAot=true -p:DefineConstants=NATIVE_AOT"
+                        + " -o \"" + targetScripts.string() + "\"";
+
+                    int publishExitCode = 0;
+                    std::string publishOutput = ExecuteCommandAndCaptureOutput(publishCommand, publishExitCode);
+                    
+                    if (publishExitCode != 0)
+                    {
+                        m_BuildError = "Failed to compile C# scripts via NativeAOT:\n" + publishOutput;
+                        return false;
+                    }
+
+                    fs::path win64Dir = targetScripts / "win-x64";
+                    if (fs::exists(win64Dir))
+                        fs::remove_all(win64Dir);
+
+                    std::vector<std::string> trashFiles = {
+                        "RXNScriptApp.dll", "RXNScriptApp.pdb", "RXNScriptApp.deps.json",
+                        "RXNScriptCore.dll", "RXNScriptCore.pdb", "RXNScriptCore.deps.json",
+                        "RXNScriptHost.pdb", "RXNScriptHost.deps.json", "RXNScriptHost.runtimeconfig.json"
+                    };
+                    for (const auto& trash : trashFiles)
+                    {
+                        fs::path trashPath = targetScripts / trash;
+                        if (fs::exists(trashPath))
+                            fs::remove(trashPath);
+                    }
+                }
+                else
+                {
+                    fs::copy(resSourceDir / "scripts", targetScripts, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+                }
+            }
+
             fs::path assetsDir = Project::GetAssetDirectory();
             if (fs::exists(assetsDir))
             {
@@ -1721,20 +1972,6 @@ namespace RXNEditor {
                     fs::copy_file(entry.path(), buildDir / entry.path().filename(), fs::copy_options::overwrite_existing);
             }
 
-            fs::path resSourceDir;
-            if (fs::exists(editorDir / "res"))
-            {
-                resSourceDir = fs::canonical(editorDir / "res");
-            }
-            else if (fs::exists(editorDir / ".." / ".." / ".." / "RXNEditor" / "res"))
-            {
-                resSourceDir = fs::canonical(editorDir / ".." / ".." / ".." / "RXNEditor" / "res");
-            }
-            else if (fs::exists(fs::current_path() / "res"))
-            {
-                resSourceDir = fs::canonical(fs::current_path() / "res");
-            }
-
             if (!resSourceDir.empty())
             {
                 fs::path tempRoot = buildDir / "temp_core";
@@ -1750,52 +1987,6 @@ namespace RXNEditor {
                     fs::path targetShaders = tempRes / "shaders";
                     fs::create_directories(targetShaders);
                     fs::copy(resSourceDir / "shaders", targetShaders, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
-                }
-                if (fs::exists(resSourceDir / "scripts"))
-                {
-                    fs::path targetScripts = buildDir / "scripts";
-                    if (!fs::exists(targetScripts))
-                        fs::create_directories(targetScripts);
-
-                    fs::path hostCsproj = resSourceDir.parent_path().parent_path() / "RXNScriptHost" / "RXNScriptHost.csproj";
-                    if (!fs::exists(hostCsproj))
-                        hostCsproj = resSourceDir.parent_path() / "RXNScriptHost" / "RXNScriptHost.csproj";
-
-                    if (fs::exists(hostCsproj))
-                    {
-                        std::string publishCommand = "dotnet publish \"" + hostCsproj.string() + "\""
-                            + " -c Release -r win-x64 --self-contained -p:PublishAot=true -p:DefineConstants=NATIVE_AOT"
-                            + " -o \"" + targetScripts.string() + "\"";
-
-                        int publishExitCode = 0;
-                        std::string publishOutput = ExecuteCommandAndCaptureOutput(publishCommand, publishExitCode);
-                        
-                        if (publishExitCode != 0)
-                        {
-                            m_BuildError = "Failed to compile C# scripts via NativeAOT:\n" + publishOutput;
-                            return false;
-                        }
-
-                        fs::path win64Dir = targetScripts / "win-x64";
-                        if (fs::exists(win64Dir))
-                            fs::remove_all(win64Dir);
-
-                        std::vector<std::string> trashFiles = {
-                            "RXNScriptApp.dll", "RXNScriptApp.pdb", "RXNScriptApp.deps.json",
-                            "RXNScriptCore.dll", "RXNScriptCore.pdb", "RXNScriptCore.deps.json",
-                            "RXNScriptHost.pdb", "RXNScriptHost.deps.json", "RXNScriptHost.runtimeconfig.json"
-                        };
-                        for (const auto& trash : trashFiles)
-                        {
-                            fs::path trashPath = targetScripts / trash;
-                            if (fs::exists(trashPath))
-                                fs::remove(trashPath);
-                        }
-                    }
-                    else
-                    {
-                        fs::copy(resSourceDir / "scripts", targetScripts, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
-                    }
                 }
                 if (fs::exists(resSourceDir / "fonts"))
                 {

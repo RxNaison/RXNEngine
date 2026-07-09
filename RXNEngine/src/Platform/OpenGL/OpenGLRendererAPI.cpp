@@ -194,7 +194,37 @@ namespace RXNEngine {
 
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, src->GetRendererID());
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->GetRendererID());
-		glBlitFramebuffer(0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+		auto colorCountOf = [](const RenderTargetSpecification& s) -> uint32_t
+		{
+			uint32_t n = 0;
+			for (const auto& a : s.Attachments.Attachments)
+				if (a.TextureFormat != RenderTargetTextureFormat::DEPTH24STENCIL8 && a.TextureFormat != RenderTargetTextureFormat::None)
+					n++;
+			return n;
+		};
+		uint32_t srcColor = colorCountOf(src->GetSpecification());
+		uint32_t dstColor = colorCountOf(dst->GetSpecification());
+		uint32_t colorCount = (srcColor < dstColor ? srcColor : dstColor);
+		if (colorCount == 0) colorCount = 1;
+
+		for (uint32_t i = 0; i < colorCount; i++)
+		{
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0 + i);
+			glBlitFramebuffer(0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		}
+
+		glBlitFramebuffer(0, 0, srcWidth, srcHeight, 0, 0, dstWidth, dstHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+
+		if (dstColor > 1)
+		{
+			GLenum drawBuffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+			glDrawBuffers((GLsizei)(dstColor <= 4 ? dstColor : 4), drawBuffers);
+		}
+		else
+		{
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
@@ -237,6 +267,30 @@ namespace RXNEngine {
 		glBindTextureUnit(slot, textureID);
 	}
 
+	void OpenGLRendererAPI::SetColorMaskIndexed(uint32_t attachmentIndex, bool r, bool g, bool b, bool a)
+	{
+		glColorMaski(attachmentIndex, r ? GL_TRUE : GL_FALSE, g ? GL_TRUE : GL_FALSE, b ? GL_TRUE : GL_FALSE, a ? GL_TRUE : GL_FALSE);
+	}
+
+	void OpenGLRendererAPI::QueryTextureBindings(std::vector<RendererAPI::TextureUnitBinding>& outBindings, uint32_t unitCount)
+	{
+		outBindings.resize(unitCount);
+		for (uint32_t i = 0; i < unitCount; i++)
+		{
+			GLint tex2d = 0, cube = 0, arr2d = 0, cubeArr = 0;
+			glGetIntegeri_v(GL_TEXTURE_BINDING_2D, i, &tex2d);
+			glGetIntegeri_v(GL_TEXTURE_BINDING_CUBE_MAP, i, &cube);
+			glGetIntegeri_v(GL_TEXTURE_BINDING_2D_ARRAY, i, &arr2d);
+			glGetIntegeri_v(GL_TEXTURE_BINDING_CUBE_MAP_ARRAY, i, &cubeArr);
+
+			outBindings[i].Unit = i;
+			outBindings[i].Tex2D = (uint32_t)tex2d;
+			outBindings[i].TexCube = (uint32_t)cube;
+			outBindings[i].Tex2DArray = (uint32_t)arr2d;
+			outBindings[i].TexCubeArray = (uint32_t)cubeArr;
+		}
+	}
+
 	void OpenGLRendererAPI::Draw(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
 	{
 		vertexArray->Bind();
@@ -262,6 +316,19 @@ namespace RXNEngine {
 		glDrawElementsInstanced(GL_TRIANGLES, count, GL_UNSIGNED_INT, offset, instanceCount);
 	}
 
+	void OpenGLRendererAPI::DrawIndexedInstancedStream(const Ref<VertexArray>& vertexArray, uint32_t instanceBufferID,
+		uint32_t instanceStride, uint32_t instanceOffsetBytes, uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex)
+	{
+		vertexArray->Bind();
+
+		glBindVertexBuffer(1, instanceBufferID, (GLintptr)instanceOffsetBytes, (GLsizei)instanceStride);
+
+		uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
+		const void* offset = (const void*)(sizeof(uint32_t) * (size_t)baseIndex);
+
+		glDrawElementsInstanced(GL_TRIANGLES, count, GL_UNSIGNED_INT, offset, instanceCount);
+	}
+
 	void OpenGLRendererAPI::DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
 	{
 		vertexArray->Bind();
@@ -274,6 +341,27 @@ namespace RXNEngine {
 		glLineWidth(width);
 	}
 
+	void OpenGLRendererAPI::DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
+	{
+		glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+	}
+
+	void OpenGLRendererAPI::MemoryBarrier(BarrierType type)
+	{
+		switch (type)
+		{
+			case BarrierType::ShaderStorage:
+				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+				break;
+			case BarrierType::VertexAttribArray:
+				glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+				break;
+			case BarrierType::ShaderStorageAndAttribArray:
+				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+				break;
+			default:
+				break;
+		}
+	}
+
 }
-
-

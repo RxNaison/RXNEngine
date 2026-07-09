@@ -6,6 +6,7 @@
 #include "EnvironmentPanel.h"
 #include "MaterialEditorPanel.h"
 #include "PhysicsMaterialEditorPanel.h"
+#include "AnimationEditorPanel.h"
 #include "LauncherPanel.h"
 #include "RXNEngine/Asset/ModelImporter.h"
 #include "CommandHistory.h"
@@ -62,6 +63,7 @@ namespace RXNEditor {
 		EnvironmentPanel m_EnvironmentPanel;
 		MaterialEditorPanel m_MaterialEditorPanel;
 		PhysicsMaterialEditorPanel m_PhysicsMaterialEditorPanel;
+		AnimationEditorPanel m_AnimationEditorPanel;
 		LauncherPanel m_LauncherPanel;
 
 		glm::vec2 m_ViewportBounds[2];
@@ -71,8 +73,8 @@ namespace RXNEditor {
 
 		SceneState m_SceneState = SceneState::Edit;
 
-		uint32_t m_ViewportWidth = 0;
-		uint32_t m_ViewportHeight = 0;
+		uint32_t m_ViewportWidth = 1;
+		uint32_t m_ViewportHeight = 1;
 
 		std::string m_PendingImportPath;
 		bool m_ShowImportDialog = false;
@@ -97,6 +99,7 @@ namespace RXNEditor {
 		bool m_WasGizmoUsing = false;
 		std::vector<std::pair<RXNEngine::UUID, RXNEngine::TransformComponent>> m_GizmoStartTransforms;
 		std::vector<std::pair<RXNEngine::UUID, RXNEngine::UITransformComponent>> m_GizmoStartUITransforms;
+		RXNEngine::RawJointTrack m_GizmoStartKeyframeTrack;
 
 	private:
 		void OpenBuildDialog();
