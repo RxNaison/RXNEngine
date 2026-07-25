@@ -145,8 +145,6 @@ namespace RXNEngine {
 					Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
 				else
 					Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, Utils::TextureFormatToOpenGL(currentTextureFormat), GL_RGBA, m_Specification.Width, m_Specification.Height, i);
-
-				Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples, Utils::TextureFormatToOpenGL(currentTextureFormat), GL_RGBA, m_Specification.Width, m_Specification.Height, i);
 			}
 		}
 
@@ -217,6 +215,16 @@ namespace RXNEngine {
 
 	}
 
+	void OpenGLRenderTarget::ReadPixels(uint32_t attachmentIndex, void* outData)
+	{
+		RXN_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
+
+		glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
+		glReadPixels(0, 0, m_Specification.Width, m_Specification.Height, GL_BGRA, GL_UNSIGNED_BYTE, outData);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
 	void OpenGLRenderTarget::ClearAttachment(uint32_t attachmentIndex, int value)
 	{
 		RXN_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
@@ -224,6 +232,15 @@ namespace RXNEngine {
 		auto& spec = m_ColorAttachmentSpecifications[attachmentIndex];
 		glClearTexImage(m_ColorAttachments[attachmentIndex], 0,
 			Utils::TextureFormatToOpenGL(spec.TextureFormat), GL_INT, &value);
+	}
+
+	void OpenGLRenderTarget::ClearColorAttachmentFloat(uint32_t attachmentIndex, float r, float g, float b, float a)
+	{
+		RXN_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
+
+		glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+		float color[4] = { r, g, b, a };
+		glClearBufferfv(GL_COLOR, (GLint)attachmentIndex, color);
 	}
 
 	void OpenGLRenderTarget::GenerateMipmaps(uint32_t attachmentIndex)

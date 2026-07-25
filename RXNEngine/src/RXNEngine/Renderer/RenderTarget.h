@@ -61,8 +61,10 @@ namespace RXNEngine {
 
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
+		virtual void ReadPixels(uint32_t attachmentIndex, void* outData) = 0;
 
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) = 0;
+		virtual void ClearColorAttachmentFloat(uint32_t attachmentIndex, float r, float g, float b, float a) = 0;
 
 		virtual void GenerateMipmaps(uint32_t attachmentIndex = 0) = 0;
 
