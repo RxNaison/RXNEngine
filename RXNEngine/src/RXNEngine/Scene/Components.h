@@ -8,6 +8,13 @@
 #include "RXNEngine/Renderer/GraphicsAPI/VideoTexture.h"
 #include "RXNEngine/Asset/PhysicsMaterial.h"
 #include "RXNEngine/Renderer/Font.h"
+#include "RXNEngine/Asset/SkeletalMesh.h"
+#include "RXNEngine/Asset/AnimationClip.h"
+#include "RXNEngine/Asset/Inertialization.h"
+#include "RXNEngine/Animation/AnimGraph.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Buffer.h"
+#include "RXNEngine/Renderer/GraphicsAPI/VertexArray.h"
+#include "RXNEngine/Renderer/GraphicsAPI/UniformBuffer.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -100,6 +107,8 @@ namespace RXNEngine {
 	{
 		glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
 		float Intensity = 1.0f;
+		bool CastsShadows = true;
+		uint32_t ShadowResolution = 2048;
 	};
 
 	struct PointLightComponent
@@ -110,10 +119,12 @@ namespace RXNEngine {
 		float Falloff = 1.0f;
 
 		bool CastsShadows = false;
+		uint32_t ShadowResolution = 1024;
 
 		bool IsShadowCacheValid = false;
 		glm::vec3 LastCachedPosition = { 0.0f, 0.0f, 0.0f };
 		int LastShadowLayer = -1;
+		float LastCachedRadius = -1.0f; // WP20: cube-map far plane of the last bake
 	};
 
 	struct SpotLightComponent
@@ -132,10 +143,15 @@ namespace RXNEngine {
 		float CookieSize = 1.0f;
 
 		bool CastsShadows = false;
+		uint32_t ShadowResolution = 1024;
 
 		bool IsShadowCacheValid = false;
 		glm::vec3 LastCachedPosition = { 0.0f, 0.0f, 0.0f };
 		int LastShadowLayer = -1;
+		// WP20: full light-space matrix of the last bake. It encodes position,
+		// direction, cone angle AND range, so ANY change invalidates the cache
+		// (a flashlight mostly rotates, which position tracking alone misses).
+		glm::mat4 LastCachedMatrix = glm::mat4(0.0f);
 	};
 
 	class ScriptableEntity;
@@ -158,6 +174,7 @@ namespace RXNEngine {
 	{
 		uint32_t Type = 0; // Maps to ScriptFieldType enum
 		std::array<uint8_t, 16> Data = { 0 };
+		std::string StringValue;
 	};
 
 	struct ScriptComponent
@@ -192,7 +209,7 @@ namespace RXNEngine {
 
 	struct BoxColliderComponent
 	{
-		glm::vec3 HalfExtents = { 0.5f, 0.5f, 0.5f };
+		glm::vec3 HalfExtents = { 1.0f, 1.0f, 1.0f };
 		glm::vec3 Offset = { 0.0f, 0.0f, 0.0f };
 		bool IsTrigger = false;
 		bool IsAmbientZone = false;
@@ -286,8 +303,40 @@ namespace RXNEngine {
 		void* RuntimeSound = nullptr;
 		bool IsPlaying = false;
 
+		// AAA Upgrades: Velocity & Occlusion Tracking
+		glm::vec3 LastPosition = { 0.0f, 0.0f, 0.0f };
+		bool HasLastPosition = false;
+		float CurrentOcclusion = 0.0f;
+
 		AudioSourceComponent() = default;
 		AudioSourceComponent(const AudioSourceComponent&) = default;
+	};
+
+	enum class ReverbPreset {
+		Off = 0, Generic, PaddedCell, Room, Bathroom, LivingRoom, StoneRoom, 
+		Auditorium, ConcertHall, Cave, Hangar, CarpettedHallway, Hallway, 
+		StoneCorridor, Alley, Forest, City, Mountains, Quarry
+	};
+
+	struct AudioReverbZoneComponent
+	{
+		ReverbPreset Preset = ReverbPreset::Generic;
+		float MinDistance = 1.0f;
+		float MaxDistance = 10.0f;
+		bool IsBox = false;
+		glm::vec3 BoxDimensions = { 10.0f, 10.0f, 10.0f };
+
+		AudioReverbZoneComponent() = default;
+		AudioReverbZoneComponent(const AudioReverbZoneComponent&) = default;
+	};
+
+	struct AudioPortalComponent
+	{
+		bool Active = true;
+		glm::vec2 Dimensions = { 1.5f, 2.2f };
+
+		AudioPortalComponent() = default;
+		AudioPortalComponent(const AudioPortalComponent&) = default;
 	};
 
 	enum class CanvasRenderMode { ScreenSpaceOverlay = 0, WorldSpace = 1 };
@@ -368,6 +417,83 @@ namespace RXNEngine {
 		UIButtonComponent(const UIButtonComponent&) = default;
 	};
 
+	struct AnimatorComponent
+	{
+		Ref<SkeletalMesh> MeshAsset = nullptr;
+		std::string MeshAssetPath = "";
+		std::string AnimationPath = "";
+		bool ApplyRootMotion = false;
+		float PrevPlaybackTime = -1.0f;
+		bool RootMotionInitialized = false;
+
+		SkeletalPose CurrentPose;
+		Ref<AnimationClip> CurrentClip = nullptr;
+		std::string CurrentClipName = "";
+		std::string CurrentClipPath = "";
+		float PlaybackTime = 0.0f;
+		float PlaybackSpeed = 1.0f;
+		bool Looping = true;
+
+		InertializationDelta DeltaSolver;
+		std::vector<glm::vec3> JointVelocities;
+
+		Ref<VertexBuffer> SkinnedVBOs[2] = { nullptr, nullptr };
+		Ref<VertexArray> SkinnedVAO = nullptr;
+		Ref<UniformBuffer> BoneUniformBuffer = nullptr;
+		uint32_t CurrentBufferIdx = 0;
+
+		AnimGraphInstance GraphInstance;
+		std::vector<AnimInstruction> CompiledInstructions;
+		AnimGraphContext GraphContext;
+		FeatureVector TargetQueryFeatures;
+		FeatureWeights SearchWeights;
+		uint64_t ActiveTagBitmask = 0;
+
+		AnimatorComponent() = default;
+		AnimatorComponent(const AnimatorComponent&) = default;
+
+		void PlayAnimation(Ref<AnimationClip> clip, float halfLife = 0.15f)
+		{
+			if (!clip)
+				return;
+
+			if (!MeshAsset)
+			{
+				CurrentClip = clip;
+				CurrentClipName = clip->GetName();
+				PlaybackTime = 0.0f;
+				RootMotionInitialized = false;
+				PrevPlaybackTime = -1.0f;
+				return;
+			}
+
+			if (CurrentClip && CurrentPose.JointCount > 0)
+			{
+				if (JointVelocities.size() != CurrentPose.JointCount)
+				{
+					JointVelocities.resize(CurrentPose.JointCount, glm::vec3(0.0f));
+				}
+
+				std::vector<glm::vec3> newVelocities(CurrentPose.JointCount, glm::vec3(0.0f));
+				SkeletalPose newPose;
+				newPose.Resize(CurrentPose.JointCount);
+				for (uint32_t j = 0; j < CurrentPose.JointCount; ++j)
+				{
+					clip->SampleTrackForSkeleton(MeshAsset->GetSkeleton().get(), j, 0.0f, newPose.LocalTranslations[j], newPose.LocalRotations[j], newPose.LocalScales[j]);
+				}
+
+				DeltaSolver.HalfLife = halfLife;
+				DeltaSolver.Initialize(CurrentPose, newPose, JointVelocities, newVelocities);
+			}
+
+			CurrentClip = clip;
+			CurrentClipName = clip->GetName();
+			PlaybackTime = 0.0f;
+			RootMotionInitialized = false;
+			PrevPlaybackTime = -1.0f;
+		}
+	};
+
 	struct FoliageComponent //TODO
 	{
 		std::string ImpostorAssetPath = "";
@@ -375,6 +501,25 @@ namespace RXNEngine {
 
 		FoliageComponent() = default;
 		FoliageComponent(const FoliageComponent&) = default;
+	};
+
+	struct ReflectionProbeComponent
+	{
+		bool Active = true;
+		glm::vec3 BoxHalfExtents = { 5.0f, 5.0f, 5.0f };
+		float BlendDistance = 1.0f;
+		float Intensity = 1.0f;
+
+		// Capture (R1 Step 2 - hybrid baked + on-demand).
+		int Resolution = 256;
+		bool Baked = true;
+		bool Dirty = true;
+		bool Captured = false; // runtime: set once this probe's cubemap has been captured
+		glm::vec3 LastCapturePosition = glm::vec3(0.0f); // runtime: world position used for the last capture (auto re-capture when the probe moves)
+		uint32_t CaptureFaceIndex = 0; // runtime (WP13): time-sliced capture cursor, one cubemap face per frame
+
+		ReflectionProbeComponent() = default;
+		ReflectionProbeComponent(const ReflectionProbeComponent&) = default;
 	};
 
 	template<typename... Component>
@@ -397,11 +542,15 @@ namespace RXNEngine {
 		MeshColliderComponent,
 		CharacterControllerComponent,
 		AudioSourceComponent,
+		AudioReverbZoneComponent,
+		AudioPortalComponent,
 		UICanvasComponent,
 		UITransformComponent,
 		UIImageComponent,
 		UITextComponent,
 		UIButtonComponent,
-		FoliageComponent
+		AnimatorComponent,
+		FoliageComponent,
+		ReflectionProbeComponent
 	>;
 }

@@ -17,11 +17,12 @@ namespace RXNEngine {
         ma_engine_uninit(&m_Engine);
     }
 
-    void MiniaudioBackend::UpdateListener(const glm::vec3& position, const glm::vec3& forward, const glm::vec3& up)
+    void MiniaudioBackend::UpdateListener(const glm::vec3& position, const glm::vec3& forward, const glm::vec3& up, const glm::vec3& velocity)
     {
         ma_engine_listener_set_position(&m_Engine, 0, position.x, position.y, position.z);
         ma_engine_listener_set_direction(&m_Engine, 0, forward.x, forward.y, forward.z);
         ma_engine_listener_set_world_up(&m_Engine, 0, up.x, up.y, up.z);
+        ma_engine_listener_set_velocity(&m_Engine, 0, velocity.x, velocity.y, velocity.z);
     }
 
     void MiniaudioBackend::PlayOneShot(const std::string& filepath, float volume)
@@ -49,14 +50,22 @@ namespace RXNEngine {
         return sound;
     }
 
-    void MiniaudioBackend::UpdateSoundSource(void* sourceData, const glm::vec3& position, float volume, float pitch, float minDistance, float maxDistance)
+    void MiniaudioBackend::UpdateSoundSource(void* sourceData, const glm::vec3& position, const glm::vec3& velocity, float volume, float pitch, float minDistance, float maxDistance, float occlusion, float spread)
     {
         if (!sourceData)
             return;
 
         ma_sound* sound = static_cast<ma_sound*>(sourceData);
         ma_sound_set_position(sound, position.x, position.y, position.z);
-        ma_sound_set_volume(sound, volume);
+        ma_sound_set_velocity(sound, velocity.x, velocity.y, velocity.z);
+        
+        float targetVolume = volume;
+        if (occlusion > 0.0f)
+        {
+            targetVolume = volume * (1.0f - occlusion) * (1.0f - occlusion * 0.8f);
+        }
+        ma_sound_set_volume(sound, targetVolume);
+
         ma_sound_set_pitch(sound, pitch);
         ma_sound_set_min_distance(sound, minDistance);
         ma_sound_set_max_distance(sound, maxDistance);
@@ -86,5 +95,9 @@ namespace RXNEngine {
         ma_sound* sound = static_cast<ma_sound*>(sourceData);
         ma_sound_uninit(sound);
         delete sound;
+    }
+
+    void MiniaudioBackend::SetReverbPreset(int preset, float volume)
+    {
     }
 }
