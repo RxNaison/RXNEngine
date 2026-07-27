@@ -34,6 +34,8 @@ void main()
 #version 450 core
 
 layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 o_SSR;
+layout(location = 2) out vec4 o_Normal;
 
 struct VertexOutput
 {
@@ -103,6 +105,8 @@ void main()
     float opacity = smoothstep(-0.5, 0.5, screenPxDistance);
 
     color = vec4(Input.Color.rgb, Input.Color.a * opacity);
+    o_SSR = vec4(0.0);
+    o_Normal = vec4(0.5, 0.5, 1.0, 0.0);
     
     if (color.a < 0.001)
         discard;

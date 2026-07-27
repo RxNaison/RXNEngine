@@ -15,6 +15,7 @@ namespace RXNEngine {
 
     class Entity;
     class Scene;
+    class SkeletalMesh;
 
     struct RenderCommandPacket
     {
@@ -23,6 +24,7 @@ namespace RXNEngine {
         glm::mat4 Transform = {};
         uint32_t SubmeshIndex = 0;
         float DistanceToCamera = 0;
+        uint32_t LODIndex = 0;
 
         uint64_t SortKey = 0;
         int EntityID = -1;
@@ -30,6 +32,9 @@ namespace RXNEngine {
         glm::vec3 BoundingCenter = { 0.0f, 0.0f, 0.0f };
         float BoundingRadius = 0.0f;
         bool IsDynamic = false;
+
+        Ref<VertexArray> ResolvedVAO = nullptr;
+        Ref<SkeletalMesh> ResolvedSkeletalMesh = nullptr;
     };
 
     struct InstanceData
@@ -69,7 +74,7 @@ namespace RXNEngine {
 
         void EndScene();
 
-        void Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID = -1);
+        void Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID = -1, uint32_t lodIndex = 0);
 
         void DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera);
         void DrawSkybox(const Ref<Cubemap>& skybox, const Camera& camera, const glm::mat4& cameraTransform);
@@ -87,15 +92,18 @@ namespace RXNEngine {
 
         void DrawFrustum(const glm::mat4& transform, const glm::mat4& projection, const glm::vec4& color);
 
-        void DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader);
+        void DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader, Scene* scene = nullptr, int entityID = -1);
+
+        void OnSceneDestroyed(Scene* scene);
 
         void ExecutePickingPass(const Ref<Shader>& pickingShader);
 
         bool IsSphereVisibleToShadows(const glm::vec3& center, float radius);
-        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius, bool isDynamic = false);
+        void SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius, bool isDynamic = false, uint32_t lodIndex = 0);
         void SubmitShadowImpostorQuad(Entity entity);
 
         RendererStatistics GetStats();
+        const std::vector<RendererAPI::TextureUnitBinding>& GetDebugTextureBindings() const;
         void ResetStats();
 
         static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
@@ -105,7 +113,7 @@ namespace RXNEngine {
             const LightEnvironment& lights, const Ref<Cubemap>& environment, const Ref<RenderTarget>& renderTarget, Scene* scene = nullptr, const glm::mat4& prevViewProj = glm::mat4(1.0f));
 
         void ExecuteQueue(const std::vector<const RenderCommandPacket*>& queue);
-        void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count);
+        void FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count, uint32_t lodIndex, const Ref<VertexArray>& resolvedVAO, const Ref<SkeletalMesh>& resolvedSkeletalMesh);
         void Flush();
         void FlushShadows();
         void FlushSpotShadows();

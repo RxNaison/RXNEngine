@@ -1,8 +1,11 @@
 #include "rxnpch.h"
+#include "RXNEngine/Renderer/GPUProfiler.h"
 #include "Renderer.h"
 #include "RXNEngine/Math/Math.h"
 #include "RXNEngine/Math/Frustum.h"
 #include "RXNEngine/Renderer/GraphicsAPI/UniformBuffer.h"
+#include "RXNEngine/Renderer/GraphicsAPI/Texture.h"
+#include "RXNEngine/Renderer/LightCuller.h"
 #include "RenderCommand.h"
 #include "ShadowMap.h"
 #include "Renderer2D.h"
@@ -15,6 +18,83 @@
 #include <cctype>
 
 namespace RXNEngine {
+
+    namespace {
+        bool PathsMatch(const std::string& path1, const std::string& path2)
+        {
+            if (path1.empty() || path2.empty())
+                return false;
+
+            auto getFilename = [](const std::string& path) -> std::string {
+                size_t lastSlash = path.find_last_of("/\\");
+                std::string filename = (lastSlash == std::string::npos) ? path : path.substr(lastSlash + 1);
+                std::transform(filename.begin(), filename.end(), filename.begin(), [](unsigned char c) {
+                    return std::tolower(c);
+                });
+                return filename;
+            };
+
+            return getFilename(path1) == getFilename(path2);
+        }
+
+        Ref<VertexArray> GetActiveVAO(const Ref<StaticMesh>& mesh, int entityID, Scene* scene, Ref<SkeletalMesh>& outSkeletalMesh)
+        {
+            Ref<VertexArray> targetVAO = mesh->GetVertexArray();
+            outSkeletalMesh = nullptr;
+            if (scene && entityID >= 0)
+            {
+                Entity entity = { (entt::entity)entityID, scene };
+                static const std::string s_EmptyPath;
+                const std::string* childPath = &s_EmptyPath;
+                if (entity.HasComponent<StaticMeshComponent>())
+                {
+                    childPath = &entity.GetComponent<StaticMeshComponent>().AssetPath;
+                }
+
+                Entity animatorEntity = entity;
+                while (animatorEntity)
+                {
+                    if (animatorEntity.HasComponent<AnimatorComponent>())
+                    {
+                        auto& animator = animatorEntity.GetComponent<AnimatorComponent>();
+                        if (animator.SkinnedVAO && animator.MeshAsset)
+                        {
+                            if (PathsMatch(*childPath, animator.MeshAssetPath))
+                            {
+                                targetVAO = animator.SkinnedVAO;
+                                outSkeletalMesh = animator.MeshAsset;
+                            }
+                        }
+                        break;
+                    }
+
+                    if (animatorEntity.HasComponent<RelationshipComponent>())
+                    {
+                        UUID parentHandle = animatorEntity.GetComponent<RelationshipComponent>().ParentHandle;
+                        if (parentHandle != 0)
+                        {
+                            animatorEntity = scene->GetEntityByUUID(parentHandle);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            return targetVAO;
+        }
+
+        Ref<VertexArray> GetActiveVAO(const Ref<StaticMesh>& mesh, int entityID, Scene* scene)
+        {
+            Ref<SkeletalMesh> dummy;
+            return GetActiveVAO(mesh, entityID, scene, dummy);
+        }
+    }
 
     struct LightDataGPU
     {
@@ -33,7 +113,7 @@ namespace RXNEngine {
             glm::vec4 Color;     // w = Radius
             glm::vec4 Falloff;   // x = Falloff, yzw = Padding
             glm::vec4 ExtraData; // x = ShadowIndex (-1 if disabled)
-        } PointLights[100];
+        };
 
         struct SpotLightGPU
         {
@@ -43,7 +123,7 @@ namespace RXNEngine {
             glm::vec4 Falloff;   // x = Falloff, y = Outer Cutoff, w = Texture size
             glm::mat4 LightSpaceMatrix;
             glm::vec4 ExtraData; // x = ShadowIndex (-1 if disabled)
-        } SpotLights[100];
+        };
     };
 
     struct ShadowData
@@ -61,9 +141,21 @@ namespace RXNEngine {
             float ContactThreshold;
             float ContactSharpness;
             float ContactSharpeningBias;
+            float SoftShadows;
+            float Padding[3];
         } BufferLocal;
 
         std::vector<float> CascadeSplits;
+
+        // WP18: far-cascade staggering. Cascades 0/1 refresh every frame,
+        // cascade 2 on even frames, cascade 3 on odd frames. A skipped cascade
+        // keeps BOTH its depth layer (never cleared) and its matrix in
+        // BufferLocal, so sampling stays perfectly consistent.
+        uint32_t FrameIndex = 0;
+        bool CascadeNeedsRender[4] = { true, true, true, true };
+        bool ForceAllCascades = true;
+        glm::vec3 LastLightDir = glm::vec3(0.0f);
+        glm::vec3 LastCameraPos = glm::vec3(0.0f);
     };
 
     struct LineVertex
@@ -96,19 +188,26 @@ namespace RXNEngine {
         float CameraFOV = 45.0f;
 
         uint32_t CurrentShaderID = 0;
+        std::vector<RendererAPI::TextureUnitBinding> DebugTextureBindings; // WP10 state inspector
+        bool RenderingTransparent = false; // true while drawing the blended transparent queue; gates G-buffer (normal/SSR) writes
         uint32_t CurrentVertexArrayID = 0;
 
         std::array<uint32_t, 32> TextureSlots{ 0 };
 
-        Ref<VertexBuffer> InstanceVertexBuffer;
+        Ref<StreamVertexBuffer> InstanceVertexBuffer;
         glm::mat4* InstanceBufferBase = nullptr;
         uint32_t InstanceCount = 0;
 
         Ref<UniformBuffer> LightUniformBuffer;
         LightDataGPU LightBufferLocal;
+        Ref<LightCuller> Clusters;
+        Ref<Texture2D> BlueNoiseTexture;
+        bool ClusteredLightingEnabled = true;
         Scene* ActiveScene = nullptr;
-        int PointLightEntityIDs[100];
-        int SpotLightEntityIDs[100];
+        std::vector<LightDataGPU::PointLightGPU> PointLightsGPU;
+        std::vector<LightDataGPU::SpotLightGPU> SpotLightsGPU;
+        std::vector<int> PointLightEntityIDs;
+        std::vector<int> SpotLightEntityIDs;
 
         Ref<VertexArray> SkyboxVAO;
         Ref<Shader> SkyboxShader;
@@ -133,7 +232,18 @@ namespace RXNEngine {
         };
         std::vector<AmbientVolume> ActiveAmbientVolumes;
 
+        struct ReflectionProbe
+        {
+            glm::mat4 Transform;
+            glm::mat4 InverseTransform;
+            glm::vec3 HalfExtents;
+            float BlendDistance;
+            float Intensity;
+        };
+        std::vector<ReflectionProbe> ActiveReflectionProbes;
+
         RendererStatistics Stats;
+        bool DirLightCastsShadows = true;
     };
 
     RendererStatistics Renderer::GetStats()
@@ -185,8 +295,40 @@ namespace RXNEngine {
             m_Data->ShadowData.CascadeSplits[i] = lambda * logSplit + (1.0f - lambda) * linSplit;
         }
 
+        // WP18: decide which cascades refresh this frame. Near cascades (0/1)
+        // update every frame; far cascades (2/3) alternate frames. Any
+        // discontinuity (light rotated, camera teleported/cut to a different
+        // view, shadow map reallocated, first frame) forces a full refresh so
+        // a stale layer is never sampled with a mismatched matrix.
+        glm::vec3 lightDirNorm = glm::normalize(lightDir);
+        glm::vec3 cameraPos = glm::vec3(glm::inverse(cameraView)[3]);
+
+        bool forceAll = m_Data->ShadowData.ForceAllCascades;
+        if (glm::dot(lightDirNorm, m_Data->ShadowData.LastLightDir) < 0.99995f)
+            forceAll = true; // light rotated (e.g. time-of-day sun)
+        if (glm::distance(cameraPos, m_Data->ShadowData.LastCameraPos) > 2.5f)
+            forceAll = true; // teleport / camera cut / probe or PIP view
+
+        m_Data->ShadowData.LastLightDir = lightDirNorm;
+        m_Data->ShadowData.LastCameraPos = cameraPos;
+        m_Data->ShadowData.ForceAllCascades = false;
+
+        const uint32_t parity = m_Data->ShadowData.FrameIndex & 1u;
+        m_Data->ShadowData.FrameIndex++;
+
+        m_Data->ShadowData.CascadeNeedsRender[0] = true;
+        m_Data->ShadowData.CascadeNeedsRender[1] = true;
+        m_Data->ShadowData.CascadeNeedsRender[2] = forceAll || (parity == 0u);
+        m_Data->ShadowData.CascadeNeedsRender[3] = forceAll || (parity == 1u);
+
         for (size_t i = 0; i < 4; ++i)
         {
+            // WP18: a skipped cascade keeps last frame's depth AND matrix. Do
+            // NOT recompute the matrix here, or the stored depth map would no
+            // longer match what the lighting pass samples with.
+            if (!m_Data->ShadowData.CascadeNeedsRender[i])
+                continue;
+
             float pNear = (i == 0) ? nearPlane : m_Data->ShadowData.CascadeSplits[i - 1];
             float pFar = m_Data->ShadowData.CascadeSplits[i];
 
@@ -261,7 +403,7 @@ namespace RXNEngine {
         Renderer2D::Init();
 
         m_Data->OpaqueQueue.reserve(1000);
-        m_Data->InstanceVertexBuffer = VertexBuffer::Create(MaxInstances * sizeof(InstanceData));
+        m_Data->InstanceVertexBuffer = StreamVertexBuffer::Create(MaxInstances * sizeof(InstanceData));
         m_Data->InstanceVertexBuffer->SetLayout({
                 { ShaderDataType::Float4, "a_ModelMatrixCol0", false, true },
                 { ShaderDataType::Float4, "a_ModelMatrixCol1", false, true },
@@ -270,6 +412,9 @@ namespace RXNEngine {
                 { ShaderDataType::Int,    "a_EntityID",        false, true }
             });
         m_Data->LightUniformBuffer = UniformBuffer::Create(sizeof(LightDataGPU), 1);
+        m_Data->Clusters = CreateRef<LightCuller>();
+        m_Data->Clusters->Init();
+        m_Data->BlueNoiseTexture = Texture2D::Create("res/textures/bluenoise_rg_64.png");
 
         float skyboxVertices[] = {
             -1.0f,  1.0f, -1.0f,
@@ -323,14 +468,14 @@ namespace RXNEngine {
         m_Data->SkyboxShader = Shader::Create("res/shaders/skybox.glsl");
 
         m_Data->SpotShadowTarget = ShadowMap::Create();
-        m_Data->SpotShadowTarget->Init(2048, 4, false);
+        m_Data->SpotShadowTarget->Init(1024, 4, false);
 
         m_Data->PointShadowTarget = ShadowMap::Create();
-        m_Data->PointShadowTarget->Init(2048, 4, true);
+        m_Data->PointShadowTarget->Init(1024, 4, true);
         m_Data->PointShadowShader = Shader::Create("res/shaders/point_shadow_depth.glsl");
 
         m_Data->ShadowData.ShadowTarget = ShadowMap::Create();
-        m_Data->ShadowData.ShadowTarget->Init(4096, 4, false);
+        m_Data->ShadowData.ShadowTarget->Init(2048, 4, false);
         m_Data->ShadowData.ShadowShader = Shader::Create("res/shaders/shadow_depth.glsl");
 
         m_Data->ShadowData.ShadowUniformBuffer = UniformBuffer::Create(sizeof(ShadowData::ShadowDataGPU), 2);
@@ -419,8 +564,34 @@ namespace RXNEngine {
                 }
             }
         }
-        std::fill(std::begin(m_Data->PointLightEntityIDs), std::end(m_Data->PointLightEntityIDs), -1);
-        std::fill(std::begin(m_Data->SpotLightEntityIDs), std::end(m_Data->SpotLightEntityIDs), -1);
+
+        m_Data->ActiveReflectionProbes.clear();
+        if (scene)
+        {
+            auto probeView = scene->GetRaw().view<ReflectionProbeComponent, TransformComponent>();
+            for (auto entity : probeView)
+            {
+                const auto& pc = probeView.get<ReflectionProbeComponent>(entity);
+                if (!pc.Active)
+                    continue;
+
+                glm::mat4 worldTransform = scene->GetWorldTransform({ entity, scene });
+
+                RendererData::ReflectionProbe probe;
+                probe.Transform = worldTransform;
+                probe.InverseTransform = glm::inverse(worldTransform);
+                probe.HalfExtents = pc.BoxHalfExtents;
+                probe.BlendDistance = pc.BlendDistance;
+                probe.Intensity = pc.Intensity;
+                m_Data->ActiveReflectionProbes.push_back(probe);
+
+                if (m_Data->ActiveReflectionProbes.size() >= 4)
+                    break;
+            }
+        }
+
+        if (m_Data->BlueNoiseTexture)
+            RenderCommand::BindTextureID(25, m_Data->BlueNoiseTexture->GetRendererID());
 
         if (environment)
         {
@@ -462,7 +633,9 @@ namespace RXNEngine {
 
         m_Data->LightBufferLocal.DirLightDirection = glm::vec4(lights.DirLight.Direction, lights.DirLight.Intensity);
         m_Data->LightBufferLocal.DirLightColor = glm::vec4(lights.DirLight.Color, 0.0f);
-        m_Data->LightBufferLocal.PointLightCount = std::min((uint32_t)lights.PointLights.size(), 100u);
+        m_Data->LightBufferLocal.PointLightCount = (uint32_t)lights.PointLights.size();
+        m_Data->PointLightsGPU.resize(m_Data->LightBufferLocal.PointLightCount);
+        m_Data->PointLightEntityIDs.assign(m_Data->LightBufferLocal.PointLightCount, -1);
 
         uint32_t activeSpotShadows = 0;
         uint32_t activePointShadows = 0;
@@ -470,9 +643,9 @@ namespace RXNEngine {
         for (uint32_t i = 0; i < m_Data->LightBufferLocal.PointLightCount; i++)
         {
             const auto& light = lights.PointLights[i];
-            m_Data->LightBufferLocal.PointLights[i].Position = glm::vec4(light.Position, light.Intensity);
-            m_Data->LightBufferLocal.PointLights[i].Color = glm::vec4(light.Color, light.Radius);
-            m_Data->LightBufferLocal.PointLights[i].Falloff = glm::vec4(light.Falloff, 0.0f, 0.0f, 0.0f);
+            m_Data->PointLightsGPU[i].Position = glm::vec4(light.Position, light.Intensity);
+            m_Data->PointLightsGPU[i].Color = glm::vec4(light.Color, light.Radius);
+            m_Data->PointLightsGPU[i].Falloff = glm::vec4(light.Falloff, 0.0f, 0.0f, 0.0f);
 
             float shadowIndex = -1.0f;
             bool isVisibleToCamera = m_Data->CameraFrustum.IsSphereVisible(light.Position, light.Radius);
@@ -480,12 +653,14 @@ namespace RXNEngine {
             if (light.CastsShadows && isVisibleToCamera && activePointShadows < 4)
                 shadowIndex = (float)activePointShadows++;
 
-            m_Data->LightBufferLocal.PointLights[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
+            m_Data->PointLightsGPU[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
             m_Data->PointLightEntityIDs[i] = light.EntityID;
         }
 
 
-        m_Data->LightBufferLocal.SpotLightCount = std::min((uint32_t)lights.SpotLights.size(), 100u);
+        m_Data->LightBufferLocal.SpotLightCount = (uint32_t)lights.SpotLights.size();
+        m_Data->SpotLightsGPU.resize(m_Data->LightBufferLocal.SpotLightCount);
+        m_Data->SpotLightEntityIDs.assign(m_Data->LightBufferLocal.SpotLightCount, -1);
         m_Data->LightBufferLocal.EnvironmentIntensity = lights.EnvironmentIntensity;
 
         uint32_t currentCookieSlot = 16;
@@ -502,11 +677,11 @@ namespace RXNEngine {
                 currentCookieSlot++;
             }
 
-            m_Data->LightBufferLocal.SpotLights[i].Position = glm::vec4(light.Position, light.Intensity);
-            m_Data->LightBufferLocal.SpotLights[i].Direction = glm::vec4(light.Direction, light.Radius);
-            m_Data->LightBufferLocal.SpotLights[i].Color = glm::vec4(light.Color, light.CutOff);
-            m_Data->LightBufferLocal.SpotLights[i].Falloff = glm::vec4(light.Falloff, light.OuterCutOff, (float)cookieIndex, light.CookieSize);
-            m_Data->LightBufferLocal.SpotLights[i].LightSpaceMatrix = light.LightSpaceMatrix;
+            m_Data->SpotLightsGPU[i].Position = glm::vec4(light.Position, light.Intensity);
+            m_Data->SpotLightsGPU[i].Direction = glm::vec4(light.Direction, light.Radius);
+            m_Data->SpotLightsGPU[i].Color = glm::vec4(light.Color, light.CutOff);
+            m_Data->SpotLightsGPU[i].Falloff = glm::vec4(light.Falloff, light.OuterCutOff, (float)cookieIndex, light.CookieSize);
+            m_Data->SpotLightsGPU[i].LightSpaceMatrix = light.LightSpaceMatrix;
 
             float shadowIndex = -1.0f;
             bool isVisibleToCamera = m_Data->CameraFrustum.IsSphereVisible(light.Position, light.Radius);
@@ -514,11 +689,22 @@ namespace RXNEngine {
             if (light.CastsShadows && isVisibleToCamera && activeSpotShadows < 4)
                 shadowIndex = (float)activeSpotShadows++;
 
-            m_Data->LightBufferLocal.SpotLights[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
+            m_Data->SpotLightsGPU[i].ExtraData = glm::vec4(shadowIndex, 0.0f, 0.0f, 0.0f);
             m_Data->SpotLightEntityIDs[i] = light.EntityID;
         }
 
         m_Data->LightUniformBuffer->SetData(&m_Data->LightBufferLocal, sizeof(LightDataGPU));
+
+        // Clustered Forward+ : build the froxel grid and cull this frame's lights.
+        if (m_Data->ClusteredLightingEnabled)
+        {
+            uint32_t clusterScreenW = renderTarget ? renderTarget->GetSpecification().Width : 1280;
+            uint32_t clusterScreenH = renderTarget ? renderTarget->GetSpecification().Height : 720;
+            m_Data->Clusters->BuildAndCull(
+                viewProjection, viewMatrix, clusterScreenW, clusterScreenH,
+                m_Data->PointLightsGPU.data(), m_Data->LightBufferLocal.PointLightCount, (uint32_t)sizeof(LightDataGPU::PointLightGPU),
+                m_Data->SpotLightsGPU.data(),  m_Data->LightBufferLocal.SpotLightCount,  (uint32_t)sizeof(LightDataGPU::SpotLightGPU));
+        }
 
         m_Data->OpaqueQueue.clear();
         m_Data->TransparentQueue.clear();
@@ -533,11 +719,56 @@ namespace RXNEngine {
         m_Data->ShadowData.BufferLocal.ContactThreshold = lights.ShadowContactThreshold;
         m_Data->ShadowData.BufferLocal.ContactSharpness = lights.ShadowContactSharpness;
         m_Data->ShadowData.BufferLocal.ContactSharpeningBias = lights.ShadowContactSharpeningBias;
+        m_Data->ShadowData.BufferLocal.SoftShadows = lights.SoftShadows ? 1.0f : 0.0f;
+
+        m_Data->DirLightCastsShadows = lights.DirLight.CastsShadows;
+
+        // Dynamic Resizing for Point Lights Shadow Map Array:
+        uint32_t maxPointRes = 16;
+        for (uint32_t i = 0; i < m_Data->LightBufferLocal.PointLightCount; i++)
+        {
+            const auto& light = lights.PointLights[i];
+            if (light.CastsShadows)
+            {
+                maxPointRes = std::max(maxPointRes, light.ShadowResolution);
+            }
+        }
+        if (maxPointRes != m_Data->PointShadowTarget->GetSize())
+        {
+            m_Data->PointShadowTarget->Init(maxPointRes, 4, true);
+        }
+
+        // Dynamic Resizing for Spot Lights Shadow Map Array:
+        uint32_t maxSpotRes = 16;
+        for (uint32_t i = 0; i < m_Data->LightBufferLocal.SpotLightCount; i++)
+        {
+            const auto& light = lights.SpotLights[i];
+            if (light.CastsShadows)
+            {
+                maxSpotRes = std::max(maxSpotRes, light.ShadowResolution);
+            }
+        }
+        if (maxSpotRes != m_Data->SpotShadowTarget->GetSize())
+        {
+            m_Data->SpotShadowTarget->Init(maxSpotRes, 4, false);
+        }
+
+        // Dynamic Resizing for CSM / Directional Lights Shadow Map Array:
+        uint32_t dirRes = 16;
+        if (lights.DirLight.CastsShadows)
+        {
+            dirRes = lights.DirLight.ShadowResolution;
+        }
+        if (dirRes != m_Data->ShadowData.ShadowTarget->GetSize())
+        {
+            m_Data->ShadowData.ShadowTarget->Init(dirRes, 4, false);
+            m_Data->ShadowData.ForceAllCascades = true; // WP18: layers reallocated, contents lost
+        }
 
         CalculateShadowMapMatrices(m_Data->ViewMatrix, m_Data->LightBufferLocal.DirLightDirection);
     }
 
-    void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID)
+    void Renderer::Submit(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const glm::mat4& transform, int entityID, uint32_t lodIndex)
     {
         RXN_PROFILE_SCOPE();
 
@@ -552,20 +783,46 @@ namespace RXNEngine {
         packet.Material = material;
         packet.Transform = transform;
         packet.EntityID = entityID;
+        packet.LODIndex = lodIndex;
 
         glm::vec3 position = glm::vec3(transform[3]);
         glm::vec3 directionToPosition = position - m_Data->CameraPosition;
         packet.DistanceToCamera = glm::dot(m_Data->CameraForward, directionToPosition);
 
-        uint64_t shaderID = material->GetShader()->GetRendererID();
-        uint64_t vaoID = mesh->GetVertexArray()->GetRendererID();
+        // Guard: a submesh whose material slot is unassigned yields an empty Ref<Material>
+        // (from GetMaterials()[matIndex] at the call site). Dereferencing material->GetShader()
+        // below would crash with an access violation reading 0x8. Skip the draw instead.
+        if (!material || !material->GetShader())
+        {
+            static bool s_WarnedNullSubmitMaterial = false;
+            if (!s_WarnedNullSubmitMaterial)
+            {
+                RXN_CORE_WARN("Renderer::Submit: entity {0} submesh {1} has no material/shader assigned; skipping draw. Assign a material to this mesh slot.", entityID, submeshIndex);
+                s_WarnedNullSubmitMaterial = true;
+            }
+            return;
+        }
 
-        packet.SortKey = (shaderID << 32) | ((vaoID & 0xFFFF) << 16) | (submeshIndex & 0xFFFF);
+        // WP3: resolve the active VAO (skinned or static) once per packet so
+        // queue execution never walks the scene graph per draw.
+        Ref<SkeletalMesh> submitSkeletalMesh = nullptr;
+        packet.ResolvedVAO = GetActiveVAO(mesh, entityID, m_Data->ActiveScene, submitSkeletalMesh);
+        packet.ResolvedSkeletalMesh = submitSkeletalMesh;
+
+        uint64_t shaderID = material->GetShader()->GetRendererID();
+        uint64_t vaoID = packet.ResolvedVAO->GetRendererID();
+
+        packet.SortKey = (shaderID << 32) | ((vaoID & 0xFFFF) << 16) | ((submeshIndex & 0xFF) << 8) | (lodIndex & 0xFF);
 
         if (material->IsTransparent())
             m_Data->TransparentQueue.push_back(packet);
         else
             m_Data->OpaqueQueue.push_back(packet);
+    }
+
+    const std::vector<RendererAPI::TextureUnitBinding>& Renderer::GetDebugTextureBindings() const
+    {
+        return m_Data->DebugTextureBindings;
     }
 
     void Renderer::EndScene()
@@ -828,20 +1085,43 @@ namespace RXNEngine {
         DrawLine(nearCorners[3], farCorners[3], color);
     }
 
-    void Renderer::DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader)
+    void Renderer::DrawEntityOutline(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, const Ref<Shader>& outlineShader, Scene* scene, int entityID)
     {
         InstanceData data;
         data.Transform = transform;
-        data.EntityID = -1;
+        data.EntityID = entityID;
 
-        m_Data->InstanceVertexBuffer->SetData(&data, sizeof(InstanceData));
+        uint32_t instanceOffset = m_Data->InstanceVertexBuffer->Push(&data, sizeof(InstanceData));
 
         outlineShader->Bind();
-        mesh->GetVertexArray()->Bind();
-        m_Data->InstanceVertexBuffer->Bind();
 
-        const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
-        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, 1, submesh.IndexCount, submesh.BaseIndex);
+        Ref<SkeletalMesh> skeletalMesh = nullptr;
+        Ref<VertexArray> targetVAO = GetActiveVAO(mesh, entityID, scene ? scene : m_Data->ActiveScene, skeletalMesh);
+
+        targetVAO->Bind();
+
+        uint32_t indexCount = 0;
+        uint32_t baseIndex = 0;
+        if (skeletalMesh && submeshIndex < skeletalMesh->GetSubmeshes().size())
+        {
+            const auto& submesh = skeletalMesh->GetSubmeshes()[submeshIndex];
+            indexCount = submesh.IndexCount;
+            baseIndex = submesh.BaseIndex;
+        }
+        else
+        {
+            const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
+            indexCount = submesh.IndexCount;
+            baseIndex = submesh.BaseIndex;
+        }
+
+        RenderCommand::DrawIndexedInstancedStream(targetVAO, m_Data->InstanceVertexBuffer, instanceOffset, 1, indexCount, baseIndex);
+    }
+
+    void Renderer::OnSceneDestroyed(Scene* scene)
+    {
+        if (m_Data && m_Data->ActiveScene == scene)
+            m_Data->ActiveScene = nullptr;
     }
 
     void Renderer::DrawSkybox(const Ref<Cubemap>& skybox, const EditorCamera& camera)
@@ -881,9 +1161,28 @@ namespace RXNEngine {
     {
         RXN_PROFILE_SCOPE();
 
-        FlushShadows();
-        FlushSpotShadows();
-        FlushPointShadows();
+        // WP4: the shadow maps are still bound as sampled textures (units 8/9/13/14)
+        // from the previous frame's lighting pass. Rendering into a depth texture
+        // that is simultaneously bound for sampling is a framebuffer feedback loop;
+        // drivers defend against it by serializing/decompressing the target per
+        // draw, which starves the GPU. Unbind them before the shadow passes.
+        RenderCommand::BindTextureID(8, 0);
+        RenderCommand::BindTextureID(9, 0);
+        RenderCommand::BindTextureID(13, 0);
+        RenderCommand::BindTextureID(14, 0);
+
+        {
+            RXN_GPU_SCOPE("CSM Shadows");
+            FlushShadows();
+        }
+        {
+            RXN_GPU_SCOPE("Spot Shadows");
+            FlushSpotShadows();
+        }
+        {
+            RXN_GPU_SCOPE("Point Shadows");
+            FlushPointShadows();
+        }
 
         if (m_Data->CurrentRenderTarget)
             m_Data->CurrentRenderTarget->Bind();
@@ -906,15 +1205,30 @@ namespace RXNEngine {
         for (const auto& packet : m_Data->OpaqueQueue)
             opaquePointers.push_back(&packet);
 
+        // Group identical meshes/shaders/materials first, then sort by camera distance
         std::sort(opaquePointers.begin(), opaquePointers.end(), [](const RenderCommandPacket* a, const RenderCommandPacket* b)
             {
                 if (a->SortKey != b->SortKey)
                     return a->SortKey < b->SortKey;
 
+                if (a->Material != b->Material)
+                    return a->Material < b->Material;
+
                 return a->DistanceToCamera < b->DistanceToCamera;
             });
 
-        ExecuteQueue(opaquePointers);
+        // WP7 fix: RenderingTransparent was declared and read by FlushBatch but
+        // never set, so u_IsTransparent stayed 0 and transparent draws leaked
+        // their normals into the GTAO/SSR G-buffer.
+        // WP10: snapshot texture-unit state at the exact moment the opaque pass
+        // samples it (diagnoses stale-binding bugs; shown in the stats panel).
+        RenderCommand::QueryTextureBindings(m_Data->DebugTextureBindings, 32);
+
+        m_Data->RenderingTransparent = false;
+        {
+            RXN_GPU_SCOPE("Opaque Pass");
+            ExecuteQueue(opaquePointers);
+        }
 
         RenderCommand::SetDepthMask(false);
         RenderCommand::SetBlend(true);
@@ -929,13 +1243,35 @@ namespace RXNEngine {
 
         std::sort(transparentPointers.begin(), transparentPointers.end(), [](const RenderCommandPacket* a, const RenderCommandPacket* b)
             {
+                if (a->SortKey != b->SortKey)
+                    return a->SortKey < b->SortKey;
+
+                if (a->Material != b->Material)
+                    return a->Material < b->Material;
+
                 if (glm::abs(a->DistanceToCamera - b->DistanceToCamera) < 0.001f)
                     return a->EntityID < b->EntityID;
 
                 return a->DistanceToCamera > b->DistanceToCamera;
             });
 
-        ExecuteQueue(transparentPointers);
+        m_Data->RenderingTransparent = true;
+
+        // WP8: hard-block G-buffer writes (SSR attachment 1, normal attachment 2)
+        // during the transparent pass with per-attachment color masks. Unlike the
+        // previous blend-based protection (o_Normal.a = 0), this cannot be broken
+        // by external GL state changes -- which is what caused transparents to
+        // leak their normals into GTAO in play mode but not in the editor.
+        // WP11: only block SSR (attachment 1). Transparent objects must still write
+        // their world-space normals (attachment 2) so GTAO does not collapse to 0
+        // on glass/lamp-shade surfaces that scripts mark as transparent at runtime.
+        RenderCommand::SetColorMaskIndexed(1, false, false, false, false);
+        {
+            RXN_GPU_SCOPE("Transparent Pass");
+            ExecuteQueue(transparentPointers);
+        }
+        RenderCommand::SetColorMaskIndexed(1, true, true, true, true);
+        m_Data->RenderingTransparent = false;
 
         RenderCommand::SetDepthMask(true);
         RenderCommand::SetBlend(false);
@@ -947,8 +1283,13 @@ namespace RXNEngine {
             m_Data->LineShader->Bind();
             m_Data->LineShader->SetMat4("u_ViewProjection", m_Data->ViewProjectionMatrix);
 
+            // WP9: line.glsl writes a dummy o_Normal; keep it out of the G-buffer.
+            RenderCommand::SetColorMaskIndexed(1, false, false, false, false);
+            RenderCommand::SetColorMaskIndexed(2, false, false, false, false);
             RenderCommand::SetLineWidth(2.0f);
             RenderCommand::DrawLines(m_Data->LineVAO, m_Data->LineVertices.size());
+            RenderCommand::SetColorMaskIndexed(1, true, true, true, true);
+            RenderCommand::SetColorMaskIndexed(2, true, true, true, true);
         }
     }
 
@@ -972,10 +1313,16 @@ namespace RXNEngine {
         {
             const RenderCommandPacket* current = queue[i];
 
-            bool isSameMesh = (current->Mesh == batchStart->Mesh && current->SubmeshIndex == batchStart->SubmeshIndex);
+            bool isSameMesh = (current->Mesh == batchStart->Mesh && current->SubmeshIndex == batchStart->SubmeshIndex && current->LODIndex == batchStart->LODIndex);
             bool isSameMaterial = (current->Material == batchStart->Material);
 
-            if (isSameMesh && isSameMaterial && transformCount < MaxInstances)
+            bool isSameVAO = false;
+            if (isSameMesh)
+            {
+                isSameVAO = (current->ResolvedVAO == batchStart->ResolvedVAO);
+            }
+
+            if (isSameMesh && isSameMaterial && isSameVAO && transformCount < MaxInstances)
             {
                 currentBatchData[transformCount].Transform = current->Transform;
                 currentBatchData[transformCount].EntityID = current->EntityID;
@@ -983,7 +1330,7 @@ namespace RXNEngine {
             }
             else
             {
-                FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount);
+                FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount, batchStart->LODIndex, batchStart->ResolvedVAO, batchStart->ResolvedSkeletalMesh);
 
                 batchStart = current;
                 transformCount = 0;
@@ -994,17 +1341,29 @@ namespace RXNEngine {
         }
 
         if (transformCount > 0)
-            FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount);
+            FlushBatch(batchStart->Mesh, batchStart->SubmeshIndex, batchStart->Material, currentBatchData, transformCount, batchStart->LODIndex, batchStart->ResolvedVAO, batchStart->ResolvedSkeletalMesh);
     }
 
-    void Renderer::FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count)
+    void Renderer::FlushBatch(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const Ref<Material>& material, const InstanceData* instanceData, uint32_t count, uint32_t lodIndex, const Ref<VertexArray>& resolvedVAO, const Ref<SkeletalMesh>& resolvedSkeletalMesh)
     {
         RXN_PROFILE_SCOPE();
 
         if (count == 0)
             return;
 
-        m_Data->InstanceVertexBuffer->SetData(instanceData, count * sizeof(InstanceData));
+        // Same null-material guard as Renderer::Submit (instanced path).
+        if (!material || !material->GetShader())
+        {
+            static bool s_WarnedNullBatchMaterial = false;
+            if (!s_WarnedNullBatchMaterial)
+            {
+                RXN_CORE_WARN("Renderer::FlushBatch: a batched submesh has no material/shader assigned; skipping {0} instances. Assign a material to this mesh slot.", count);
+                s_WarnedNullBatchMaterial = true;
+            }
+            return;
+        }
+
+        uint32_t instanceOffset = m_Data->InstanceVertexBuffer->Push(instanceData, count * sizeof(InstanceData));
         material->Bind();
 
         Ref<Shader> shader = material->GetShader();
@@ -1018,6 +1377,8 @@ namespace RXNEngine {
             shader->SetMat4("u_PrevInverseViewProjection", glm::inverse(m_Data->PrevViewProjectionMatrix));
             shader->SetFloat3("u_CameraPosition", m_Data->CameraPosition);
             shader->SetMat4("u_View", m_Data->ViewMatrix);
+            shader->SetInt("u_ClusteredEnabled", m_Data->ClusteredLightingEnabled ? 1 : 0);
+            shader->SetFloat("u_PointShadowResolution", (float)m_Data->PointShadowTarget->GetSize());
 
             shader->SetInt("u_AmbientVolumeCount", (int)m_Data->ActiveAmbientVolumes.size());
             for (size_t i = 0; i < m_Data->ActiveAmbientVolumes.size(); i++)
@@ -1029,29 +1390,80 @@ namespace RXNEngine {
                 shader->SetFloat3(prefix + "TransitionMin", m_Data->ActiveAmbientVolumes[i].TransitionMin);
                 shader->SetFloat3(prefix + "TransitionMax", m_Data->ActiveAmbientVolumes[i].TransitionMax);
             }
+
+            shader->SetInt("u_ReflectionProbeCount", (int)m_Data->ActiveReflectionProbes.size());
+            for (size_t i = 0; i < m_Data->ActiveReflectionProbes.size(); i++)
+            {
+                std::string prefix = "u_ReflectionProbes[" + std::to_string(i) + "].";
+                shader->SetMat4(prefix + "Transform", m_Data->ActiveReflectionProbes[i].Transform);
+                shader->SetMat4(prefix + "InverseTransform", m_Data->ActiveReflectionProbes[i].InverseTransform);
+                shader->SetFloat3(prefix + "HalfExtents", m_Data->ActiveReflectionProbes[i].HalfExtents);
+                shader->SetFloat(prefix + "BlendDistance", m_Data->ActiveReflectionProbes[i].BlendDistance);
+                shader->SetFloat(prefix + "Intensity", m_Data->ActiveReflectionProbes[i].Intensity);
+            }
         }
 
-        mesh->GetVertexArray()->Bind();
-        m_Data->InstanceVertexBuffer->Bind();
+        Ref<SkeletalMesh> skeletalMesh = resolvedSkeletalMesh;
+        // GTAO fix: tell the shader whether this draw is transparent so it can avoid
+        // clobbering the opaque normal/SSR G-buffer (must run every batch, not just on shader change).
+        shader->SetInt("u_IsTransparent", m_Data->RenderingTransparent ? 1 : 0);
 
-        const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
+        Ref<VertexArray> targetVAO = resolvedVAO ? resolvedVAO : mesh->GetVertexArray();
+        targetVAO->Bind();
 
-        RenderCommand::DrawIndexedInstanced(mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, count, submesh.IndexCount, submesh.BaseIndex);
+        uint32_t indexCount = 0;
+        uint32_t baseIndex = 0;
+        if (skeletalMesh && submeshIndex < skeletalMesh->GetSubmeshes().size())
+        {
+            const auto& submesh = skeletalMesh->GetSubmeshes()[submeshIndex];
+            uint32_t actualLod = lodIndex < submesh.LODs.size() ? lodIndex : 0;
+            const auto& lod = submesh.LODs[actualLod];
+            indexCount = lod.IndexCount;
+            baseIndex = lod.BaseIndex;
+        }
+        else
+        {
+            const auto& submesh = mesh->GetSubmeshes()[submeshIndex];
+            uint32_t actualLod = lodIndex < submesh.LODs.size() ? lodIndex : 0;
+            const auto& lod = submesh.LODs[actualLod];
+            indexCount = lod.IndexCount;
+            baseIndex = lod.BaseIndex;
+        }
+        RenderCommand::DrawIndexedInstancedStream(targetVAO, m_Data->InstanceVertexBuffer, instanceOffset, count, indexCount, baseIndex);
 
         m_Data->Stats.DrawCalls++;
         m_Data->Stats.Instances += count;
-        m_Data->Stats.TotalIndices += submesh.IndexCount * count;
+        m_Data->Stats.TotalIndices += indexCount * count;
     }
 
     void Renderer::FlushShadows()
     {
         RXN_PROFILE_SCOPE();
 
+        if (!m_Data->DirLightCastsShadows)
+        {
+            for (uint32_t cascade = 0; cascade < 4; cascade++)
+            {
+                m_Data->ShadowData.ShadowTarget->BindWriteLayer(cascade);
+            }
+            m_Data->ShadowData.ForceAllCascades = true; // WP18: layers were cleared; refresh all when re-enabled
+            return;
+        }
+
         m_Data->ShadowData.ShadowShader->Bind();
 
         for (uint32_t cascade = 0; cascade < 4; cascade++)
         {
+            // WP18: staggered cascade — keep last frame's depth. Skipping
+            // BEFORE BindWriteLayer matters because BindWriteLayer clears the
+            // layer; a skipped cascade must be neither cleared nor drawn.
+            if (!m_Data->ShadowData.CascadeNeedsRender[cascade])
+                continue;
+
             m_Data->ShadowData.ShadowTarget->BindWriteLayer(cascade);
+
+            static const char* s_CascadeScopeNames[4] = { "CSM Cascade 0", "CSM Cascade 1", "CSM Cascade 2", "CSM Cascade 3" };
+            RXN_GPU_SCOPE(s_CascadeScopeNames[cascade]);
 
             const glm::mat4& M = m_Data->ShadowData.BufferLocal.LightSpaceMatrices[cascade];
             m_Data->ShadowData.ShadowShader->SetMat4("u_LightSpaceMatrix", M);
@@ -1097,9 +1509,15 @@ namespace RXNEngine {
                     continue;
                 }
 
-                bool isSameMesh = (packet.Mesh == batchStart->Mesh && packet.SubmeshIndex == batchStart->SubmeshIndex);
+                bool isSameMesh = (packet.Mesh == batchStart->Mesh && packet.SubmeshIndex == batchStart->SubmeshIndex && packet.LODIndex == batchStart->LODIndex);
 
-                if (isSameMesh && transformCount < MaxInstances)
+                bool isSameVAO = false;
+                if (isSameMesh)
+                {
+                    isSameVAO = (packet.ResolvedVAO == batchStart->ResolvedVAO);
+                }
+
+                if (isSameMesh && isSameVAO && transformCount < MaxInstances)
                 {
                     batchData[transformCount].Transform = packet.Transform;
                     batchData[transformCount].EntityID = packet.EntityID;
@@ -1107,16 +1525,35 @@ namespace RXNEngine {
                 }
                 else
                 {
-                    m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
-                    batchStart->Mesh->GetVertexArray()->Bind();
-                    const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                    uint32_t instanceOffset = m_Data->InstanceVertexBuffer->Push(batchData, transformCount * sizeof(InstanceData));
+                    Ref<SkeletalMesh> skeletalMesh = batchStart->ResolvedSkeletalMesh;
+                    Ref<VertexArray> targetVAO = batchStart->ResolvedVAO ? batchStart->ResolvedVAO : batchStart->Mesh->GetVertexArray();
+                    targetVAO->Bind();
+                    uint32_t indexCount = 0;
+                    uint32_t baseIndex = 0;
+                    if (skeletalMesh && batchStart->SubmeshIndex < skeletalMesh->GetSubmeshes().size())
+                    {
+                        const auto& submesh = skeletalMesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                        uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                        const auto& lod = submesh.LODs[actualLod];
+                        indexCount = lod.IndexCount;
+                        baseIndex = lod.BaseIndex;
+                    }
+                    else
+                    {
+                        const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                        uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                        const auto& lod = submesh.LODs[actualLod];
+                        indexCount = lod.IndexCount;
+                        baseIndex = lod.BaseIndex;
+                    }
+                    RenderCommand::DrawIndexedInstancedStream(targetVAO, m_Data->InstanceVertexBuffer, instanceOffset, transformCount, indexCount, baseIndex);
 
                     if (cascade == 0)
                     {
                         m_Data->Stats.DrawCalls++;
                         m_Data->Stats.Instances += transformCount;
-                        m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                        m_Data->Stats.TotalIndices += indexCount * transformCount;
                     }
 
                     batchStart = &packet;
@@ -1129,16 +1566,35 @@ namespace RXNEngine {
 
             if (transformCount > 0 && batchStart)
             {
-                m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
-                batchStart->Mesh->GetVertexArray()->Bind();
-                const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                uint32_t instanceOffset = m_Data->InstanceVertexBuffer->Push(batchData, transformCount * sizeof(InstanceData));
+                Ref<SkeletalMesh> skeletalMesh = batchStart->ResolvedSkeletalMesh;
+                Ref<VertexArray> targetVAO = batchStart->ResolvedVAO ? batchStart->ResolvedVAO : batchStart->Mesh->GetVertexArray();
+                targetVAO->Bind();
+                uint32_t indexCount = 0;
+                uint32_t baseIndex = 0;
+                if (skeletalMesh && batchStart->SubmeshIndex < skeletalMesh->GetSubmeshes().size())
+                {
+                    const auto& submesh = skeletalMesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                    uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                    const auto& lod = submesh.LODs[actualLod];
+                    indexCount = lod.IndexCount;
+                    baseIndex = lod.BaseIndex;
+                }
+                else
+                {
+                    const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                    uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                    const auto& lod = submesh.LODs[actualLod];
+                    indexCount = lod.IndexCount;
+                    baseIndex = lod.BaseIndex;
+                }
+                RenderCommand::DrawIndexedInstancedStream(targetVAO, m_Data->InstanceVertexBuffer, instanceOffset, transformCount, indexCount, baseIndex);
 
                 if (cascade == 0)
                 {
                     m_Data->Stats.DrawCalls++;
                     m_Data->Stats.Instances += transformCount;
-                    m_Data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                    m_Data->Stats.TotalIndices += indexCount * transformCount;
                 }
             }
         }
@@ -1148,13 +1604,13 @@ namespace RXNEngine {
     {
         for (uint32_t i = 0; i < m_Data->LightBufferLocal.SpotLightCount; i++)
         {
-            if (m_Data->LightBufferLocal.SpotLights[i].ExtraData.x < 0.0f)
+            if (m_Data->SpotLightsGPU[i].ExtraData.x < 0.0f)
                 continue;
 
-            uint32_t layer = (uint32_t)m_Data->LightBufferLocal.SpotLights[i].ExtraData.x;
+            uint32_t layer = (uint32_t)m_Data->SpotLightsGPU[i].ExtraData.x;
 
-            glm::vec3 lightPos = m_Data->LightBufferLocal.SpotLights[i].Position;
-            float lightRadius = m_Data->LightBufferLocal.SpotLights[i].Direction.w;
+            glm::vec3 lightPos = m_Data->SpotLightsGPU[i].Position;
+            float lightRadius = m_Data->SpotLightsGPU[i].Direction.w;
 
             int entityID = m_Data->SpotLightEntityIDs[i];
             bool hasCache = false;
@@ -1171,6 +1627,23 @@ namespace RXNEngine {
 
                     if (glm::distance(slc.LastCachedPosition, lightPos) > 0.01f)
                         slc.IsShadowCacheValid = false;
+
+                    // WP20: a flashlight mostly ROTATES, which the position
+                    // check alone cannot see. The light-space matrix encodes
+                    // position, direction, cone angle and range, so compare
+                    // the whole thing: if it changed, the cached depth no
+                    // longer matches the matrix the lighting pass samples
+                    // with, and the shadow would be frozen/garbage.
+                    {
+                        const glm::mat4& cur = m_Data->SpotLightsGPU[i].LightSpaceMatrix;
+                        const glm::mat4& old = slc.LastCachedMatrix;
+                        float maxDiff = 0.0f;
+                        for (int c = 0; c < 4; ++c)
+                            for (int r = 0; r < 4; ++r)
+                                maxDiff = glm::max(maxDiff, glm::abs(cur[c][r] - old[c][r]));
+                        if (maxDiff > 1e-4f)
+                            slc.IsShadowCacheValid = false;
+                    }
 
                     if (slc.LastShadowLayer != (int)layer)
                     {
@@ -1204,12 +1677,13 @@ namespace RXNEngine {
                 continue;
 
             m_Data->SpotShadowTarget->BindWriteLayer(layer);
-            DrawShadowBatch(m_Data, m_Data->ShadowData.ShadowShader, m_Data->LightBufferLocal.SpotLights[i].LightSpaceMatrix, false, lightPos, lightRadius);
+            DrawShadowBatch(m_Data, m_Data->ShadowData.ShadowShader, m_Data->SpotLightsGPU[i].LightSpaceMatrix, false, lightPos, lightRadius);
 
             if (hasCache)
             {
                 auto& slc = entity.GetComponent<SpotLightComponent>();
                 slc.LastCachedPosition = lightPos;
+                slc.LastCachedMatrix = m_Data->SpotLightsGPU[i].LightSpaceMatrix; // WP20
                 slc.IsShadowCacheValid = !isVolumeDirty;
             }
         }
@@ -1219,13 +1693,13 @@ namespace RXNEngine {
     {
         for (uint32_t i = 0; i < m_Data->LightBufferLocal.PointLightCount; i++)
         {
-            if (m_Data->LightBufferLocal.PointLights[i].ExtraData.x < 0.0f)
+            if (m_Data->PointLightsGPU[i].ExtraData.x < 0.0f)
                 continue;
 
-            uint32_t layer = (uint32_t)m_Data->LightBufferLocal.PointLights[i].ExtraData.x;
+            uint32_t layer = (uint32_t)m_Data->PointLightsGPU[i].ExtraData.x;
 
-            glm::vec3 lightPos = m_Data->LightBufferLocal.PointLights[i].Position;
-            float farPlane = m_Data->LightBufferLocal.PointLights[i].Color.w; // Radius
+            glm::vec3 lightPos = m_Data->PointLightsGPU[i].Position;
+            float farPlane = m_Data->PointLightsGPU[i].Color.w; // Radius
 
             int entityID = m_Data->PointLightEntityIDs[i];
             bool hasCache = false;
@@ -1241,6 +1715,13 @@ namespace RXNEngine {
                     auto& plc = entity.GetComponent<PointLightComponent>();
 
                     if (glm::distance(plc.LastCachedPosition, lightPos) > 0.01f)
+                        plc.IsShadowCacheValid = false;
+
+                    // WP20: the radius is the far plane of all six cube-face
+                    // projections. If it changes (script-driven torch flicker,
+                    // editor tweak), the cached depth no longer matches the
+                    // projection the lighting pass unprojects with.
+                    if (glm::abs(plc.LastCachedRadius - farPlane) > 1e-3f)
                         plc.IsShadowCacheValid = false;
 
                     if (plc.LastShadowLayer != (int)layer)
@@ -1294,6 +1775,7 @@ namespace RXNEngine {
             {
                 auto& plc = entity.GetComponent<PointLightComponent>();
                 plc.LastCachedPosition = lightPos;
+                plc.LastCachedRadius = farPlane; // WP20
                 plc.IsShadowCacheValid = !isVolumeDirty;
             }
         }
@@ -1328,13 +1810,12 @@ namespace RXNEngine {
                     }
                     else
                     {
-                        m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                        uint32_t instanceOffset = m_Data->InstanceVertexBuffer->Push(batchData, transformCount * sizeof(InstanceData));
 
                         batchStart->Mesh->GetVertexArray()->Bind();
-                        m_Data->InstanceVertexBuffer->Bind();
 
                         const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                        RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                        RenderCommand::DrawIndexedInstancedStream(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, instanceOffset, transformCount, submesh.IndexCount, submesh.BaseIndex);
 
                         batchStart = it;
                         transformCount = 0;
@@ -1346,13 +1827,12 @@ namespace RXNEngine {
 
                 if (transformCount > 0)
                 {
-                    m_Data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
+                    uint32_t instanceOffset = m_Data->InstanceVertexBuffer->Push(batchData, transformCount * sizeof(InstanceData));
 
                     batchStart->Mesh->GetVertexArray()->Bind();
-                    m_Data->InstanceVertexBuffer->Bind();
 
                     const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                    RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                    RenderCommand::DrawIndexedInstancedStream(batchStart->Mesh->GetVertexArray(), m_Data->InstanceVertexBuffer, instanceOffset, transformCount, submesh.IndexCount, submesh.BaseIndex);
                 }
             };
 
@@ -1380,17 +1860,36 @@ namespace RXNEngine {
         return false;
     }
 
-    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius, bool isDynamic)
+    void Renderer::SubmitShadowCaster(const Ref<StaticMesh>& mesh, uint32_t submeshIndex, const glm::mat4& transform, int entityID, const glm::vec3& boundingCenter, float boundingRadius, bool isDynamic, uint32_t lodIndex)
     {
+        const auto& submeshes = mesh->GetSubmeshes();
+        if (submeshIndex >= submeshes.size())
+            return;
+
+        // WP5: shadow maps never need full-resolution geometry. Bias shadow
+        // casters to a coarser LOD: the cascades' vertex cost drops with the
+        // triangle count, and PCSS filtering blurs the shadow far more than
+        // the geometric simplification changes it.
+        constexpr uint32_t kShadowLODBias = 2;
+        uint32_t shadowLod = lodIndex;
+        uint32_t lodCount = (uint32_t)submeshes[submeshIndex].LODs.size();
+        if (lodCount > 0)
+            shadowLod = (lodIndex + kShadowLODBias < lodCount) ? (lodIndex + kShadowLODBias) : (lodCount - 1);
+
         RenderCommandPacket packet;
         packet.Mesh = mesh;
         packet.SubmeshIndex = submeshIndex;
         packet.Transform = transform;
         packet.EntityID = entityID;
+        packet.LODIndex = shadowLod;
 
         packet.BoundingCenter = boundingCenter;
         packet.BoundingRadius = boundingRadius;
         packet.IsDynamic = isDynamic;
+
+        Ref<SkeletalMesh> skeletalMesh = nullptr;
+        packet.ResolvedVAO = GetActiveVAO(mesh, entityID, m_Data->ActiveScene, skeletalMesh);
+        packet.ResolvedSkeletalMesh = skeletalMesh;
 
         m_Data->ShadowQueue.push_back(packet);
     }
@@ -1468,21 +1967,47 @@ namespace RXNEngine {
                 continue;
             }
 
-            if (packet.Mesh == batchStart->Mesh && packet.SubmeshIndex == batchStart->SubmeshIndex && transformCount < MaxInstances)
+            bool isSameMesh = (packet.Mesh == batchStart->Mesh && packet.SubmeshIndex == batchStart->SubmeshIndex && packet.LODIndex == batchStart->LODIndex);
+            bool isSameVAO = false;
+            if (isSameMesh)
+            {
+                isSameVAO = (packet.ResolvedVAO == batchStart->ResolvedVAO);
+            }
+
+            if (isSameMesh && isSameVAO && transformCount < MaxInstances)
             {
                 batchData[transformCount].Transform = packet.Transform;
                 transformCount++;
             }
             else
             {
-                data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
-                batchStart->Mesh->GetVertexArray()->Bind();
-                const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-                RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+                uint32_t instanceOffset = data->InstanceVertexBuffer->Push(batchData, transformCount * sizeof(InstanceData));
+                Ref<SkeletalMesh> skeletalMesh = batchStart->ResolvedSkeletalMesh;
+                Ref<VertexArray> targetVAO = batchStart->ResolvedVAO ? batchStart->ResolvedVAO : batchStart->Mesh->GetVertexArray();
+                targetVAO->Bind();
+                uint32_t indexCount = 0;
+                uint32_t baseIndex = 0;
+                if (skeletalMesh && batchStart->SubmeshIndex < skeletalMesh->GetSubmeshes().size())
+                {
+                    const auto& submesh = skeletalMesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                    uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                    const auto& lod = submesh.LODs[actualLod];
+                    indexCount = lod.IndexCount;
+                    baseIndex = lod.BaseIndex;
+                }
+                else
+                {
+                    const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                    uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                    const auto& lod = submesh.LODs[actualLod];
+                    indexCount = lod.IndexCount;
+                    baseIndex = lod.BaseIndex;
+                }
+                RenderCommand::DrawIndexedInstancedStream(targetVAO, data->InstanceVertexBuffer, instanceOffset, transformCount, indexCount, baseIndex);
 
                 data->Stats.DrawCalls++;
                 data->Stats.Instances += transformCount;
-                data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+                data->Stats.TotalIndices += indexCount * transformCount;
 
                 batchStart = &packet;
                 transformCount = 0;
@@ -1493,14 +2018,33 @@ namespace RXNEngine {
 
         if (transformCount > 0 && batchStart)
         {
-            data->InstanceVertexBuffer->SetData(batchData, transformCount * sizeof(InstanceData));
-            batchStart->Mesh->GetVertexArray()->Bind();
-            const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
-            RenderCommand::DrawIndexedInstanced(batchStart->Mesh->GetVertexArray(), data->InstanceVertexBuffer, transformCount, submesh.IndexCount, submesh.BaseIndex);
+            uint32_t instanceOffset = data->InstanceVertexBuffer->Push(batchData, transformCount * sizeof(InstanceData));
+            Ref<SkeletalMesh> skeletalMesh = batchStart->ResolvedSkeletalMesh;
+            Ref<VertexArray> targetVAO = batchStart->ResolvedVAO ? batchStart->ResolvedVAO : batchStart->Mesh->GetVertexArray();
+            targetVAO->Bind();
+            uint32_t indexCount = 0;
+            uint32_t baseIndex = 0;
+            if (skeletalMesh && batchStart->SubmeshIndex < skeletalMesh->GetSubmeshes().size())
+            {
+                const auto& submesh = skeletalMesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                const auto& lod = submesh.LODs[actualLod];
+                indexCount = lod.IndexCount;
+                baseIndex = lod.BaseIndex;
+            }
+            else
+            {
+                const auto& submesh = batchStart->Mesh->GetSubmeshes()[batchStart->SubmeshIndex];
+                uint32_t actualLod = batchStart->LODIndex < submesh.LODs.size() ? batchStart->LODIndex : 0;
+                const auto& lod = submesh.LODs[actualLod];
+                indexCount = lod.IndexCount;
+                baseIndex = lod.BaseIndex;
+            }
+            RenderCommand::DrawIndexedInstancedStream(targetVAO, data->InstanceVertexBuffer, instanceOffset, transformCount, indexCount, baseIndex);
 
             data->Stats.DrawCalls++;
             data->Stats.Instances += transformCount;
-            data->Stats.TotalIndices += submesh.IndexCount * transformCount;
+            data->Stats.TotalIndices += indexCount * transformCount;
         }
     }
 }

@@ -19,8 +19,12 @@ void main()
 
 in vec4 v_Color;
 layout(location = 0) out vec4 o_Color;
+layout(location = 1) out vec4 o_SSR;
+layout(location = 2) out vec4 o_Normal;
 
 void main()
 {
     o_Color = v_Color;
+    o_SSR = vec4(0.0);
+    o_Normal = vec4(0.5, 0.5, 1.0, 1.0);
 }

@@ -120,6 +120,16 @@ namespace RXNEngine {
 
 		m_VertexBuffers.push_back(vertexBuffer);
 	}
+
+	void OpenGLVertexArray::SetVertexBuffer(const Ref<VertexBuffer>& vertexBuffer, uint32_t index)
+	{
+		RXN_CORE_ASSERT(index < m_VertexBuffers.size(), "Index out of range!");
+		m_VertexBuffers[index] = vertexBuffer;
+		
+		glBindVertexArray(m_RendererID);
+		glBindVertexBuffer(index, vertexBuffer->GetRendererID(), 0, vertexBuffer->GetLayout().GetStride());
+	}
+
 	void OpenGLVertexArray::SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer)
 	{
 		glBindVertexArray(m_RendererID);

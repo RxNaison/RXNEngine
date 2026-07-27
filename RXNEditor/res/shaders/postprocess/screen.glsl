@@ -89,6 +89,8 @@ vec3 ComputeLensFlare(vec2 uv)
 float GetLinearDepth(vec2 uv, float depth);
 
 uniform sampler2D u_AOTexture;
+uniform vec2 u_AOTexelSize;
+uniform sampler2D u_SSRTexture;
 
 vec3 ReconstructWorldPos(vec2 uv, float depth)
 {
@@ -114,7 +116,7 @@ vec3 ReconstructNormalFromDepth(vec2 uv, float depth)
 
 float BilateralUpscaleAO(vec2 uv, float centerDepth, vec3 centerNormal)
 {
-    vec2 texelSizeLow = u_TexelSize * 4.0;
+    vec2 texelSizeLow = u_AOTexelSize;
     
     vec2 centerCoord = uv / texelSizeLow - 0.5;
     vec2 baseUV = (floor(centerCoord) + 0.5) * texelSizeLow;
@@ -195,6 +197,9 @@ void main()
 
     if (centerDepth < 0.9999)
     {
+        vec3 ssr = texture(u_SSRTexture, v_TexCoord).rgb;
+        if (any(isnan(ssr)) || any(isinf(ssr))) ssr = vec3(0.0);
+        hdrColor += ssr;
         float ao = BilateralUpscaleAO(v_TexCoord, centerDepth, vec3(0.0));
         hdrColor *= ao;
     }

@@ -52,6 +52,8 @@ void main()
 #version 450 core
 
 layout(location = 0) out vec4 o_Color;
+layout(location = 1) out vec4 o_SSR; // R2 Step 3: isolated SSR target (unused until 3b)
+layout(location = 2) out vec4 o_Normal; // GTAO: world-space shading normal (encoded *0.5+0.5)
 
 in vec2 v_TexCoord;
 in vec3 v_WorldPos;
@@ -72,6 +74,8 @@ uniform float u_Roughness;
 uniform float u_AO;
 
 uniform int u_UseNormalMap;
+uniform int u_NormalMapIsBC5; // WP17: BC5/RGTC2 stores only X/Y; reconstruct Z
+uniform int u_IsTransparent; // 1 while drawing the transparent pass: suppress normal/SSR G-buffer writes so GTAO keeps the opaque surface behind
 
 uniform vec3 u_CameraPosition;
 
@@ -85,6 +89,7 @@ layout (std140, binding = 2) uniform ShadowData
     float u_ContactThreshold;
     float u_ContactSharpness;
     float u_ContactSharpeningBias;
+    float u_SoftShadows;
 };
 uniform mat4 u_View;
 
@@ -99,6 +104,7 @@ layout(binding = 16) uniform sampler2D u_LightCookies[8];
 
 layout(binding = 15) uniform sampler2D u_PrevFrameColor;
 layout(binding = 24) uniform sampler2D u_PrevDepthTexture;
+layout(binding = 25) uniform sampler2D u_BlueNoiseTex; // static screen-space blue noise (RG)
 uniform mat4 u_ViewProjection;
 uniform mat4 u_InverseViewProjection;
 uniform mat4 u_PrevViewProjection;
@@ -113,6 +119,22 @@ struct AmbientVolume {
 };
 uniform AmbientVolume u_AmbientVolumes[8];
 uniform int u_AmbientVolumeCount;
+
+struct ReflectionProbe {
+    mat4 Transform;
+    mat4 InverseTransform;
+    vec3 HalfExtents;
+    float BlendDistance;
+    float Intensity;
+};
+uniform ReflectionProbe u_ReflectionProbes[8];
+uniform int u_ReflectionProbeCount;
+layout(binding = 26) uniform samplerCube u_ReflectionProbeCubes[4];
+
+// R2 Step 2: Hi-Z hierarchical min-depth pyramid of the previous frame's depth.
+// Level 0 holds linearized prev depth (abs(clip.w)); coarser levels hold the min
+// over 2x2 children so the SSR tracer can skip large empty regions in one step.
+layout(binding = 30) uniform sampler2D u_HiZBuffer;
 
 float GetLinearDepth(vec2 uv, float depth)
 {
@@ -151,9 +173,53 @@ layout(std140, binding = 1) uniform LightData {
     uint u_SpotLightCount;
     float u_EnvironmentIntensity;
     uint u_Padding;
-    PointLight u_PointLights[100];
-    SpotLight  u_SpotLights[100];
 };
+
+// ===================== Clustered Forward+ =============================
+// Lights now live in SSBOs and are culled per-froxel by the light_culling
+// compute pass. These constants MUST match LightCuller.h / light_culling.glsl.
+const uint MAX_POINT_PER_CLUSTER = 64u;
+const uint MAX_SPOT_PER_CLUSTER  = 32u;
+
+layout(std430, binding = 1) readonly buffer PointLightBuffer { PointLight b_PointLights[]; };
+layout(std430, binding = 2) readonly buffer SpotLightBuffer  { SpotLight  b_SpotLights[]; };
+layout(std430, binding = 3) readonly buffer PointGridBuffer  { uvec2 b_PointGrid[]; };
+layout(std430, binding = 4) readonly buffer SpotGridBuffer   { uvec2 b_SpotGrid[]; };
+layout(std430, binding = 5) readonly buffer PointIndexBuffer { uint  b_PointIndices[]; };
+layout(std430, binding = 6) readonly buffer SpotIndexBuffer  { uint  b_SpotIndices[]; };
+
+layout(std140, binding = 4) uniform ClusterData {
+    mat4  u_InvProjection;
+    mat4  u_ClusterView;   // world -> view
+    vec4  u_GridSizeTileX;  // x=gridX y=gridY z=gridZ w=tilePxX
+    vec4  u_ScreenNearFar;  // x=screenW y=screenH z=zNear w=zFar
+    vec4  u_ScaleBiasTileY; // x=scale y=bias z=tilePxY w=numClusters
+    uvec4 u_LightCounts;    // x=pointCount y=spotCount
+};
+
+uniform int u_ClusteredEnabled;
+uniform float u_PointShadowResolution; // actual point-shadow cube face resolution (texels per side)
+
+// Maps the current fragment to its froxel index in the cluster grid.
+uint ComputeClusterIndex()
+{
+    uint gridX = uint(u_GridSizeTileX.x);
+    uint gridY = uint(u_GridSizeTileX.y);
+    uint gridZ = uint(u_GridSizeTileX.z);
+
+    float zNear = u_ScreenNearFar.z;
+    float viewZ = (u_ClusterView * vec4(v_WorldPos, 1.0)).z;
+    float depthVS = max(-viewZ, zNear);
+
+    float scale = u_ScaleBiasTileY.x;
+    float bias  = u_ScaleBiasTileY.y;
+    uint zSlice = uint(clamp(floor(log(depthVS) * scale + bias), 0.0, float(gridZ - 1u)));
+
+    uint tileX = min(uint(gl_FragCoord.x / u_GridSizeTileX.w),  gridX - 1u);
+    uint tileY = min(uint(gl_FragCoord.y / u_ScaleBiasTileY.z), gridY - 1u);
+
+    return tileX + tileY * gridX + zSlice * gridX * gridY;
+}
 
 const float PI = 3.14159265359;
 
@@ -190,89 +256,201 @@ float GetDitherNoise(vec2 screenPos)
     return fract(52.9829189 * fract(dot(screenPos, vec2(0.06711056, 0.00583715))));
 }
 
-vec4 StochasticSSR(vec3 N, vec3 V, float roughness, vec3 F0)
-{
-    vec3 R_world = reflect(-V, N);
-    vec3 rayStartPos = v_WorldPos + N * 0.05; 
-    vec4 rayStartNDC = u_PrevViewProjection * vec4(rayStartPos, 1.0);
-    if (rayStartNDC.w <= 0.0001) return vec4(0.0);
-        
-    rayStartNDC /= rayStartNDC.w;
-    vec3 rayStartUV = rayStartNDC.xyz * 0.5 + 0.5;
+#define SSR_MAX_RAYS 1
 
-    const int maxSteps = 40; 
-    const float maxDistance = 15.0; 
-    const float stepSize = maxDistance / float(maxSteps);
-    float dither = GetDitherNoise(gl_FragCoord.xy);
-    
-    vec3 currentWorldPos = rayStartPos;
-    float currentDist = 0.05 + stepSize * dither * 0.5; 
-    bool hit = false;
-    vec2 hitUV = vec2(0.0);
-    vec3 hitWorldPos = vec3(0.0);
-    
+// GGX importance sampling: build a microfacet half-vector around N for a given
+// roughness. Xi is a 2D low-discrepancy / blue-noise sample in the 0..1 range.
+vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
+{
+    float a = roughness * roughness;
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(max(1.0 - cosTheta * cosTheta, 0.0));
+
+    vec3 H = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+
+    vec3 up = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+    return normalize(tangent * H.x + bitangent * H.y + N * H.z);
+}
+
+vec2 SampleBlueNoise(vec2 fragCoord);
+
+vec4 TraceSSRRay(vec3 rayOrigin, vec3 rayDir, vec3 V, float roughness, float startJitter)
+{
+    const int   maxSteps    = 28;
+    const float maxDistance = 18.0;
+    const float baseStep    = maxDistance / float(maxSteps);
+
+    int maxLevel    = max(textureQueryLevels(u_HiZBuffer) - 1, 0);
+    int coarseLevel = clamp(maxLevel - 1, 0, maxLevel);
+
+    float dWdt  = (u_PrevViewProjection * vec4(rayDir, 0.0)).w;
+    float absDW = abs(dWdt);
+    float invDW = (absDW > 1e-5) ? (1.0 / absDW) : 0.0;
+
+    float currentDist  = baseStep * (0.5 + 0.5 * startJitter);
+    vec3  prevWorldPos = rayOrigin;
+
     for (int i = 0; i < maxSteps; ++i)
     {
-        currentDist += stepSize;
-        currentWorldPos = rayStartPos + R_world * currentDist;
-        vec4 rayNDC = u_PrevViewProjection * vec4(currentWorldPos, 1.0);
-        if (rayNDC.w <= 0.0001) break;
-            
-        rayNDC /= rayNDC.w;
-        vec3 rayUV = rayNDC.xyz * 0.5 + 0.5;
-        
-        if (rayUV.x < 0.001 || rayUV.x > 0.999 || rayUV.y < 0.001 || rayUV.y > 0.999 || rayUV.z < 0.0 || rayUV.z > 1.0)
-            break;
-            
-        float sampledDepth = texture(u_PrevDepthTexture, rayUV.xy).r;
-        float rayDepth = GetLinearDepthPrev(rayUV.xy, rayUV.z);
-        float sampledDepthLinear = GetLinearDepthPrev(rayUV.xy, sampledDepth);
-        float thickness = stepSize * (1.0 + currentDist * 0.05);
-        
-        if (rayDepth > sampledDepthLinear && (rayDepth - sampledDepthLinear) < thickness)
+        vec3 pos  = rayOrigin + rayDir * currentDist;
+        vec4 clip = u_PrevViewProjection * vec4(pos, 1.0);
+        if (clip.w <= 0.0001) break;                         // behind the prev camera
+
+        vec2 uv = (clip.xy / clip.w) * 0.5 + 0.5;
+        if (uv.x < 0.001 || uv.x > 0.999 || uv.y < 0.001 || uv.y > 0.999)
+            break;                                            // left the screen
+
+        float rayZ    = abs(clip.w);                          // ray depth metric
+        float cellMin = textureLod(u_HiZBuffer, uv, float(coarseLevel)).r;
+        float gap     = cellMin - rayZ;                       // >0 => in front of all geometry in cell
+
+        if (gap > 0.02)
         {
-            hit = true;
-            hitUV = rayUV.xy;
-            vec3 prevWorldPos = rayStartPos + R_world * (currentDist - stepSize);
-            hitWorldPos = currentWorldPos;
-            
-            for (int j = 0; j < 10; ++j)
-            {
-                vec3 midWorldPos = (prevWorldPos + hitWorldPos) * 0.5;
-                vec4 midNDC = u_PrevViewProjection * vec4(midWorldPos, 1.0);
-                if (midNDC.w <= 0.0001) break;
-                midNDC /= midNDC.w;
-                vec3 midUV = midNDC.xyz * 0.5 + 0.5;
-                
-                float midSampledDepth = texture(u_PrevDepthTexture, midUV.xy).r;
-                float midRayDepth = GetLinearDepthPrev(midUV.xy, midUV.z);
-                float midSampledDepthLinear = GetLinearDepthPrev(midUV.xy, midSampledDepth);
-                
-                if (midRayDepth > midSampledDepthLinear)
-                {
-                    hitWorldPos = midWorldPos;
-                    hitUV = midUV.xy;
-                }
-                else
-                {
-                    prevWorldPos = midWorldPos;
-                }
-            }
-            break;
+            // Empty-space skip: jump roughly to the cell's nearest surface depth.
+            float skip = clamp(gap * invDW, baseStep, maxDistance * 0.5);
+            prevWorldPos = pos;
+            currentDist += skip;
+            if (currentDist > maxDistance) break;
+            continue;
         }
+
+        // Potential intersection: test against the precise (level 0) depth.
+        float surfZ = textureLod(u_HiZBuffer, uv, 0.0).r;
+        float delta = rayZ - surfZ;                           // >0 => ray passed behind surface
+
+        if (delta > 0.0)
+        {
+            // Thickness-aware acceptance: reject crossings of thin foreground
+            // occluders (convert a world-space slab into depth-metric units).
+            float worldStep  = max(currentDist - length(prevWorldPos - rayOrigin), baseStep);
+            float thickness  = clamp(worldStep * (1.0 + currentDist * 0.08), 0.05, 2.0);
+            float thicknessZ = thickness * absDW + 0.05;
+
+            if (delta < thicknessZ)
+            {
+                // Binary refinement of the crossing between prevWorldPos and pos.
+                vec3 lo = prevWorldPos;
+                vec3 hi = pos;
+                vec2 hitUV = uv;
+                for (int j = 0; j < 6; ++j) // perf: 8 -> 6 binary-refinement steps (sub-pixel crossing accuracy already saturates)
+                {
+                    vec3 mid = (lo + hi) * 0.5;
+                    vec4 mc  = u_PrevViewProjection * vec4(mid, 1.0);
+                    if (mc.w <= 0.0001) break;
+                    vec2 muv    = (mc.xy / mc.w) * 0.5 + 0.5;
+                    float mRayZ = abs(mc.w);
+                    float mSurf = textureLod(u_HiZBuffer, muv, 0.0).r;
+                    hitUV = muv;
+                    if (mRayZ - mSurf > 0.0) hi = mid; else lo = mid;
+                }
+
+                // Confidence: fade at screen borders, when the ray points back
+                // toward the camera, and with ray length.
+                vec2 edge = smoothstep(vec2(0.0), vec2(0.12), hitUV) * (1.0 - smoothstep(vec2(0.88), vec2(1.0), hitUV));
+                float confidence = edge.x * edge.y;
+                confidence *= (1.0 - clamp(dot(rayDir, V), 0.0, 1.0));
+                confidence *= 1.0 - clamp(currentDist / maxDistance, 0.0, 1.0) * 0.5;
+
+                float lod = roughness * 4.0;
+                vec3 reflectionColor = textureLod(u_PrevFrameColor, hitUV, lod).rgb;
+                return vec4(reflectionColor, clamp(confidence, 0.0, 1.0));
+            }
+            // Thin occluder: keep marching past it.
+        }
+
+        prevWorldPos = pos;
+        currentDist += baseStep;
+        if (currentDist > maxDistance) break;
     }
-    
-    if (hit)
-    {
-        vec2 prevUV = hitUV;
-        vec2 edge = smoothstep(vec2(0.0), vec2(0.12), prevUV) * (1.0 - smoothstep(vec2(0.88), vec2(1.0), prevUV));
-        float fade = edge.x * edge.y;
-        fade *= (1.0 - clamp(dot(R_world, V), 0.0, 1.0));
-        float lod = roughness * 5.0;
-        vec3 reflectionColor = textureLod(u_PrevFrameColor, prevUV, lod).rgb;
-        return vec4(reflectionColor, fade);
-    }
+
     return vec4(0.0);
+}
+
+// Stochastic screen-space reflections (temporal-free). GGX-importance-sampled,
+// blue-noise jittered rays; a few rays for glossy surfaces are averaged inline
+// (the separable bilateral denoise pass in R2 Step 3 lets this drop to 1 ray).
+vec4 StochasticSSR(vec3 N, vec3 V, float roughness, vec3 F0)
+{
+    vec3 rayOrigin = v_WorldPos + N * 0.05;
+    vec4 originNDC = u_PrevViewProjection * vec4(rayOrigin, 1.0);
+    if (originNDC.w <= 0.0001) return vec4(0.0);
+
+    vec2 bn = SampleBlueNoise(gl_FragCoord.xy);
+    int numRays = (roughness < 0.08) ? 1 : SSR_MAX_RAYS;
+
+    vec3  accumColor = vec3(0.0);
+    float accumConf  = 0.0;
+
+    for (int r = 0; r < SSR_MAX_RAYS; ++r)
+    {
+        if (r >= numRays) break;
+
+        // Decorrelate the blue-noise sample per ray (golden-ratio rotation).
+        vec2 Xi = fract(bn + float(r) * vec2(0.61803399, 0.32471796));
+
+        // Mirror-ish surfaces use the exact reflection; glossy ones perturb the
+        // half-vector via GGX importance sampling scaled by roughness.
+        vec3 H = (roughness < 0.02) ? N : ImportanceSampleGGX(Xi, N, roughness);
+        vec3 rayDir = reflect(-V, H);
+
+        // Reject rays that fall below the surface horizon.
+        if (dot(rayDir, N) <= 0.0)
+            continue;
+
+        vec4 rayResult = TraceSSRRay(rayOrigin, rayDir, V, roughness, Xi.y);
+        accumColor += rayResult.rgb * rayResult.a;
+        accumConf  += rayResult.a;
+    }
+
+    if (accumConf <= 0.0001)
+        return vec4(0.0);
+
+    vec3 color = accumColor / accumConf;            // confidence-weighted color
+    float confidence = accumConf / float(numRays);  // misses lower confidence
+    return vec4(color, clamp(confidence, 0.0, 1.0));
+}
+
+// R1: Local parallax-corrected reflection probes.
+// Step 2 samples each probe's own captured + prefiltered specular cubemap,
+// parallax-corrected through the probe's box volume. Blended by influence weight.
+vec3 SampleReflectionProbes(vec3 R, vec3 worldPos, float roughness, vec3 fallback, out float weightOut)
+{
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 accumColor = vec3(0.0);
+    float accumWeight = 0.0;
+
+    for (int i = 0; i < u_ReflectionProbeCount && i < 4; ++i)
+    {
+        vec3 ext = u_ReflectionProbes[i].HalfExtents;
+        vec3 localPos = (u_ReflectionProbes[i].InverseTransform * vec4(worldPos, 1.0)).xyz;
+        vec3 inside = ext - abs(localPos);
+        if (inside.x < 0.0 || inside.y < 0.0 || inside.z < 0.0)
+            continue;
+
+        vec3 localR = normalize(mat3(u_ReflectionProbes[i].InverseTransform) * R);
+        vec3 firstPlane  = (-ext - localPos) / localR;
+        vec3 secondPlane = ( ext - localPos) / localR;
+        vec3 furthest = max(firstPlane, secondPlane);
+        float dist = min(min(furthest.x, furthest.y), furthest.z);
+        vec3 localHit = localPos + localR * dist;
+
+        vec3 worldDir = normalize(mat3(u_ReflectionProbes[i].Transform) * localHit);
+        vec3 probeColor = textureLod(u_ReflectionProbeCubes[i], worldDir, roughness * MAX_REFLECTION_LOD).rgb;
+
+        float edge = min(min(inside.x, inside.y), inside.z);
+        float w = clamp(edge / max(u_ReflectionProbes[i].BlendDistance, 0.001), 0.0, 1.0) * u_ReflectionProbes[i].Intensity;
+
+        accumColor += probeColor * w;
+        accumWeight += w;
+    }
+
+    weightOut = clamp(accumWeight, 0.0, 1.0);
+    if (accumWeight > 0.0)
+        accumColor /= accumWeight;
+    return mix(fallback, accumColor, weightOut);
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -318,6 +496,11 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 vec3 GetNormalFromMap(vec3 N)
 {
     vec3 tangentNormal = texture(u_NormalMap, v_TexCoord).xyz * 2.0 - 1.0;
+
+    // WP17: BC5 normal maps carry only X/Y (sampled B is 0 -> Z would be -1).
+    // Rebuild Z on the unit hemisphere.
+    if (u_NormalMapIsBC5 == 1)
+        tangentNormal.z = sqrt(clamp(1.0 - dot(tangentNormal.xy, tangentNormal.xy), 0.0, 1.0));
     
     // bypass derivative artifacts
     if (abs(tangentNormal.x) < 0.015 && abs(tangentNormal.y) < 0.015)
@@ -386,10 +569,50 @@ vec2 GetVogelDiskSample(int sampleIndex, int sampleCount, float phi, float jitte
     return vec2(cos(theta), sin(theta)) * r;
 }
 
+// Static screen-space blue noise (RG channels). texelFetch => nearest, no
+// filtering or mips, with manual toroidal wrap so it tiles seamlessly. Static
+// (not animated per frame) on purpose: this engine ships without TAA, so a
+// fixed screen-space pattern stays stable instead of crawling frame to frame.
+vec2 SampleBlueNoise(vec2 fragCoord)
+{
+    ivec2 sz = textureSize(u_BlueNoiseTex, 0);
+    ivec2 uv = ivec2(fragCoord) % sz;
+    return texelFetch(u_BlueNoiseTex, uv, 0).rg;
+}
+
+// Penumbra-adaptive PCF bounds (inline, MSAA-correct directional shadows).
+#define PCSS_MIN_PCF_SAMPLES 12   // razor-sharp contacts: cheap
+#define PCSS_MAX_PCF_SAMPLES 32   // widest penumbra: smoothest
+#define PCSS_GAUSSIAN_FALLOFF 2.2 // higher = tighter center weighting
+#define PCSS_BLOCKER_SAMPLES  24  // blocker search taps: more taps = stabler penumbra estimate (less grain on small casters)
+
 float SamplePCSSShadow(vec3 unbiasedProjCoords, float biasWorld, int layer, float depthRange)
 {
     if (unbiasedProjCoords.z > 1.0)
         return 1.0;
+
+    vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
+    float cascadeWorldWidth = u_CascadePlaneDistances[layer].w; 
+
+    // Screen-space blue-noise rotation + jitter (decorrelated R/G channels)
+    vec2 bn = SampleBlueNoise(gl_FragCoord.xy);
+    float phi = bn.r * 2.0 * PI;
+    float jitter = bn.g;
+
+    float biasedDepth = unbiasedProjCoords.z - (biasWorld / depthRange);
+
+    if (u_SoftShadows < 0.5)
+    {
+        // Low-cost 4-sample PCF filtering for high performance
+        float filterRadiusUV = texelSize.x * 1.5;
+        float visibility = 0.0;
+        for (int i = 0; i < 4; ++i)
+        {
+            vec2 offset = GetVogelDiskSample(i, 4, phi, jitter) * filterRadiusUV;
+            visibility += texture(u_ShadowMap, vec4(unbiasedProjCoords.xy + offset, float(layer), biasedDepth));
+        }
+        return visibility / 4.0;
+    }
 
     float lightSize = u_LightSize;                         // Controls how wide/blurry the shadow gets at its softest point
                                                            
@@ -402,30 +625,28 @@ float SamplePCSSShadow(vec3 unbiasedProjCoords, float biasWorld, int layer, floa
     float contactSharpeningBias = u_ContactSharpeningBias; // Blends the closest blocker (1.0) with average blocker (0.0).
                                                            // Set to 0.85 to keep contact points (feet/pillars) razor-sharp.
 
-    vec2 texelSize = 1.0 / vec2(textureSize(u_ShadowMap, 0));
-    float cascadeWorldWidth = u_CascadePlaneDistances[layer].w; 
-
-    // Generate a world-position-based rotation/jitter angle
-    float worldNoise = fract(sin(dot(v_WorldPos.xyz, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-    float phi = worldNoise * 2.0 * PI;
-    float jitter = fract(worldNoise * 1.618);
-
-    // Blocker Search (12 Vogel Samples)
+    // Blocker Search (light-size-scaled radius, dense Vogel samples)
     float sumBlockerDepth = 0.0;
     float numBlockers = 0.0;
     float maxBlockerDepth = 0.0; 
     
-    float blockerSearchRadiusWS = 1.2; 
+    // Search radius scaled by light size (proper PCSS) instead of a fixed 1.2 m.
+    // The fixed radius was far wider than small (< ~1.5 m) casters, so only a few
+    // of the per-pixel rotated samples hit the occluder and the blocker statistics
+    // jittered pixel-to-pixel -> random penumbra estimate -> salt-and-pepper grain.
+    // Scaling with lightSize keeps the search proportional to the real penumbra and
+    // the samples dense, killing the noise without changing the overall softness.
+    float blockerSearchRadiusWS = clamp(lightSize * 3.0, 0.06, 1.2);
     float blockerSearchRadiusUV = blockerSearchRadiusWS / cascadeWorldWidth;
-    blockerSearchRadiusUV = clamp(blockerSearchRadiusUV, texelSize.x * 1.5, 0.15);
+    blockerSearchRadiusUV = clamp(blockerSearchRadiusUV, texelSize.x * 1.5, 0.08);
 
     float blockerBiasWS = 0.0015; 
     float blockerBiasUVz = blockerBiasWS / depthRange;
     float blockerThresholdDepth = unbiasedProjCoords.z - blockerBiasUVz;
 
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < PCSS_BLOCKER_SAMPLES; ++i)
     {
-        vec2 offset = GetVogelDiskSample(i, 12, phi, jitter) * blockerSearchRadiusUV;
+        vec2 offset = GetVogelDiskSample(i, PCSS_BLOCKER_SAMPLES, phi, jitter) * blockerSearchRadiusUV;
         float sampleDepth = texture(u_ShadowMapRaw, vec3(unbiasedProjCoords.xy + offset, float(layer))).r;
         
         if (sampleDepth < blockerThresholdDepth)
@@ -453,25 +674,35 @@ float SamplePCSSShadow(vec3 unbiasedProjCoords, float biasWorld, int layer, floa
     float activeDistance = max(blockerDistanceWS - contactThreshold, 0.0);
     float penumbraSizeWS = pow(activeDistance, contactSharpness) * lightSize;
 
-    // PCF Filtering in World-Space Meters (16 Jittered Vogel Samples)
+    // PCF Filtering in World-Space Meters (penumbra-adaptive Vogel samples)
     float minBlurWS = 0.001; 
     float maxBlurWS = min(4.5, cascadeWorldWidth * 0.18); 
 
     float filterRadiusWS = clamp(penumbraSizeWS, minBlurWS, maxBlurWS);
-    float filterRadiusUV = filterRadiusWS / cascadeWorldWidth;
+    float filterRadiusUV = clamp(filterRadiusWS / cascadeWorldWidth, texelSize.x * 1.0, 0.15);
 
-    filterRadiusUV = clamp(filterRadiusUV, texelSize.x * 1.0, 0.15);
+    // Penumbra-adaptive tap count: razor-sharp contacts stay cheap (few taps),
+    // wide penumbrae get more taps to kill residual grain. Keeps the average
+    // cost near the old fixed 16 while making the soft regions visibly smoother.
+    float penumbraNorm = clamp((filterRadiusWS - minBlurWS) / max(maxBlurWS - minBlurWS, 1e-4), 0.0, 1.0);
+    int sampleCount = int(mix(float(PCSS_MIN_PCF_SAMPLES), float(PCSS_MAX_PCF_SAMPLES), penumbraNorm) + 0.5);
+    sampleCount = clamp(sampleCount, PCSS_MIN_PCF_SAMPLES, PCSS_MAX_PCF_SAMPLES);
 
-    float biasedDepth = unbiasedProjCoords.z - (biasWorld / depthRange);
-
+    // Gaussian-weighted accumulation (center taps weigh more) for a smoother,
+    // more natural penumbra falloff than a flat disk average. normR2 matches the
+    // Vogel radial distribution (r^2 grows linearly with sample index).
     float visibility = 0.0;
-    for (int i = 0; i < 16; ++i)
+    float weightSum = 0.0;
+    for (int i = 0; i < sampleCount; ++i)
     {
-        vec2 offset = GetVogelDiskSample(i, 16, phi, jitter) * filterRadiusUV;
-        visibility += texture(u_ShadowMap, vec4(unbiasedProjCoords.xy + offset, float(layer), biasedDepth));
+        float normR2 = (float(i) + 0.5) / float(sampleCount);
+        float w = exp(-PCSS_GAUSSIAN_FALLOFF * normR2);
+        vec2 offset = GetVogelDiskSample(i, sampleCount, phi, jitter) * filterRadiusUV;
+        visibility += w * texture(u_ShadowMap, vec4(unbiasedProjCoords.xy + offset, float(layer), biasedDepth));
+        weightSum += w;
     }
 
-    return visibility / 16.0;
+    return visibility / max(weightSum, 1e-4);
 }
 
 float ShadowCalculation(vec3 fragPosWorld, vec3 shadingNormal)
@@ -624,12 +855,19 @@ float PointShadowCalculation(vec3 fragPosWorld, PointLight light, vec3 normal) {
     float sinTheta = sqrt(max(1.0 - cosTheta * cosTheta, 0.0));
     float slopeScale = sinTheta / max(cosTheta, 0.001);
     
+    float shadowRes = max(u_PointShadowResolution, 1.0);
     float distanceToLight = length(fragToLightUnbiased);
-    float texelSize = distanceToLight / 1024.0; 
-    float normalOffset = max(texelSize, 0.002) * 2.0 * sinTheta;
-    
-    float constantDepthBias = 0.005;
-    float depthOffset = constantDepthBias * (1.0 + min(slopeScale, 3.0));
+    // World size of one shadow-cube texel at the receiver. A cube face is a 90-deg
+    // FOV frustum, so the face spans 2*distance across 'shadowRes' texels.
+    float texelSize = (2.0 * distanceToLight) / shadowRes;
+    // Normal-offset bias. The shadow texel's footprint ALONG the surface grows as
+    // texelSize * tan(incidence) = texelSize * slopeScale. A point light embedded in
+    // a wall makes that wall extremely grazing, so the offset must scale by slopeScale
+    // (not just sinTheta, which saturates at 1 and was far too weak -> residual acne).
+    float normalOffset = texelSize * (1.0 + 2.0 * min(slopeScale, 6.0));
+    normalOffset = max(normalOffset, 0.003);
+    // Light-direction offset mops up residual self-shadow on near-facing surfaces.
+    float depthOffset = texelSize * (0.5 + min(slopeScale, 3.0));
     
     vec3 shadowPos = fragPosWorld + geoNormal * normalOffset + L * depthOffset;
     vec3 fragToLight = shadowPos - lightPos;
@@ -645,9 +883,8 @@ float PointShadowCalculation(vec3 fragPosWorld, PointLight light, vec3 normal) {
     vec3 up = abs(lightDir.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent = SafeNormalize(cross(up, lightDir));
     vec3 bitangent = cross(lightDir, tangent);
-    vec3 normalDirection = SafeNormalize(fragToLight);
-    float stableValue = fract(sin(dot(normalDirection, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-    float randomAngle = stableValue * 2.0 * PI;
+    // Screen-space blue-noise rotation (replaces world-space white-noise hash)
+    float randomAngle = SampleBlueNoise(gl_FragCoord.xy).r * 2.0 * PI;
     float c = cos(randomAngle), s = sin(randomAngle);
 
     float shadow = 0.0;
@@ -663,8 +900,13 @@ float PointShadowCalculation(vec3 fragPosWorld, PointLight light, vec3 normal) {
         float sampledDepth = texture(u_PointShadowMap, vec4(sampleDir, float(shadowIndex))).r;
         float sampledLinearDistance = (0.2 * farPlane) / ((farPlane + 0.1) - (2.0 * sampledDepth - 1.0) * (farPlane - 0.1));
         
-        float linearBias = 0.004 + 0.008 * slopeScale;
-        linearBias = min(linearBias, 0.02); 
+        // Distance-scaled slope bias. One shadow texel covers ~ (2 * sZEye / res)
+        // in world units and required bias grows with surface slope; the old fixed
+        // 0.02 cap was far too small for distant texels, so far / grazing surfaces
+        // self-shadowed (acne). Scaling with the texel footprint fixes it at all ranges.
+        float worldTexelSize = (2.0 * sZEye) / shadowRes;
+        float linearBias = worldTexelSize * (1.5 + 2.0 * min(slopeScale, 6.0));
+        linearBias = clamp(linearBias, 0.0015, farPlane * 0.02);
         
         if (sZEye - linearBias > sampledLinearDistance)
             shadow += 1.0;
@@ -690,7 +932,21 @@ void main()
     {
         N = GetNormalFromMap(N);
     }
- 
+
+    // WP19: silhouette fix. On smooth-shaded low-poly geometry the
+    // interpolated (and normal-mapped) normal can face AWAY from the camera
+    // near silhouettes (dot(N,V) < 0). ComputePBRDirect hard-rejects those
+    // pixels (NdotV <= 0 -> vec3(0)) and specularOcclusion zeroes the IBL
+    // specular, leaving a near-black patch that slides with the view angle.
+    // Bend N the minimal amount needed to sit on the view horizon instead;
+    // pixels with dot(N,V) >= kHorizonEps are completely untouched.
+    {
+        const float kHorizonEps = 0.02;
+        float NoV = dot(N, V);
+        if (NoV < kHorizonEps)
+            N = SafeNormalize(N + V * (kHorizonEps - NoV));
+    }
+
     vec3 R = reflect(-V, N); 
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
@@ -712,12 +968,25 @@ void main()
         }
     }
 
-    // POINT LIGHTS
-    for(int i = 0; i < int(u_PointLightCount); ++i)
+    // POINT LIGHTS (Clustered Forward+)
+    uint clusterIndex = (u_ClusteredEnabled == 1) ? ComputeClusterIndex() : 0u;
+
+    uint pointOffset = 0u;
+    uint pointCount  = u_PointLightCount;
+    if (u_ClusteredEnabled == 1)
     {
-        vec3 lightPos = u_PointLights[i].PositionIntensity.xyz;
+        uvec2 pg = b_PointGrid[clusterIndex];
+        pointOffset = pg.x;
+        pointCount  = pg.y;
+    }
+
+    for (uint pi = 0u; pi < pointCount; ++pi)
+    {
+        uint i = (u_ClusteredEnabled == 1) ? b_PointIndices[pointOffset + pi] : pi;
+
+        vec3 lightPos = b_PointLights[i].PositionIntensity.xyz;
         float distance = length(lightPos - v_WorldPos);
-        float radius = u_PointLights[i].ColorRadius.w;
+        float radius = b_PointLights[i].ColorRadius.w;
 
         if (distance < radius)
         {
@@ -726,17 +995,17 @@ void main()
 
             if (NdotL > 0.0)
             {
-                float intensity = u_PointLights[i].PositionIntensity.w;
-                float falloffExp = max(u_PointLights[i].Falloff.x, 0.001);
+                float intensity = b_PointLights[i].PositionIntensity.w;
+                float falloffExp = max(b_PointLights[i].Falloff.x, 0.001);
                 float window = pow(clamp(1.0 - (distance / radius), 0.0, 1.0), falloffExp);
                 float attenuation = window / (distance * distance + 0.001);
 
                 if (attenuation > 0.0001)
                 {
-                    float pShadow = PointShadowCalculation(v_WorldPos, u_PointLights[i], N);
+                    float pShadow = PointShadowCalculation(v_WorldPos, b_PointLights[i], N);
                     if (pShadow > 0.0)
                     {
-                        vec3 radiance = u_PointLights[i].ColorRadius.rgb * intensity * attenuation * pShadow;
+                        vec3 radiance = b_PointLights[i].ColorRadius.rgb * intensity * attenuation * pShadow;
                         Lo += ComputePBRDirect(N, V, L, albedo, roughnessSpec, metallic, F0, radiance);
                     }
                 }
@@ -744,12 +1013,23 @@ void main()
         }
     }
 
-    // SPOT LIGHTS
-    for(int i = 0; i < int(u_SpotLightCount); ++i)
+    // SPOT LIGHTS (Clustered Forward+)
+    uint spotOffset = 0u;
+    uint spotCount  = u_SpotLightCount;
+    if (u_ClusteredEnabled == 1)
     {
-        vec3 lightPos = u_SpotLights[i].PositionIntensity.xyz;
+        uvec2 sg = b_SpotGrid[clusterIndex];
+        spotOffset = sg.x;
+        spotCount  = sg.y;
+    }
+
+    for (uint si = 0u; si < spotCount; ++si)
+    {
+        uint i = (u_ClusteredEnabled == 1) ? b_SpotIndices[spotOffset + si] : si;
+
+        vec3 lightPos = b_SpotLights[i].PositionIntensity.xyz;
         float distance = length(lightPos - v_WorldPos);
-        float radius = u_SpotLights[i].DirectionRadius.w;
+        float radius = b_SpotLights[i].DirectionRadius.w;
 
         if (distance < radius)
         {
@@ -758,36 +1038,36 @@ void main()
 
             if (NdotL > 0.0)
             {
-                vec3 lightDir = SafeNormalize(u_SpotLights[i].DirectionRadius.xyz);
+                vec3 lightDir = SafeNormalize(b_SpotLights[i].DirectionRadius.xyz);
                 float theta = dot(L, -lightDir); 
-                float innerCutOff = u_SpotLights[i].ColorCutoff.w;
-                float outerCutOff = u_SpotLights[i].Falloff.y;
+                float innerCutOff = b_SpotLights[i].ColorCutoff.w;
+                float outerCutOff = b_SpotLights[i].Falloff.y;
                 float epsilon = max(innerCutOff - outerCutOff, 0.0001);
                 float intensityMultiplier = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
 
                 if (intensityMultiplier > 0.0)
                 {
-                    float intensity = u_SpotLights[i].PositionIntensity.w;
-                    float falloffExp = max(u_SpotLights[i].Falloff.x, 0.001);
+                    float intensity = b_SpotLights[i].PositionIntensity.w;
+                    float falloffExp = max(b_SpotLights[i].Falloff.x, 0.001);
                     float window = pow(clamp(1.0 - (distance / radius), 0.0, 1.0), falloffExp);
                     float attenuation = window / (distance * distance + 0.001);
 
                     if (attenuation > 0.0001)
                     {
-                        float sShadow = SpotShadowCalculation(v_WorldPos, u_SpotLights[i], L);
+                        float sShadow = SpotShadowCalculation(v_WorldPos, b_SpotLights[i], L);
                         if (sShadow > 0.0)
                         {
                             vec3 cookieColor = vec3(1.0);
-                            int cookieIndex = int(u_SpotLights[i].Falloff.z);
+                            int cookieIndex = int(b_SpotLights[i].Falloff.z);
                             
                             if (cookieIndex >= 16 && cookieIndex < 24)
                             {
                                 int arrayIndex = cookieIndex - 16;
-                                vec4 lightSpacePos = u_SpotLights[i].LightSpaceMatrix * vec4(v_WorldPos, 1.0);
+                                vec4 lightSpacePos = b_SpotLights[i].LightSpaceMatrix * vec4(v_WorldPos, 1.0);
                                 vec3 projCoords = lightSpacePos.xyz / max(lightSpacePos.w, 0.0001);
                                 projCoords = projCoords * 0.5 + 0.5;
                                 
-                                float cookieSize = max(u_SpotLights[i].Falloff.w, 0.0001);
+                                float cookieSize = max(b_SpotLights[i].Falloff.w, 0.0001);
                                 vec2 cookieUV = (projCoords.xy - 0.5) / cookieSize + 0.5;
 
                                 if (lightSpacePos.w > 0.0 && 
@@ -802,7 +1082,7 @@ void main()
                                 }
                             }
 
-                            vec3 radiance = u_SpotLights[i].ColorCutoff.rgb * intensity * attenuation * intensityMultiplier * cookieColor * sShadow;
+                            vec3 radiance = b_SpotLights[i].ColorCutoff.rgb * intensity * attenuation * intensityMultiplier * cookieColor * sShadow;
                             Lo += ComputePBRDirect(N, V, L, albedo, roughnessSpec, metallic, F0, radiance);
                         }
                     }
@@ -862,14 +1142,29 @@ void main()
     vec3 prefilteredColor = textureLod(u_PrefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
     vec2 brdf  = texture(u_BRDFLUT, vec2(NdotV, roughness)).rg;
     
-    vec3 reflectionColor = prefilteredColor * skyVisibility;
-    if (roughness < 0.4)
+    float probeWeight = 0.0;
+    vec3 localReflection = SampleReflectionProbes(R, v_WorldPos, roughness, prefilteredColor, probeWeight);
+
+    // R2 Step 3b: o_Color now carries ONLY the probe/global reflection. The SSR
+    // contribution is exported as a *delta* into o_SSR, denoised in a separable
+    // bilateral pass, then re-added in screen.glsl. With an identity denoise this
+    // is mathematically identical to the previous inline blend.
+    vec3 reflectionColor = localReflection * skyVisibility;
+    vec4 ssrOut = vec4(0.0);
+    if (roughness < 0.6)
     {
         vec4 ssrResult = StochasticSSR(N, V, roughness, F0);
         if (ssrResult.a > 0.001)
         {
-            float ssrRoughnessFade = smoothstep(0.4, 0.15, roughness);
-            reflectionColor = mix(prefilteredColor * skyVisibility, ssrResult.rgb, ssrResult.a * ssrRoughnessFade);
+            float ssrRoughnessFade = smoothstep(0.6, 0.2, roughness);
+            float ssrWeight = clamp(ssrResult.a, 0.0, 1.0) * ssrRoughnessFade;
+            // delta = ssrWeight * (ssrRadiance - baseReflection), pre-multiplied by
+            // the same specular BRDF / occlusion / env-intensity terms o_Color uses,
+            // so the composite in screen.glsl is a plain additive blend.
+            vec3 ssrDelta = ssrWeight * (ssrResult.rgb - localReflection * skyVisibility);
+            ssrOut.rgb = ssrDelta * (F_IBL * brdf.x + brdf.y) * specularOcclusion * u_EnvironmentIntensity;
+            // Per-pixel blur radius: 0 = mirror-sharp, 1 = widest glossy blur.
+            ssrOut.a = clamp(roughness / 0.6, 0.0, 1.0);
         }
     }
     vec3 specularIBL = reflectionColor * (F_IBL * brdf.x + brdf.y) * specularOcclusion;
@@ -883,4 +1178,8 @@ void main()
     if (!(alpha >= 0.0 && alpha <= 1.0)) alpha = 1.0;
 
     o_Color = vec4(color, alpha);
+
+    float gbufAlpha = (u_IsTransparent != 0) ? 0.0 : 1.0;
+    o_SSR = vec4(ssrOut.rgb, (u_IsTransparent != 0) ? 0.0 : ssrOut.a);
+    o_Normal = vec4(normalize(N) * 0.5 + 0.5, gbufAlpha); 
 }

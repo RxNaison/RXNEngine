@@ -55,9 +55,24 @@ namespace RXNEngine {
 			s_RendererAPI->DrawIndexedInstanced(vertexArray, instanceData, instanceCount, indexCount, baseIndex);
 		}
 
+		inline static void DrawIndexedInstancedStream(const Ref<VertexArray>& vertexArray, const Ref<StreamVertexBuffer>& instanceBuffer, uint32_t instanceOffsetBytes, uint32_t instanceCount, uint32_t indexCount, uint32_t baseIndex)
+		{
+			s_RendererAPI->DrawIndexedInstancedStream(vertexArray, instanceBuffer->GetRendererID(), instanceBuffer->GetLayout().GetStride(), instanceOffsetBytes, instanceCount, indexCount, baseIndex);
+		}
+
 		inline static void BindTextureID(uint32_t slot, uint32_t textureID)
 		{
 			s_RendererAPI->BindTextureID(slot, textureID);
+		}
+
+		inline static void SetColorMaskIndexed(uint32_t attachmentIndex, bool r, bool g, bool b, bool a)
+		{
+			s_RendererAPI->SetColorMaskIndexed(attachmentIndex, r, g, b, a);
+		}
+
+		inline static void QueryTextureBindings(std::vector<RendererAPI::TextureUnitBinding>& outBindings, uint32_t unitCount)
+		{
+			s_RendererAPI->QueryTextureBindings(outBindings, unitCount);
 		}
 
 		inline static void SetDepthTest(bool enabled)
@@ -138,6 +153,16 @@ namespace RXNEngine {
 		inline static void SetColorMask(bool r, bool g, bool b, bool a)
 		{
 			s_RendererAPI->SetColorMask(r, g, b, a);
+		}
+
+		inline static void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
+		{
+			s_RendererAPI->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+		}
+
+		inline static void MemoryBarrier(RendererAPI::BarrierType type)
+		{
+			s_RendererAPI->MemoryBarrier(type);
 		}
 
 	private:

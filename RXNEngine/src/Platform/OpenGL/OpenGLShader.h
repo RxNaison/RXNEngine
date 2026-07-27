@@ -3,7 +3,6 @@
 #include "RXNEngine/Renderer/GraphicsAPI/Shader.h"
 #include "glad/glad.h"
 
-
 namespace RXNEngine {
 
 	class OpenGLShader : public Shader
@@ -32,9 +31,12 @@ namespace RXNEngine {
 
 		std::string ReadFile(const std::string& filepath);
 		std::unordered_map<GLenum, std::string> PreProcess(const std::string& source);
+
+		GLint GetUniformLocation(const std::string& name) const;
 	private:
 		uint32_t m_RendererID;
 		std::string m_Name;
+		mutable std::unordered_map<std::string, GLint> m_UniformLocationCache;
 	};
 
 }

@@ -19,6 +19,8 @@ void main()
 #type fragment
 #version 450 core
 layout(location = 0) out vec4 o_Color;
+layout(location = 1) out vec4 o_SSR;
+layout(location = 2) out vec4 o_Normal;
 
 in vec4 v_ScreenPos;
 in vec3 v_LocalPos;
@@ -49,4 +51,6 @@ void main()
         discard;
 
     o_Color = vec4(u_Color.rgb, u_Color.a * alpha * 2.0);
+    o_SSR = vec4(0.0);
+    o_Normal = vec4(0.5, 0.5, 1.0, 1.0);
 }

@@ -12,6 +12,9 @@ namespace RXNEngine {
 
         glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
         float Padding = 0.0f;
+
+        bool CastsShadows = true;
+        uint32_t ShadowResolution = 2048;
     };
 
     struct PointLight
@@ -26,6 +29,7 @@ namespace RXNEngine {
         float Padding[3];
 
         bool CastsShadows = false;
+        uint32_t ShadowResolution = 1024;
         int EntityID = -1;
     };
 
@@ -49,6 +53,7 @@ namespace RXNEngine {
         float CookieSize = 1.0f;
 
         bool CastsShadows = false;
+        uint32_t ShadowResolution = 1024;
         int EntityID = -1;
     };
 
@@ -64,5 +69,6 @@ namespace RXNEngine {
         float ShadowContactThreshold = 2.0f;
         float ShadowContactSharpness = 2.0f;
         float ShadowContactSharpeningBias = 1.0f;
+        bool SoftShadows = true;
     };
 }
